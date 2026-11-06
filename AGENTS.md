@@ -50,7 +50,7 @@ con el documento, pregunta antes de cambiarlo.
 ### Autenticación y cuentas
 | Método y ruta | Rol | Notas |
 |---|---|---|
-| `POST /api/v1/auth/register` | Público | Recibe `name`, `email`, `password`; crea `User` y `Profile` en una transacción. Asigna `TENANT` e ignora `role` del cuerpo |
+| `POST /api/v1/auth/register` | Público | Recibe `name`, `email`, `password`; crea `User` y `Profile` en una transacción y asigna `TENANT`. Si el cuerpo incluye `role` u otro campo no permitido, responde 400 |
 | `POST /api/v1/auth/login` | Público | Mensaje genérico «Correo o contraseña incorrectos»; 5 fallos por correo normalizado dentro de 15 minutos bloquean ese correo por 15 minutos, también si la cuenta no existe |
 | `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | Sin access token; valida, rota el refresh token y entrega un par nuevo |
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | Sin access token; revoca el refresh token |

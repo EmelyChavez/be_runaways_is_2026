@@ -1,14 +1,9 @@
-import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { Allow, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { IsNormalizedEmail } from '@Common/decorators';
 
 export class RegisterDto {
-  // Preserve the previous behavior of ignoring client-supplied role values.
-  @ApiHideProperty()
-  @Allow()
-  role?: unknown;
-
   @ApiProperty({ example: 'Ana', maxLength: 100 })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
