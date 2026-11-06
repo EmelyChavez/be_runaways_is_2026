@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import bcrypt from 'bcrypt';
 import { UserRepository } from '@Users/repositories';
 import { EmailAlreadyTakenError } from '@Users/errors';
-import type { CreateUserDto } from '@Users/dto';
+import type { RegisterDto } from '@Auth/dto';
 import type { EnvConfig } from '@Config';
 import type { User } from '@PrismaClient';
 
@@ -23,11 +23,11 @@ export class UsersService {
     this.saltRounds = configService.get('BCRYPT_SALT_ROUNDS', { infer: true });
   }
 
-  async create({ email, password }: CreateUserDto): Promise<User> {
+  async create({ email, password, name }: RegisterDto): Promise<User> {
     const passwordHash = await this.hashPassword(password);
 
     try {
-      return await this.userRepository.create({ email, passwordHash });
+      return await this.userRepository.create({ email, passwordHash, name });
     } catch (error) {
       // Traduce el error de dominio del repositorio a una excepción HTTP.
       if (error instanceof EmailAlreadyTakenError) {

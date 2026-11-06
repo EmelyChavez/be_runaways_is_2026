@@ -5,9 +5,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Public } from '@Auth/decorators';
 import { UsersService } from '@Users/services';
-import { CreateUserDto, UserResponseDto } from '@Users/dto';
+import { UserResponseDto } from '@Users/dto';
+import { RegisterDto } from '@Auth/dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -15,15 +15,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   /**
-   * Registro. Crear un usuario es crear un recurso, así que es un POST a la
-   * colección `/users` y responde 201 (el default de Nest para POST).
+   * Creación secundaria de usuarios protegida por el guard global.
    */
-  @Public()
   @Post()
-  @ApiOperation({ summary: 'Registra un nuevo usuario' })
+  @ApiOperation({ summary: 'Crea un usuario desde una sesión autenticada' })
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiConflictResponse({ description: 'El nombre de usuario ya está en uso.' })
-  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+  async create(@Body() dto: RegisterDto): Promise<UserResponseDto> {
     const user = await this.usersService.create(dto);
     return UserResponseDto.fromEntity(user);
   }
