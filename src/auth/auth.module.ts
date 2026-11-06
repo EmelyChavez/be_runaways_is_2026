@@ -5,7 +5,7 @@ import { UsersModule } from '@Users';
 import { AuthController } from '@Auth/controllers';
 import { AuthService, LoginRateLimitService, TokenService } from '@Auth/services';
 import { LoginAttemptRepository, RefreshTokenRepository } from '@Auth/repositories';
-import { JwtAuthGuard } from '@Auth/guards';
+import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
 import type { EnvConfig } from '@Config';
 
 @Module({
@@ -31,9 +31,16 @@ import type { EnvConfig } from '@Config';
     LoginAttemptRepository,
     RefreshTokenRepository,
     JwtAuthGuard,
+    RolesGuard,
   ],
   // JwtAuthGuard se exporta para que app.module.ts pueda registrarlo como
   // APP_GUARD con sus dependencias (JwtService, UsersService) ya resueltas.
-  exports: [AuthService, TokenService, RefreshTokenRepository, JwtAuthGuard],
+  exports: [
+    AuthService,
+    TokenService,
+    RefreshTokenRepository,
+    JwtAuthGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

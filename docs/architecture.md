@@ -86,6 +86,15 @@ reemplaza ambos tokens en la cookie y continúa la solicitud. Al cerrar sesión,
 llama a `/auth/logout` y elimina la cookie incluso si el backend ya no acepta el
 refresh token.
 
+## Autorización por roles
+
+`@Roles(...)` guarda metadata en el controlador o método; no toma decisiones de
+acceso por sí mismo. El `RolesGuard`, registrado globalmente después de
+`JwtAuthGuard`, permite rutas sin roles requeridos y, en las rutas restringidas,
+comprueba el rol del usuario que el guard JWT ya adjuntó a la petición. Sin
+usuario autenticado responde `401`; con usuario pero sin el rol requerido,
+responde `403`.
+
 ## Registro de decisiones
 
 Este es el documento único del repositorio para decisiones y contratos de
