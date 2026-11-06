@@ -15,6 +15,10 @@ API y evita exponer los tokens a JavaScript que corre en el navegador.
 responde `200` con `accessToken`, `refreshToken`, `expiresIn` y `user`. El backend
 no devuelve un encabezado `Set-Cookie`.
 
+El objeto `user` de login y de `GET /api/v1/auth/me` incluye el rol. El frontend
+usa ese dato para escoger las vistas permitidas; el backend sigue siendo quien
+autoriza cada operación.
+
 Los fallos de login se cuentan usando un HMAC del correo normalizado, sin
 guardar el correo en claro en la tabla de límites. Cinco fallos dentro de 15
 minutos bloquean temporalmente ese identificador por otros 15 minutos; aplica
@@ -56,6 +60,16 @@ detecta el reuso de un token rotado, se revocan las sesiones del usuario.
 
 `POST /api/v1/auth/logout` recibe el refresh token y lo revoca. Responde `204`
 sin cuerpo; el frontend también debe borrar su cookie `session`.
+
+Refresh y logout llevan `@Public()` para que el guard no exija un access token,
+que puede haber vencido cuando Next.js necesite renovar la sesión. No son
+operaciones anónimas: ambas requieren el refresh token en el cuerpo, que es la
+credencial para rotar o revocar la sesión.
+
+En login se comprueba primero la contraseña. Una contraseña incorrecta devuelve
+el mismo `401` genérico tanto para una cuenta activa como para una deshabilitada.
+Solo si la contraseña es correcta se responde `403` cuando la cuenta está
+deshabilitada. Así, conocer únicamente el correo no revela el estado de la cuenta.
 
 ## Responsabilidad del frontend Next.js
 

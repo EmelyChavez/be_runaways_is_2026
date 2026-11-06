@@ -55,10 +55,6 @@ export class AuthService {
       throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
-    if (!user.isActive) {
-      throw new ForbiddenException('La cuenta está deshabilitada.');
-    }
-
     const passwordMatches = await this.usersService.verifyPassword(
       dto.password,
       user.passwordHash,
@@ -75,6 +71,11 @@ export class AuthService {
     }
 
     await this.loginRateLimitService.clear(email);
+
+    if (!user.isActive) {
+      throw new ForbiddenException('La cuenta está deshabilitada.');
+    }
+
     return { user, tokens: await this.tokenService.issueTokenPair(user) };
   }
 
