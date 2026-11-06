@@ -30,6 +30,9 @@ con el documento, pregunta antes de cambiarlo.
   `@Roles()` y `RolesGuard`. La identidad siempre sale de la sesión, nunca del cuerpo de la petición.
 - **Renovación de sesión:** el access token dura 15 minutos y el refresh token hasta 7 días. Next.js
   renueva con el refresh token antes de que venza el access token y guarda el par rotado en `session`.
+- **Rutas de refresh y logout:** ambas omiten la validación del access token porque deben funcionar
+  cuando este ya venció. Exigen el refresh token en el cuerpo; ese token es la credencial que autoriza
+  renovar o revocar la sesión. En este sentido son públicas para `JwtAuthGuard`, pero no anónimas.
 - **Cambio de rol:** tras cambiar de rol, la respuesta incluye un token nuevo con el rol actualizado.
 - **Acceso sin sesión:** 401. **Sesión sin permiso:** 403.
 
@@ -49,8 +52,8 @@ con el documento, pregunta antes de cambiarlo.
 |---|---|---|
 | `POST /api/v1/auth/register` | Público | Recibe `name`, `email`, `password`; crea `User` y `Profile` en una transacción. Asigna `TENANT` e ignora `role` del cuerpo |
 | `POST /api/v1/auth/login` | Público | Mensaje genérico «Correo o contraseña incorrectos»; 5 fallos por correo normalizado dentro de 15 minutos bloquean ese correo por 15 minutos, también si la cuenta no existe |
-| `POST /api/v1/auth/refresh` | Refresh token | Rota el refresh token y entrega un access token nuevo |
-| `POST /api/v1/auth/logout` | Sesión | |
+| `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | Sin access token; valida, rota el refresh token y entrega un par nuevo |
+| `POST /api/v1/auth/logout` | Refresh token en el cuerpo | Sin access token; revoca el refresh token |
 | `GET /api/v1/auth/me` | Sesión | Datos del usuario de la sesión actual |
 | `PATCH /api/v1/profile/role` | TENANT o OWNER | Cambio de rol. Responde con token nuevo |
 | `POST /api/v1/profile/document` | Sesión | Sube el documento de identidad |

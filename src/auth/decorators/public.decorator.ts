@@ -3,10 +3,12 @@ import { SetMetadata } from '@nestjs/common';
 export const IS_PUBLIC_KEY = 'isPublic';
 
 /**
- * Marca una ruta como accesible sin token.
+ * Marca una ruta que no requiere el access token JWT.
  *
  * El guard de JWT está registrado globalmente (todo cerrado por defecto), así
- * que login, refresh y registro tienen que abrirse explícitamente. Olvidarse
- * de este decorador deja el endpoint protegido, que es el error seguro.
+ * que login, registro, refresh y logout tienen que abrirse explícitamente.
+ * Esto no significa que todas sean anónimas: refresh y logout validan el
+ * refresh token recibido en el cuerpo. Olvidarse de este decorador deja la
+ * ruta protegida por access token.
  */
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
