@@ -1,15 +1,19 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthService } from '@Auth/services';
 import { CurrentUser, Public } from '@Auth/decorators';
-import { AuthResponseDto, LoginDto, RefreshTokenDto } from '@Auth/dto';
+import { AuthResponseDto, LoginDto, RefreshTokenDto, RegisterDto, RegisterResponseDto } from '@Auth/dto';
 import { UserResponseDto } from '@Users/dto';
 import type { User } from '@PrismaClient';
 
@@ -17,6 +21,16 @@ import type { User } from '@PrismaClient';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Post('register')
+  @ApiOperation({ summary: 'Registra un usuario TENANT y crea su perfil' })
+  @ApiCreatedResponse({ type: RegisterResponseDto })
+  @ApiConflictResponse({ description: 'El correo ya está registrado.' })
+  async register(@Body() dto: RegisterDto): Promise<RegisterResponseDto> {
+    const user = await this.authService.register(dto);
+    return RegisterResponseDto.fromEntity(user);
+  }
 
   /**
    * Login. Responde 200 y no 201: no se crea un recurso direccionable, se
@@ -28,7 +42,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Inicia sesión con usuario y contraseña' })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Credenciales inválidas.' })
+  @ApiUnauthorizedResponse({ description: 'Correo o contraseña incorrectos.' })
+  @ApiForbiddenResponse({ description: 'La cuenta está deshabilitada.' })
+  @ApiResponse({ status: HttpStatus.TOO_MANY_REQUESTS, description: 'Demasiados intentos; bloqueo temporal de 15 minutos.' })
   async login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     const { user, tokens } = await this.authService.login(dto);
     return AuthResponseDto.from(user, tokens);
