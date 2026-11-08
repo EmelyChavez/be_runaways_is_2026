@@ -13,9 +13,24 @@ con el documento, pregunta antes de cambiarlo.
 - No crear repos nuevos. Se trabaja sobre el fork del equipo, con ramas `feature/<ID>-<descripcion>`
   hacia `develop`, Pull Requests aprobados por otro integrante y commits con el ID de la historia.
 - No romper el contrato de autenticación: la forma en que el sistema identifica al usuario, su rol
-  y su sesión. Cualquier cambio de arquitectura se justifica en el único documento
-  `docs/architecture.md`; agrega ahí las decisiones nuevas en vez de crear documentos separados.
+  y su sesión. Mantén la documentación del proyecto en los archivos de `docs/` indicados en la
+  sección «Documentación»; las decisiones nuevas deben quedar en el documento que corresponda.
 - La autenticación y los roles se fusionan a `develop` antes que el resto de módulos.
+
+## Documentación
+
+La documentación debe ser consultable por el equipo, los revisores y la cátedra. Organiza el
+contenido en estos archivos. La información puede repetirse en `AGENTS.md` cuando sirva como
+instrucción para trabajar en el repositorio; los documentos de `docs/` mantienen el detalle para
+revisión y consulta.
+
+| Archivo | Contenido |
+|---|---|
+| `docs/arquitectura.md` | Estructura de los módulos y relación entre capas. |
+| `docs/modelo-datos.md` | Entidades, relaciones y modelo de base de datos. |
+| `docs/endpoints.md` | Rutas, métodos HTTP, parámetros y respuestas. |
+| `docs/flujos-autenticacion.md` | Registro, login, renovación de tokens y cierre de sesión. |
+| `docs/decisiones-tecnicas.md` | Patrones utilizados y justificación de las decisiones. |
 
 ## Stack
 - NestJS sobre PostgreSQL, con Prisma como ORM. Swagger en `/api/docs`. Prefijo global `/api/v1`.
@@ -23,7 +38,7 @@ con el documento, pregunta antes de cambiarlo.
 - Autenticación del boilerplate: JWT de acceso de 15 minutos, token de renovación rotado de 7 días,
   contraseñas con bcrypt y guard JWT global. Las rutas públicas se marcan con `@Public()`.
 
-## Decisiones (documentar en `docs/architecture.md`)
+## Decisiones de autenticación y roles
 - **Entrega de la sesión:** el backend responde el JWT y el frontend lo guarda en la cookie `session`
   (`HttpOnly`). El backend no pone cookies propias; Next.js las escribe desde una ruta de servidor.
 - **Rol en el token:** el payload incluye `sub`, `email` y `role`. Los endpoints se protegen con
@@ -34,6 +49,9 @@ con el documento, pregunta antes de cambiarlo.
   cuando este ya venció. Exigen el refresh token en el cuerpo; ese token es la credencial que autoriza
   renovar o revocar la sesión. En este sentido son públicas para `JwtAuthGuard`, pero no anónimas.
 - **Cambio de rol:** tras cambiar de rol, la respuesta incluye un token nuevo con el rol actualizado.
+- **Elegibilidad para OWNER:** solo se exige `Profile.isVerified` al pasar de `TENANT` a `OWNER`.
+- **Regreso a TENANT:** al cambiar de `OWNER` a `TENANT`, todos los bienes propios en estado
+  `AVAILABLE` pasan a `PAUSED` dentro de la misma transacción que actualiza el rol.
 - **Acceso sin sesión:** 401. **Sesión sin permiso:** 403.
 
 ## Roles
@@ -43,7 +61,8 @@ con el documento, pregunta antes de cambiarlo.
 - `ADMIN`: revisa documentos de identidad. No se asigna por registro ni por cambio de rol; solo lo crea
   el script de datos iniciales.
 - Un usuario tiene un solo rol activo. Puede cambiar entre TENANT y OWNER, salvo que tenga
-  reservas PENDIENTE o PAGADA, o depósitos pendientes de decisión.
+  reservas PENDING o PAID como arrendatario o sobre sus bienes, o depósitos pendientes de decisión.
+  Pasar a OWNER requiere un perfil verificado; volver a TENANT pausa sus bienes AVAILABLE.
 
 ## Endpoints
 
@@ -55,7 +74,7 @@ con el documento, pregunta antes de cambiarlo.
 | `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | Sin access token; valida, rota el refresh token y entrega un par nuevo |
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | Sin access token; revoca el refresh token |
 | `GET /api/v1/auth/me` | Sesión | Datos del usuario de la sesión actual |
-| `PATCH /api/v1/profile/role` | TENANT o OWNER | Cambio de rol. Responde con token nuevo |
+| `PATCH /api/v1/profile/role` | TENANT o OWNER | Acepta `TENANT` o `OWNER`; valida reservas y depósitos pendientes, y responde con un par de tokens nuevo |
 | `POST /api/v1/profile/document` | Sesión | Sube el documento de identidad |
 
 ### Verificación (ADMIN)
@@ -69,14 +88,14 @@ con el documento, pregunta antes de cambiarlo.
 | Método y ruta | Rol | Notas |
 |---|---|---|
 | `POST /api/v1/properties` | OWNER | Publica un bien |
-| `GET /api/v1/properties` | TENANT, OWNER | Catálogo paginado. Acepta `page`, `q`, `category`, `location`, `minPrice`, `maxPrice`, `startDate`, `endDate`. Solo bienes DISPONIBLE |
-| `GET /api/v1/properties/:id` | TENANT, OWNER | Detalle. Bienes PAUSADO, ELIMINADO o inexistentes responden 404 |
+| `GET /api/v1/properties` | TENANT, OWNER | Catálogo paginado. Acepta `page`, `q`, `category`, `location`, `minPrice`, `maxPrice`, `startDate`, `endDate`. Solo bienes AVAILABLE |
+| `GET /api/v1/properties/:id` | TENANT, OWNER | Detalle. Bienes PAUSED, DELETED o inexistentes responden 404 |
 | `GET /api/v1/properties/:id/availability` | TENANT, OWNER | Calendario de 90 días |
 | `GET /api/v1/properties/mine` | OWNER | Bienes propios, paginados |
 | `GET /api/v1/properties/:id/owner` | OWNER dueño | Bien propio para edición |
-| `PUT /api/v1/properties/:id` | OWNER dueño | Reemplazo completo. 409 si cambia precio o depósito con reservas PENDIENTE o PAGADA |
-| `PATCH /api/v1/properties/:id/status` | OWNER dueño | Cambia entre DISPONIBLE y PAUSADO. 409 si hay reservas PENDIENTE o PAGADA |
-| `DELETE /api/v1/properties/:id` | OWNER dueño | Borrado lógico (ELIMINADO). 409 si hay reservas PENDIENTE o PAGADA |
+| `PUT /api/v1/properties/:id` | OWNER dueño | Reemplazo completo. 409 si cambia precio o depósito con reservas PENDING o PAID |
+| `PATCH /api/v1/properties/:id/status` | OWNER dueño | Cambia entre AVAILABLE y PAUSED. 409 si hay reservas PENDING o PAID |
+| `DELETE /api/v1/properties/:id` | OWNER dueño | Borrado lógico (DELETED). 409 si hay reservas PENDING o PAID |
 
 ### Bloqueos de fechas
 | Método y ruta | Rol |
@@ -88,7 +107,7 @@ con el documento, pregunta antes de cambiarlo.
 ### Reservas y pagos
 | Método y ruta | Rol | Notas |
 |---|---|---|
-| `POST /api/v1/bookings` | TENANT | Crea la reserva en PENDIENTE. Valida verificación (`verifiedOnly`) y traslapes en una operación atómica |
+| `POST /api/v1/bookings` | TENANT | Crea la reserva en PENDING. Valida verificación (`verifiedOnly`) y traslapes en una operación atómica |
 | `GET /api/v1/bookings/mine` | TENANT | Reservas propias |
 | `GET /api/v1/owner/bookings` | OWNER | Reservas de sus bienes |
 | `POST /api/v1/payments` | TENANT | Pago simulado. Valida verificación |
@@ -128,18 +147,18 @@ con el documento, pregunta antes de cambiarlo.
 - `User`: id, name, email (único), passwordHash, role, isActive, createdAt, updatedAt.
 - `Profile`: id, userId (único, 1 a 1 con User), isVerified. No incluye apellido ni teléfono.
   El registro crea el perfil junto al usuario.
-- `Property`: id, ownerId, title, description, category (PROPIEDAD o EQUIPO), department, municipality,
-  address, pricePerDay, securityDeposit, images (string[] de Firebase), status (DISPONIBLE, PAUSADO,
-  ELIMINADO), createdAt, updatedAt.
+- `Property`: id, ownerId, title, description, category (PROPERTY o EQUIPMENT), department, municipality,
+  address, pricePerDay, securityDeposit, images (string[] de Firebase), status (AVAILABLE, PAUSED,
+  DELETED), createdAt, updatedAt.
 - `NoAvailability`, `Booking`, `Payment`, `Deposit`, `TransactionHistory`, `Review`, `Conversation`,
   `Message`, `IdentityDocument` y `Notification`: ver el diagrama del equipo.
 
 ## Estados (nombres fijos; transiciones fuera de la tabla responden 409)
-- Bien: DISPONIBLE, PAUSADO, ELIMINADO. ELIMINADO es final.
-- Reserva: PENDIENTE, PAGADA, FINALIZADA, CANCELADA. PENDIENTE expira a las 24 horas sin pago.
-- Depósito: PENDIENTE, DEVUELTO, RETENIDO, RETENIDO_PARCIAL.
-- Documento de identidad: PENDIENTE, APROBADO, RECHAZADO.
-- Cuenta (calculada): SIN_VERIFICAR, PENDIENTE, VERIFICADA, RECHAZADA.
+- Bien: AVAILABLE, PAUSED, DELETED. DELETED es final.
+- Reserva: PENDING, PAID, COMPLETED, CANCELED. PENDING expira a las 24 horas sin pago.
+- Depósito: PENDING, RETURNED, RETAINED, PARTIALLY_RETAINED.
+- Documento de identidad: PENDING, APPROVED, REJECTED.
+- Cuenta: UNVERIFIED, PENDING, VERIFIED, REJECTED.
 - Notificación: UNREAD, READ.
 
 ## Reglas de negocio
@@ -172,7 +191,7 @@ con el documento, pregunta antes de cambiarlo.
 
 ## Convenciones de código
 - Código e identificadores en inglés. Mensajes de error visibles en español.
-- Los valores de enum se respetan tal cual (`DISPONIBLE`, `OWNER`…).
+- Los valores de enum se escriben en inglés y se respetan tal cual (`AVAILABLE`, `OWNER`…).
 - Ramas: `feature/<ID>-<descripcion>`. Commits: empiezan con el ID de la historia (`H28: agregar enum Role`).
 - Migraciones con `npx prisma migrate dev`. No editar a mano migraciones ya fusionadas.
 - Antes de un PR: `npm run lint`, `npm run build` y `npm test` deben pasar.
@@ -180,7 +199,18 @@ con el documento, pregunta antes de cambiarlo.
   card nueva con el siguiente número disponible.
 
 ## Comandos
-- `docker compose up -d`: base de datos y backend en local.
-- `npx prisma migrate dev`: aplica migraciones en desarrollo.
-- `npx prisma db seed`: carga las cuentas y bienes de prueba (idempotente).
-- `npm run dev`, `npm test`, `npm run lint`, `npm run build`.
+# 1. Variables de entorno
+cp .env.example .env
+
+# 2. Solo la base
+docker compose up -d postgres
+
+# 3. Dependencias (el postinstall genera el cliente de Prisma)
+npm install          # o: yarn install  /  pnpm install
+
+# 4. Aplicar migraciones y cargar el usuario demo
+npm run prisma:migrate
+npm run db:seed
+
+# 5. Arrancar en watch mode
+npm run start:dev
