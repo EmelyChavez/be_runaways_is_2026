@@ -5,6 +5,7 @@ import { AuthModule } from '@Auth';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
 import { HealthModule } from '@Health';
 import { PrismaModule } from '@Prisma';
+import { ProfileModule } from '@Profile';
 import { UsersModule } from '@Users';
 import { validateEnv } from '@Config';
 
@@ -20,6 +21,7 @@ import { validateEnv } from '@Config';
     HealthModule,
     UsersModule,
     AuthModule,
+    ProfileModule,
   ],
   providers: [
     {
