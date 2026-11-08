@@ -4,6 +4,11 @@ import { createHmac } from 'node:crypto';
 import { LoginAttemptRepository } from '@Auth/repositories';
 import type { EnvConfig } from '@Config';
 
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const LOCKOUT_MS = 15 * 60 * 1000;
+const RETENTION_MS = FAILURE_WINDOW_MS + LOCKOUT_MS;
+const MAX_FAILURES = 5;
+
 @Injectable()
 export class LoginRateLimitService {
   private readonly hashSecret: string;
@@ -18,17 +23,36 @@ export class LoginRateLimitService {
   async assertAllowed(email: string): Promise<void> {
     const keyHashes = this.getKeyHashes(email);
     if (await this.loginAttemptRepository.isLocked(keyHashes)) {
-      throw new HttpException(
-        'Demasiados intentos. Intenta nuevamente en 15 minutos.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw this.tooManyAttemptsException();
     }
   }
 
-  recordFailure(email: string): Promise<boolean> {
-    return this.loginAttemptRepository.recordFailure(
-      this.getKeyHashes(email),
-    );
+  async recordFailure(email: string): Promise<boolean> {
+    const keyHashes = this.getKeyHashes(email);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + RETENTION_MS);
+
+    return this.loginAttemptRepository.inTransaction(async (repository) => {
+      await repository.deleteExpired(now);
+
+      for (const keyHash of keyHashes) {
+        let attempt = await repository.recordFailure(keyHash, now, expiresAt);
+
+        if (now.getTime() - attempt.windowStartedAt.getTime() >= FAILURE_WINDOW_MS) {
+          attempt = await repository.resetWindow(keyHash, now, expiresAt);
+        }
+
+        if (attempt.attempts >= MAX_FAILURES) {
+          await repository.setLock(
+            keyHash,
+            new Date(now.getTime() + LOCKOUT_MS),
+            expiresAt,
+          );
+        }
+      }
+
+      return repository.isLocked(keyHashes, now);
+    });
   }
 
   async clear(email: string): Promise<void> {
@@ -44,5 +68,12 @@ export class LoginRateLimitService {
 
   private hashIdentifier(identifier: string): string {
     return createHmac('sha256', this.hashSecret).update(identifier).digest('hex');
+  }
+
+  private tooManyAttemptsException(): HttpException {
+    return new HttpException(
+      'Demasiados intentos. Intenta nuevamente en 15 minutos.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
   }
 }
