@@ -10,7 +10,6 @@ import {
   DepositStatus,
   PropertyStatus,
   Role,
-  type User,
 } from '@PrismaClient';
 import { RoleChangeResponseDto } from '@Profile/dto';
 import {
