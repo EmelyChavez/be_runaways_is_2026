@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import type { CreatePropertyRequestDto } from '@Properties/dto';
-import type { Property } from '@PrismaClient';
+import { Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
 @Injectable()
@@ -47,6 +47,78 @@ export class PropertiesRepository {
     ]);
 
     return { properties, total };
+  }
+
+  async findOwnerPage(ownerId: string, page: number) {
+    const where = {
+      ownerId,
+      status: { in: [PropertyStatus.AVAILABLE, PropertyStatus.PAUSED] },
+    };
+    const [properties, total] = await this.prisma.$transaction([
+      this.prisma.property.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * CATALOG_PAGE_SIZE,
+        take: CATALOG_PAGE_SIZE,
+        select: {
+          id: true,
+          title: true,
+          municipality: true,
+          department: true,
+          category: true,
+          pricePerDay: true,
+          images: true,
+          status: true,
+        },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+    return { properties, total };
+  }
+
+  findOwnedById(ownerId: string, id: string, transaction?: Prisma.TransactionClient) {
+    const client = transaction ?? this.prisma;
+    return client.property.findFirst({
+      where: {
+        id,
+        ownerId,
+        status: { in: [PropertyStatus.AVAILABLE, PropertyStatus.PAUSED] },
+      },
+    });
+  }
+
+  countActiveBookings(propertyId: string, transaction?: Prisma.TransactionClient) {
+    const client = transaction ?? this.prisma;
+    return client.booking.count({
+      where: { propertyId, status: { in: ['PENDING', 'PAID'] } },
+    });
+  }
+
+  transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction(operation);
+  }
+
+  updateOwned(
+    ownerId: string,
+    id: string,
+    data: CreatePropertyRequestDto,
+    images: string[],
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.property.update({
+      where: { id, ownerId },
+      data: {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        department: data.department,
+        municipality: data.municipality,
+        address: data.address,
+        pricePerDay: data.pricePerDay,
+        securityDeposit: data.securityDeposit,
+        images,
+      },
+    });
   }
 
   findAvailableById(id: string) {
