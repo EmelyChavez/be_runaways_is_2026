@@ -88,7 +88,7 @@ revisión y consulta.
 | Método y ruta | Rol | Notas |
 |---|---|---|
 | `POST /api/v1/properties` | OWNER | Publica un bien |
-| `GET /api/v1/properties` | TENANT, OWNER | Catálogo paginado. Acepta `page`, `q`, `category`, `location`, `minPrice`, `maxPrice`, `startDate`, `endDate`. Solo bienes AVAILABLE |
+| `GET /api/v1/properties` | TENANT | Catálogo paginado. Acepta `page`, `q`, `category`, `location`, `minPrice`, `maxPrice`, `startDate`, `endDate`. Solo bienes AVAILABLE |
 | `GET /api/v1/properties/:id` | TENANT, OWNER | Detalle. Bienes PAUSED, DELETED o inexistentes responden 404 |
 | `GET /api/v1/properties/:id/availability` | TENANT, OWNER | Calendario de 90 días |
 | `GET /api/v1/properties/mine` | OWNER | Bienes propios, paginados |
