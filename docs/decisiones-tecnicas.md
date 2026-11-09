@@ -45,6 +45,15 @@ El `ValidationPipe` global transforma DTOs, elimina la posibilidad de ignorar ca
 (los rechaza) y normaliza errores de validación como `400 VALIDATION_ERROR`. El registro no acepta
 un rol enviado por cliente; el servidor siempre asigna `TENANT`.
 
+## Imágenes de propiedades en Cloudinary
+
+La creación de propiedades recibe `multipart/form-data` con entre una y cinco imágenes JPG o PNG,
+de hasta 5 MB cada una. El backend valida MIME y firma del archivo, sube las imágenes a la carpeta
+`runaways/properties` de Cloudinary y almacena en `Property.images` únicamente sus URLs HTTPS. Las
+credenciales se leen de `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` y `CLOUDINARY_API_SECRET`;
+si la carga o el guardado del bien falla, se eliminan las imágenes subidas durante esa solicitud.
+Las credenciales no son necesarias para arrancar otros módulos, pero sí para publicar un bien.
+
 ## Prisma y PostgreSQL
 
 El proyecto usa Prisma como ORM y PostgreSQL como base. `PrismaService` configura el driver adapter
