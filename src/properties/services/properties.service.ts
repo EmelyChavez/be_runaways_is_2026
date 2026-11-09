@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException} from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertyRepository } from '@Properties/repositories';
 import type { CreatePropertyDto } from '@Properties/dto';
@@ -78,6 +78,40 @@ export class PropertiesService {
       total,
       page,
       pageSize: CATALOG_PAGE_SIZE,
+    };
+  }
+
+  async getDetail(id: string) {
+    const property = await this.propertiesRepository.findAvailableById(id);
+    if (!property) {
+      throw new NotFoundException({
+        code: 'PROPERTY_NOT_AVAILABLE',
+        message: 'Este bien no existe o no está disponible',
+      });
+    }
+
+    const [propertyRating, ownerRating, reviews] = await Promise.all([
+      this.propertiesRepository.findPropertyRating(id),
+      this.propertiesRepository.findUserRating(property.owner.id),
+      this.propertiesRepository.findPropertyReviews(id),
+    ]);
+
+    return {
+      ...property,
+      pricePerDay: property.pricePerDay.toFixed(2),
+      securityDeposit: property.securityDeposit.toFixed(2),
+      owner: property.owner,
+      propertyRatingAverage:
+        propertyRating._avg.propertyRating === null
+          ? null
+          : propertyRating._avg.propertyRating.toFixed(1),
+      propertyReviewCount: propertyRating._count._all,
+      ownerRatingAverage:
+        ownerRating._avg.userRating === null
+          ? null
+          : ownerRating._avg.userRating.toFixed(1),
+      ownerReviewCount: ownerRating._count._all,
+      reviews,
     };
   }
 }

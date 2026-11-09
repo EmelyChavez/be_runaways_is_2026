@@ -30,4 +30,53 @@ export class PropertiesRepository {
 
     return { properties, total };
   }
+
+  findAvailableById(id: string) {
+    return this.prisma.property.findFirst({
+      where: { id, status: 'AVAILABLE' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        department: true,
+        municipality: true,
+        pricePerDay: true,
+        securityDeposit: true,
+        images: true,
+        owner: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  findPropertyRating(propertyId: string) {
+    return this.prisma.review.aggregate({
+      where: { propertyId, reviewType: 'RENTER_TO_PROPERTY' },
+      _avg: { propertyRating: true },
+      _count: { _all: true },
+    });
+  }
+
+  findUserRating(userId: string) {
+    return this.prisma.review.aggregate({
+      where: { targetUserId: userId },
+      _avg: { userRating: true },
+      _count: { _all: true },
+    });
+  }
+
+  findPropertyReviews(propertyId: string) {
+    return this.prisma.review.findMany({
+      where: { propertyId, reviewType: 'RENTER_TO_PROPERTY' },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        propertyRating: true,
+        userRating: true,
+        comment: true,
+        createdAt: true,
+        author: { select: { name: true } },
+      },
+    });
+  }
 }
