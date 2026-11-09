@@ -109,7 +109,39 @@ export class PropertiesController {
     return CreatePropertyResponseDto.fromEntity(property);
   }
 
-
+  @Put(':id')
+  @Roles(Role.OWNER)
+  @UseInterceptors(
+    FilesInterceptor('images', MAX_FILES, {
+      limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+      fileFilter: (_request, file, callback) => {
+        if (file.mimetype !== 'image/jpeg' && file.mimetype !== 'image/png') {
+          callback(new BadRequestException('Cada foto debe estar en formato JPG o PNG.'), false);
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdatePropertyRequestDto })
+  @ApiOperation({ summary: 'Reemplaza los datos e imágenes de un bien propio' })
+  @ApiOkResponse({ type: CreatePropertyResponseDto })
+  @ApiBadRequestResponse({ description: 'Datos inválidos o cantidad de fotos fuera de 1 a 5.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un OWNER puede editar publicaciones.' })
+  @ApiNotFoundResponse({ description: 'El bien no existe o no pertenece al arrendador.' })
+  @ApiConflictResponse({ description: 'No se puede cambiar el precio o depósito con reservas activas.' })
+  async update(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdatePropertyRequestDto,
+    @UploadedFiles() files: PropertyImageFile[],
+  ): Promise<CreatePropertyResponseDto> {
+    const property = await this.propertiesService.updateOwned(user.id, id, dto, files ?? []);
+    return CreatePropertyResponseDto.fromEntity(property);
+  }
 
   @Get(':id')
   @Roles(Role.TENANT)
