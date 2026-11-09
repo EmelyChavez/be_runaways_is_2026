@@ -16,6 +16,7 @@ aún no deben considerarse disponibles en la API.
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | `{ "refreshToken" }` | `204`, sin cuerpo |
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
+| `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
 
 ### Validación y errores de los endpoints implementados
 
@@ -43,7 +44,7 @@ controladores implementados en el backend actual.
 | Área | Rutas | Acceso previsto |
 |---|---|---|
 | Verificación | `GET /api/v1/admin/verifications`; `PATCH /api/v1/admin/verifications/:userId/approve`; `PATCH /api/v1/admin/verifications/:userId/reject` | `ADMIN` |
-| Bienes | `POST /api/v1/properties`; `GET /api/v1/properties`; `GET /api/v1/properties/:id`; `GET /api/v1/properties/:id/availability`; `GET /api/v1/properties/mine`; `GET /api/v1/properties/:id/owner`; `PUT /api/v1/properties/:id`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | Según `AGENTS.md`: `OWNER`, `TENANT` o ambos; algunas requieren ser propietario del bien |
+| Bienes | `GET /api/v1/properties`; `GET /api/v1/properties/:id`; `GET /api/v1/properties/:id/availability`; `GET /api/v1/properties/mine`; `GET /api/v1/properties/:id/owner`; `PUT /api/v1/properties/:id`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | Según `AGENTS.md`: `OWNER`, `TENANT` o ambos; algunas requieren ser propietario del bien |
 | Bloqueos de fechas | `POST /api/v1/properties/:id/blocks`; `GET /api/v1/properties/:id/blocks`; `DELETE /api/v1/blocks/:id` | `OWNER` dueño |
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT`, `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
