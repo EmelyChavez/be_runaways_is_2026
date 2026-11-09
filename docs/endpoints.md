@@ -1,8 +1,7 @@
 # Endpoints
 
-Prefijo global: `/api/v1`. Swagger: `/api/docs`. Los ejemplos omiten campos no relevantes.
-Las rutas implementadas corresponden a controladores existentes en `src/`; las planificadas
-pertenecen al contrato del producto y aún no tienen controlador implementado.
+Prefijo global: `/api/v1`. Swagger: `/api/docs`. Las rutas implementadas corresponden a controladores
+existentes en `src/`; las planificadas aún no tienen controlador.
 
 ## Implementados
 
@@ -50,11 +49,13 @@ establece una cookie HTTP.
 | Área | Rutas | Acceso previsto |
 |---|---|---|
 | Verificación | `GET /api/v1/admin/verifications`; `PATCH /api/v1/admin/verifications/:userId/approve`; `PATCH /api/v1/admin/verifications/:userId/reject` | `ADMIN` |
-| Bienes | `POST /api/v1/properties`; `GET /api/v1/properties/:id/availability`; `GET /api/v1/properties/mine`; `GET /api/v1/properties/:id/owner`; `PUT /api/v1/properties/:id`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | Según `AGENTS.md`: `OWNER`, `TENANT` o ambos; algunas requieren ser propietario |
+| Bienes | `GET /api/v1/properties/:id/availability`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | `TENANT`, `OWNER` o dueño según ruta |
 | Bloqueos de fechas | `POST /api/v1/properties/:id/blocks`; `GET /api/v1/properties/:id/blocks`; `DELETE /api/v1/blocks/:id` | `OWNER` dueño |
-| Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT`, `OWNER` dueño según ruta |
+| Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
 | Mensajería | `GET /api/v1/conversations`; `GET /api/v1/conversations/:id/messages`; `POST /api/v1/conversations/:id/messages` | Sesión; mensajes limitados a participantes |
+| Notificaciones | `POST /api/v1/notifications/internal`; `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
+| Reportes del arrendador | `GET /api/v1/owner/reports/income`; `GET /api/v1/owner/reports/income/by-property`; `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
 | Notificaciones | `POST /api/v1/notifications/internal`; `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión según ruta |
 | Reportes del arrendador | `GET /api/v1/owner/reports/income`; `GET /api/v1/owner/reports/income/by-property`; `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
 

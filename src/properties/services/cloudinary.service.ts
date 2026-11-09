@@ -46,6 +46,17 @@ export class CloudinaryService {
     await cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
   }
 
+  async deleteByUrl(secureUrl: string): Promise<void> {
+    const url = new URL(secureUrl);
+    const uploadIndex = url.pathname.split('/').indexOf('upload');
+    if (uploadIndex < 0) return;
+
+    const segments = url.pathname.split('/').slice(uploadIndex + 1);
+    if (segments[0]?.startsWith('v') && /^v\d+$/.test(segments[0])) segments.shift();
+    const publicId = segments.join('/').replace(/\.[^/.]+$/, '');
+    if (publicId) await this.delete(publicId);
+  }
+
   private ensureConfigured(): void {
     if (!this.configured) {
       throw new ServiceUnavailableException('El almacenamiento de imágenes no está configurado.');
