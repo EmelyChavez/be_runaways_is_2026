@@ -2,6 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
+  IsArray,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -12,7 +14,7 @@ import { PropertyCategory } from '@PrismaClient';
 const POSITIVE_MONEY = /^(?=.*[1-9])\d{1,8}(?:\.\d{1,2})?$/;
 const NON_NEGATIVE_MONEY = /^\d{1,8}(?:\.\d{1,2})?$/;
 
-export class CreatePropertyDto {
+export class CreatePropertyRequestDto {
   @ApiProperty({ example: 'Cámara profesional', maxLength: 100 })
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
   @IsString()
@@ -57,4 +59,15 @@ export class CreatePropertyDto {
   @IsString()
   @Matches(NON_NEGATIVE_MONEY, { message: 'El depósito debe ser un monto no negativo con hasta dos decimales.' })
   securityDeposit!: string;
+
+  @ApiProperty({
+    type: 'array',
+    minItems: 1,
+    maxItems: 5,
+    items: { type: 'string', format: 'binary' },
+    description: 'Entre una y cinco imágenes JPG o PNG de hasta 5 MB cada una.',
+  })
+  @IsOptional()
+  @IsArray()
+  images?: string[];
 }

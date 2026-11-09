@@ -1,11 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
+import type { CreatePropertyRequestDto } from '@Properties/dto';
+import type { Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
-
 @Injectable()
 export class PropertiesRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  create(ownerId: string, data: CreatePropertyRequestDto, images: string[]): Promise<Property> {
+    return this.prisma.property.create({
+      data: {
+        ownerId,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        department: data.department,
+        municipality: data.municipality,
+        address: data.address,
+        pricePerDay: data.pricePerDay,
+        securityDeposit: data.securityDeposit,
+        images,
+      },
+    });
+  }
 
   async findAvailablePage(page: number) {
     const where = { status: 'AVAILABLE' as const };
