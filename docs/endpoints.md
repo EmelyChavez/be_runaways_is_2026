@@ -17,6 +17,7 @@ aún no deben considerarse disponibles en la API.
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
+| `GET /api/v1/properties?page=N` | `TENANT` autenticado | `page` opcional, entero desde 1 (por defecto 1) | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE`, más recientes primero |
 
 ### Validación y errores de los endpoints implementados
 
@@ -28,6 +29,7 @@ aún no deben considerarse disponibles en la API.
   deshabilitada responde `403`.
 - Refresh inválido, vencido o revocado responde `401`. Logout es idempotente y responde `204`.
 - `/auth/me` responde `401` sin access token válido.
+- Catálogo: `400 VALIDATION_ERROR` si `page` no es un entero positivo; `401` sin sesión. Si no hay bienes disponibles, responde `200` con `data: []` y `total: 0`.
 - Cambio de rol: `401` sin sesión; `403` si la cuenta no está verificada al pasar a `OWNER` o si es
   `ADMIN`; `409 ROLE_UNCHANGED` si se solicita el mismo rol y `409 ROLE_CHANGE_BLOCKED` si hay
   reservas `PENDING`/`PAID` o depósitos `PENDING` que bloquean el cambio. Rol fuera de `TENANT` y

@@ -1,1 +1,1 @@
-export { PropertiesController } from './properties.controller.js';
+export * from './properties.controller.js';

@@ -1,1 +1,1 @@
-export { PropertyRepository } from './property.repository.js';
+export * from './properties.repository.js';

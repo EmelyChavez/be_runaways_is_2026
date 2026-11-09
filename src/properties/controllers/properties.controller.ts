@@ -13,6 +13,10 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+import { Controller, Get, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -74,5 +78,14 @@ export class PropertiesController {
     @UploadedFiles() files: PropertyImageFile[],
   ): Promise<Property> {
     return this.propertiesService.create(user.id, dto, files);
+      
+      
+  @Get()
+  @Roles(Role.TENANT)
+  @ApiOperation({ summary: 'Lista el catálogo de bienes disponibles' })
+  @ApiOkResponse({ description: 'Catálogo paginado de bienes disponibles.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  listCatalog(@Query() query: PropertyCatalogQueryDto) {
+    return this.propertiesService.listCatalog(query.page);
   }
 }

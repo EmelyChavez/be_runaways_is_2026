@@ -1,1 +1,1 @@
-export { PropertiesModule } from './properties.module.js';
+export * from './properties.module.js';

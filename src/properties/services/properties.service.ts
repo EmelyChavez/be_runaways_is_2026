@@ -3,7 +3,9 @@ import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertyRepository } from '@Properties/repositories';
 import type { CreatePropertyDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
+import type { PropertyCatalogResponseDto } from '@Properties/dto';
 
+const CATALOG_PAGE_SIZE = 12;
 const MAX_IMAGES = 5;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -58,5 +60,24 @@ export class PropertiesService {
         throw new BadRequestException('Cada foto debe ser JPG o PNG y pesar como máximo 5 MB.');
       }
     }
+
+
+@Injectable()
+export class PropertiesService {
+  constructor(private readonly propertiesRepository: PropertiesRepository) {}
+
+  async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
+    const { properties, total } =
+      await this.propertiesRepository.findAvailablePage(page);
+
+    return {
+      data: properties.map((property) => ({
+        ...property,
+        pricePerDay: property.pricePerDay.toFixed(2),
+      })),
+      total,
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+    };
   }
 }
