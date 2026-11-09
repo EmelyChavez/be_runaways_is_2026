@@ -1,0 +1,2 @@
+ALTER TABLE "properties"
+ALTER COLUMN "title" TYPE VARCHAR(100);

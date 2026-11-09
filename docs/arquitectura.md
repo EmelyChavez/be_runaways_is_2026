@@ -33,7 +33,7 @@ flowchart LR
 | `auth` | Registro, login, emisión y rotación de tokens, intentos de login y guards de autenticación/autorización. |
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
-| `properties` | Consulta paginada del catálogo de bienes disponibles mediante controlador, servicio y repositorio. |
+| `properties` | Creación de bienes por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo de bienes disponibles mediante controlador, servicio y repositorio. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
 | `common` | Utilidades y decoradores compartidos. |
@@ -50,6 +50,10 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
 - Cambio de rol: `ProfileController` → `ProfileRoleService` → `ProfileRoleRepository` y
   `TokenService`. El servicio aplica las reglas; el repositorio agrupa las lecturas y escrituras de
   base de datos en una transacción serializable.
+- Publicación: `PropertiesController` recibe los campos y archivos multipart, `PropertiesService`
+  valida las imágenes y coordina su carga a `CloudinaryService`; `PropertyRepository` guarda el bien
+  y las URLs seguras en PostgreSQL. Si falla la persistencia, elimina las imágenes cargadas durante
+  esa solicitud.
 
 ## Validación y documentación HTTP
 

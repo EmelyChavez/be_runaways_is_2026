@@ -17,17 +17,9 @@ pertenecen al contrato del producto y aún no tienen controlador implementado.
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
 | `GET /api/v1/properties?page=N` | `TENANT` autenticado | `page` opcional, entero desde 1 | `200`: catálogo paginado; solo bienes `AVAILABLE` |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
-
-El detalle devuelve `id`, título, descripción, categoría, departamento, municipio, precio por día,
-depósito, todas las imágenes y `owner` (`id`, `name`). Los montos son textos con dos decimales.
-También devuelve `reviews`, las reseñas `RENTER_TO_PROPERTY` del bien ordenadas de más recientes
-a más antiguas. Cada reseña incluye `propertyRating`, `userRating`, comentario, fecha y nombre
-del autor.
-
-Las calificaciones se entregan por separado: `propertyRatingAverage` y `propertyReviewCount`
-corresponden al bien; `ownerRatingAverage` y `ownerReviewCount` corresponden al arrendador y se
-calculan con las reseñas dirigidas a su `targetUserId`. Los promedios tienen un decimal; sin
-calificaciones, el promedio es `null` y el conteo es `0`.
+| `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
+| `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
+| `GET /api/v1/properties?page=N` | `TENANT` autenticado | `page` opcional, entero desde 1 (por defecto 1) | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE`, más recientes primero |
 
 ### Validación y errores de los endpoints implementados
 
