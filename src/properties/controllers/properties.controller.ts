@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
   UploadedFiles,
   UseInterceptors,
@@ -16,6 +17,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiConflictResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -29,6 +31,7 @@ import {
   CreatePropertyRequestDto,
   CreatePropertyResponseDto,
   PropertyCatalogQueryDto,
+  UpdatePropertyRequestDto,
 } from '@Properties/dto';
 import { PropertiesService, type PropertyImageFile } from '@Properties/services';
 import { Role, type User } from '@PrismaClient';
@@ -80,6 +83,33 @@ export class PropertiesController {
   listCatalog(@Query() query: PropertyCatalogQueryDto) {
     return this.propertiesService.listCatalog(query.page);
   }
+
+  @Get('mine')
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Lista las publicaciones del arrendador actual' })
+  @ApiOkResponse({ description: 'Publicaciones AVAILABLE o PAUSED, paginadas.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  listMine(@CurrentUser() user: User, @Query() query: PropertyCatalogQueryDto) {
+    return this.propertiesService.listMine(user.id, query.page);
+  }
+
+  @Get(':id/owner')
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Obtiene un bien propio para editarlo' })
+  @ApiOkResponse({ type: CreatePropertyResponseDto })
+  @ApiBadRequestResponse({ description: 'El ID no es un UUID válido.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un OWNER puede editar publicaciones.' })
+  @ApiNotFoundResponse({ description: 'El bien no existe o no pertenece al arrendador.' })
+  async getOwnedDetail(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<CreatePropertyResponseDto> {
+    const property = await this.propertiesService.getOwnedDetail(user.id, id);
+    return CreatePropertyResponseDto.fromEntity(property);
+  }
+
+
 
   @Get(':id')
   @Roles(Role.TENANT)
