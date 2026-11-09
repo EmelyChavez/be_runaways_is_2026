@@ -1,7 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
-import type { CreatePropertyRequestDto } from '@Properties/dto';
+import type { CreatePropertyRequestDto, UpdatePropertyRequestDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
 
@@ -23,7 +28,7 @@ export class PropertiesService {
   ) {}
 
   async create(ownerId: string, dto: CreatePropertyRequestDto, files: PropertyImageFile[]): Promise<Property> {
-    this.validateImages(files);
+    this.validateImages(files, true);
     const uploaded: UploadedImage[] = [];
 
     try {
@@ -42,9 +47,9 @@ export class PropertiesService {
     }
   }
 
-  private validateImages(files: PropertyImageFile[]): void {
-    if (!files || files.length < 1 || files.length > MAX_IMAGES) {
-      throw new BadRequestException('Debes subir entre una y cinco fotos del bien.');
+  private validateImages(files: PropertyImageFile[], requireOne: boolean): void {
+    if (!files || files.length > MAX_IMAGES || (requireOne && files.length < 1)) {
+      throw new BadRequestException('Debes mantener entre una y cinco fotos del bien.');
     }
 
     for (const file of files) {
@@ -62,6 +67,106 @@ export class PropertiesService {
     }
   }
 
+  async listMine(ownerId: string, page: number) {
+    const { properties, total } = await this.propertiesRepository.findOwnerPage(ownerId, page);
+    return {
+      data: properties.map((property) => ({
+        ...property,
+        pricePerDay: property.pricePerDay.toFixed(2),
+      })),
+      total,
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+    };
+  }
+
+  async getOwnedDetail(ownerId: string, id: string) {
+    const property = await this.propertiesRepository.findOwnedById(ownerId, id);
+    if (!property) {
+      throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+    }
+    return property;
+  }
+
+  async updateOwned(
+    ownerId: string,
+    id: string,
+    dto: UpdatePropertyRequestDto,
+    files: PropertyImageFile[],
+  ): Promise<Property> {
+    const current = await this.propertiesRepository.findOwnedById(ownerId, id);
+    if (!current) {
+      throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+    }
+
+    this.validateImages(files ?? [], false);
+    const imagesToRemove = dto.imagesToRemove ?? [];
+    const removalSet = new Set(imagesToRemove);
+    if (removalSet.size !== imagesToRemove.length || imagesToRemove.some((url) => !current.images.includes(url))) {
+      throw new BadRequestException('La lista de imágenes a remover no es válida.');
+    }
+    const finalImageCount = current.images.length - removalSet.size + files.length;
+    if (finalImageCount < 1 || finalImageCount > MAX_IMAGES) {
+      throw new BadRequestException('El bien debe conservar entre una y cinco fotos.');
+    }
+
+    const uploaded: UploadedImage[] = [];
+    try {
+      for (const file of files) {
+        uploaded.push(await this.cloudinaryService.upload(file.buffer, file.mimetype));
+      }
+      const result = await this.propertiesRepository.transaction(async (transaction) => {
+        const latest = await this.propertiesRepository.findOwnedById(ownerId, id, transaction);
+        if (!latest) {
+          throw new NotFoundException({
+            code: 'PROPERTY_NOT_FOUND',
+            message: 'El bien no existe o no te pertenece.',
+          });
+        }
+        if (imagesToRemove.some((url) => !latest.images.includes(url))) {
+          throw new BadRequestException('La lista de imágenes a remover no es válida.');
+        }
+        const imageCount = latest.images.length - removalSet.size + files.length;
+        if (imageCount < 1 || imageCount > MAX_IMAGES) {
+          throw new BadRequestException('El bien debe conservar entre una y cinco fotos.');
+        }
+
+        const changesProtectedAmount =
+          !latest.pricePerDay.equals(dto.pricePerDay) ||
+          !latest.securityDeposit.equals(dto.securityDeposit);
+        if (
+          changesProtectedAmount &&
+          (await this.propertiesRepository.countActiveBookings(id, transaction)) > 0
+        ) {
+          throw new ConflictException({
+            code: 'PROPERTY_PRICE_CHANGE_BLOCKED',
+            message: 'No se puede modificar el precio ni el depósito de un bien con reservas PENDIENTE O PAGADA',
+          });
+        }
+
+        const finalImages = [
+          ...latest.images.filter((image) => !removalSet.has(image)),
+          ...uploaded.map((image) => image.secureUrl),
+        ];
+        const property = await this.propertiesRepository.updateOwned(
+          ownerId,
+          id,
+          dto,
+          finalImages,
+          transaction,
+        );
+        return {
+          property,
+          removedImages: latest.images.filter((image) => !finalImages.includes(image)),
+        };
+      });
+      await Promise.allSettled(result.removedImages.map((url) => this.cloudinaryService.deleteByUrl(url)));
+      return result.property;
+    } catch (error) {
+      await Promise.allSettled(uploaded.map(({ publicId }) => this.cloudinaryService.delete(publicId)));
+      throw error;
+    }
+  }
   async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
     const { properties, total } =
       await this.propertiesRepository.findAvailablePage(page);
