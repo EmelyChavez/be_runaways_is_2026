@@ -43,6 +43,8 @@
       "@Users/*": ["./src/users/*/index.ts"],
       "@Profile": ["./src/profile/index.ts"],
       "@Profile/*": ["./src/profile/*/index.ts"],
+      "@Properties": ["./src/properties/index.ts"],
+      "@Properties/*": ["./src/properties/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
       "@Health/*": ["./src/health/*/index.ts"],
       "@Prisma": ["./src/prisma/index.ts"],
