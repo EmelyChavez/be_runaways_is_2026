@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import type { CreatePropertyRequestDto } from '@Properties/dto';
-import type { Property } from '@PrismaClient';
+import { Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
 @Injectable()
@@ -25,8 +25,16 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(page: number) {
-    const where = { status: 'AVAILABLE' as const };
+  async findAvailablePage(page: number, minPrice?: string, maxPrice?: string) {
+    const where: Prisma.PropertyWhereInput = {
+      status: PropertyStatus.AVAILABLE,
+      ...((minPrice !== undefined || maxPrice !== undefined) && {
+        pricePerDay: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      }),
+    };
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
         where,

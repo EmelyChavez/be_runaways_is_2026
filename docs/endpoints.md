@@ -15,11 +15,11 @@ pertenecen al contrato del producto y aún no tienen controlador implementado.
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | `{ refreshToken }` | `204`, sin cuerpo |
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
-| `GET /api/v1/properties?page=N` | `TENANT` autenticado | `page` opcional, entero desde 1 | `200`: catálogo paginado; solo bienes `AVAILABLE` |
+| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N` | `TENANT` autenticado | `page` opcional; `minPrice` y `maxPrice` opcionales (0.01–9999.99) | `200`: catálogo paginado filtrado por precio; solo bienes `AVAILABLE` |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
-| `GET /api/v1/properties?page=N` | `TENANT` autenticado | `page` opcional, entero desde 1 (por defecto 1) | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE`, más recientes primero |
+| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N` | `TENANT` autenticado | `page` opcional (por defecto 1); límites de precio opcionales, decimales positivos de 0.01 a 9999.99 | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE` dentro del rango inclusivo, más recientes primero |
 
 ### Validación y errores de los endpoints implementados
 
@@ -30,8 +30,10 @@ pertenecen al contrato del producto y aún no tienen controlador implementado.
   fallos en la ventana definida responde `429`. Una cuenta deshabilitada responde `403`.
 - Refresh inválido, vencido o revocado responde `401`. Logout es idempotente y responde `204`.
 - `/auth/me` responde `401` sin access token válido.
-- Catálogo: `400 VALIDATION_ERROR` si `page` no es un entero positivo; `401` sin sesión. Sin bienes
-  disponibles responde `200` con `data: []` y `total: 0`.
+- Catálogo: `400 VALIDATION_ERROR` si `page` no es un entero positivo, un precio es inválido o
+  `minPrice` es mayor que `maxPrice`; `401` sin sesión. Se puede enviar solo uno de los límites.
+  Los límites son inclusivos. Sin bienes disponibles que coincidan responde `200` con `data: []`
+  y `total: 0`.
 - Detalle: `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de `TENANT`.
   Responde `404 PROPERTY_NOT_AVAILABLE` si el bien no existe o no está `AVAILABLE`, con el mensaje
   «Este bien no existe o no está disponible».
