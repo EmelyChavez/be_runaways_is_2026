@@ -75,10 +75,11 @@ export class PropertiesController {
   @Get()
   @Roles(Role.TENANT)
   @ApiOperation({ summary: 'Lista el catálogo de bienes disponibles' })
-  @ApiOkResponse({ description: 'Catálogo paginado de bienes disponibles.' })
+  @ApiOkResponse({ description: 'Catálogo paginado de bienes disponibles, con filtros opcionales de precio.' })
+  @ApiBadRequestResponse({ description: 'Precio mínimo o máximo inválido, o mínimo mayor que máximo.' })
   @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
   listCatalog(@Query() query: PropertyCatalogQueryDto) {
-    return this.propertiesService.listCatalog(query.page);
+    return this.propertiesService.listCatalog(query);
   }
 
   @Get(':id')
