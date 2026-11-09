@@ -61,6 +61,11 @@ enum DepositStatus {
   PARTIALLY_RETAINED
 }
 
+enum ReviewType {
+  RENTER_TO_PROPERTY
+  OWNER_TO_RENTER
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   role         Role     @default(TENANT)
@@ -73,9 +78,11 @@ model User {
 
   refreshTokens   RefreshToken[]
   profile         Profile? //permite que sea opcional
-  ownedProperties Property[] @relation("PropertyOwner")
-  tenantBookings  Booking[]  @relation("BookingTenant")
-  depositsDecided Deposit[]  @relation("DepositDecidedBy")
+  ownedProperties Property[]     @relation("PropertyOwner")
+  tenantBookings  Booking[]      @relation("BookingTenant")
+  depositsDecided Deposit[]      @relation("DepositDecidedBy")
+  reviewsAuthored Review[]       @relation("ReviewAuthor")
+  reviewsReceived Review[]       @relation("ReviewTargetUser")
 
   @@map("users")
 }
@@ -90,11 +97,11 @@ model Profile {
 }
 
 model LoginAttempt {
-  keyHash        String    @id @map("key_hash")
-  attempts       Int       @default(0)
-  windowStartedAt DateTime @default(now()) @map("window_started_at")
-  lockedUntil    DateTime? @map("locked_until")
-  expiresAt      DateTime  @map("expires_at")
+  keyHash         String    @id @map("key_hash")
+  attempts        Int       @default(0)
+  windowStartedAt DateTime  @default(now()) @map("window_started_at")
+  lockedUntil     DateTime? @map("locked_until")
+  expiresAt       DateTime  @map("expires_at")
 
   @@index([expiresAt])
   @@map("login_attempts")
@@ -118,6 +125,7 @@ model Property {
   createdAt       DateTime         @default(now()) @map("created_at")
 
   bookings Booking[]
+  reviews  Review[]
 
   @@index([ownerId, status])
   @@map("properties")
@@ -138,10 +146,32 @@ model Booking {
   updatedAt  DateTime      @updatedAt @map("updated_at")
 
   deposit Deposit?
+  reviews Review[]
 
   @@index([tenantId, status])
   @@index([propertyId, status])
   @@map("bookings")
+}
+
+model Review {
+  id             String     @id @default(uuid()) @db.Uuid
+  reservationId  String     @map("reservation_id") @db.Uuid
+  reservation    Booking    @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  propertyId     String     @map("property_id") @db.Uuid
+  property       Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  authorId       String     @map("author_id") @db.Uuid
+  author         User       @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  targetUserId   String     @map("target_user_id") @db.Uuid
+  targetUser     User       @relation("ReviewTargetUser", fields: [targetUserId], references: [id], onDelete: Restrict)
+  reviewType     ReviewType @map("review_type")
+  propertyRating Int?       @map("property_rating")
+  userRating     Int        @map("user_rating")
+  comment        String?    @db.VarChar(200)
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  @@index([propertyId, reviewType])
+  @@index([targetUserId, reviewType])
+  @@map("reviews")
 }
 
 model Deposit {
