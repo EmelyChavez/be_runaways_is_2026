@@ -1,34 +1,37 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import {
   BadRequestException,
   Body,
   Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
-import { Controller, Get, Query } from '@nestjs/common';
-import {
-  ApiBearerAuth,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
-  ApiBadRequestResponse,
-  ApiNotFoundResponse,
 } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { CurrentUser, Roles } from '@Auth/decorators';
-import { CreatePropertyDto } from '@Properties/dto';
-import { PropertiesService } from '@Properties/services';
-import type { PropertyImageFile } from '@Properties/services';
-import { Role, type Property, type User } from '@PrismaClient';
+import {
+  CreatePropertyRequestDto,
+  CreatePropertyResponseDto,
+  PropertyCatalogQueryDto,
+} from '@Properties/dto';
+import { PropertiesService, type PropertyImageFile } from '@Properties/services';
+import { Role, type User } from '@PrismaClient';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILES = 5;
@@ -54,35 +57,21 @@ export class PropertiesController {
     }),
   )
   @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['title', 'description', 'category', 'department', 'municipality', 'address', 'pricePerDay', 'securityDeposit', 'images'],
-      properties: {
-        title: { type: 'string', maxLength: 100 },
-        description: { type: 'string', minLength: 30 },
-        category: { type: 'string', enum: ['PROPERTY', 'EQUIPMENT'] },
-        department: { type: 'string' },
-        municipality: { type: 'string' },
-        address: { type: 'string' },
-        pricePerDay: { type: 'string', example: '45.00' },
-        securityDeposit: { type: 'string', example: '100.00' },
-        images: { type: 'array', minItems: 1, maxItems: 5, items: { type: 'string', format: 'binary' } },
-      },
-    },
-  })
+  @ApiBody({ type: CreatePropertyRequestDto })
   @ApiOperation({ summary: 'Publica un bien y almacena sus imágenes en Cloudinary' })
-  @ApiCreatedResponse({ description: 'Bien publicado con estado AVAILABLE.' })
+  @ApiCreatedResponse({ type: CreatePropertyResponseDto })
+  @ApiBadRequestResponse({ description: 'Datos o imágenes inválidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente, inválido o expirado.' })
   @ApiForbiddenResponse({ description: 'Solo un OWNER puede publicar bienes.' })
-  create(
+  async create(
     @CurrentUser() user: User,
-    @Body() dto: CreatePropertyDto,
+    @Body() dto: CreatePropertyRequestDto,
     @UploadedFiles() files: PropertyImageFile[],
-  ): Promise<Property> {
-    return this.propertiesService.create(user.id, dto, files);
-      
-      
+  ): Promise<CreatePropertyResponseDto> {
+    const property = await this.propertiesService.create(user.id, dto, files);
+    return CreatePropertyResponseDto.fromEntity(property);
+  }
+
   @Get()
   @Roles(Role.TENANT)
   @ApiOperation({ summary: 'Lista el catálogo de bienes disponibles' })

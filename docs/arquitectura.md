@@ -51,7 +51,7 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   `TokenService`. El servicio aplica las reglas; el repositorio agrupa las lecturas y escrituras de
   base de datos en una transacción serializable.
 - Publicación: `PropertiesController` recibe los campos y archivos multipart, `PropertiesService`
-  valida las imágenes y coordina su carga a `CloudinaryService`; `PropertyRepository` guarda el bien
+  valida las imágenes y coordina su carga a `CloudinaryService`; `PropertiesRepository` guarda el bien
   y las URLs seguras en PostgreSQL. Si falla la persistencia, elimina las imágenes cargadas durante
   esa solicitud.
 

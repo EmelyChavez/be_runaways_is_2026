@@ -1,7 +1,7 @@
-import { Injectable, BadRequestException, NotFoundException} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
-import { PropertyRepository } from '@Properties/repositories';
-import type { CreatePropertyDto } from '@Properties/dto';
+import { PropertiesRepository } from '@Properties/repositories';
+import type { CreatePropertyRequestDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
 
@@ -18,11 +18,11 @@ export interface PropertyImageFile {
 @Injectable()
 export class PropertiesService {
   constructor(
-    private readonly propertyRepository: PropertyRepository,
+    private readonly propertiesRepository: PropertiesRepository,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async create(ownerId: string, dto: CreatePropertyDto, files: PropertyImageFile[]): Promise<Property> {
+  async create(ownerId: string, dto: CreatePropertyRequestDto, files: PropertyImageFile[]): Promise<Property> {
     this.validateImages(files);
     const uploaded: UploadedImage[] = [];
 
@@ -31,7 +31,7 @@ export class PropertiesService {
         uploaded.push(await this.cloudinaryService.upload(file.buffer, file.mimetype));
       }
 
-      return await this.propertyRepository.create(
+      return await this.propertiesRepository.create(
         ownerId,
         dto,
         uploaded.map((image) => image.secureUrl),
@@ -60,11 +60,7 @@ export class PropertiesService {
         throw new BadRequestException('Cada foto debe ser JPG o PNG y pesar como máximo 5 MB.');
       }
     }
-
-
-@Injectable()
-export class PropertiesService {
-  constructor(private readonly propertiesRepository: PropertiesRepository) {}
+  }
 
   async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
     const { properties, total } =
