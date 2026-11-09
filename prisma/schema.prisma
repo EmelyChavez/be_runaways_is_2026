@@ -36,6 +36,31 @@ enum Role {
   OWNER
 }
 
+enum PropertyCategory {
+  PROPERTY
+  EQUIPMENT
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  PAUSED
+  DELETED
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  COMPLETED
+  CANCELED
+}
+
+enum DepositStatus {
+  PENDING
+  RETURNED
+  RETAINED
+  PARTIALLY_RETAINED
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   role         Role     @default(TENANT)
@@ -46,8 +71,11 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  profile       Profile? //permite que sea opcional
+  refreshTokens   RefreshToken[]
+  profile         Profile? //permite que sea opcional
+  ownedProperties Property[] @relation("PropertyOwner")
+  tenantBookings  Booking[]  @relation("BookingTenant")
+  depositsDecided Deposit[]  @relation("DepositDecidedBy")
 
   @@map("users")
 }
@@ -70,6 +98,68 @@ model LoginAttempt {
 
   @@index([expiresAt])
   @@map("login_attempts")
+}
+
+model Property {
+  id              String           @id @default(uuid()) @db.Uuid
+  ownerId         String           @map("owner_id") @db.Uuid
+  owner           User             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  title           String
+  description     String
+  category        PropertyCategory
+  department      String
+  municipality    String
+  address         String
+  pricePerDay     Decimal          @map("price_per_day") @db.Decimal(10, 2)
+  securityDeposit Decimal          @map("security_deposit") @db.Decimal(10, 2)
+  images          String[]         @default([])
+  status          PropertyStatus   @default(AVAILABLE)
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  bookings Booking[]
+
+  @@index([ownerId, status])
+  @@map("properties")
+}
+
+model Booking {
+  id         String        @id @default(uuid()) @db.Uuid
+  propertyId String        @map("property_id") @db.Uuid
+  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenantId   String        @map("tenant_id") @db.Uuid
+  tenant     User          @relation("BookingTenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  startDate  DateTime      @map("start_date") @db.Date
+  endDate    DateTime      @map("end_date") @db.Date
+  subtotal   Decimal       @db.Decimal(10, 2)
+  status     BookingStatus @default(PENDING)
+  expiresAt  DateTime      @map("expires_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  deposit Deposit?
+
+  @@index([tenantId, status])
+  @@index([propertyId, status])
+  @@map("bookings")
+}
+
+model Deposit {
+  id             String        @id @default(uuid()) @db.Uuid
+  bookingId      String        @unique @map("booking_id") @db.Uuid
+  booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  decidedById    String?       @map("decided_by_id") @db.Uuid
+  decidedBy      User?         @relation("DepositDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  amount         Decimal       @db.Decimal(10, 2)
+  state          DepositStatus @default(PENDING)
+  retainedAmount Decimal       @default(0) @map("retained_amount") @db.Decimal(10, 2)
+  returnedAmount Decimal       @default(0) @map("returned_amount") @db.Decimal(10, 2)
+  decidedAt      DateTime?     @map("decided_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@index([state])
+  @@map("deposits")
 }
 
 model RefreshToken {
