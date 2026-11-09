@@ -9,6 +9,7 @@ import { PropertiesRepository } from '@Properties/repositories';
 import type { CreatePropertyRequestDto, UpdatePropertyRequestDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
+import type { PropertyCatalogQueryDto } from '@Properties/dto';
 
 const CATALOG_PAGE_SIZE = 12;
 const MAX_IMAGES = 5;
@@ -168,8 +169,13 @@ export class PropertiesService {
     }
   }
   async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
+  async listCatalog(query: PropertyCatalogQueryDto): Promise<PropertyCatalogResponseDto> {
     const { properties, total } =
-      await this.propertiesRepository.findAvailablePage(page);
+      await this.propertiesRepository.findAvailablePage(
+        query.page,
+        query.minPrice,
+        query.maxPrice,
+      );
 
     return {
       data: properties.map((property) => ({
@@ -177,7 +183,7 @@ export class PropertiesService {
         pricePerDay: property.pricePerDay.toFixed(2),
       })),
       total,
-      page,
+      page: query.page,
       pageSize: CATALOG_PAGE_SIZE,
     };
   }

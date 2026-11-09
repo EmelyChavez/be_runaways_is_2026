@@ -25,8 +25,16 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(page: number) {
-    const where = { status: 'AVAILABLE' as const };
+  async findAvailablePage(page: number, minPrice?: string, maxPrice?: string) {
+    const where: Prisma.PropertyWhereInput = {
+      status: PropertyStatus.AVAILABLE,
+      ...((minPrice !== undefined || maxPrice !== undefined) && {
+        pricePerDay: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      }),
+    };
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
         where,
