@@ -168,7 +168,6 @@ export class PropertiesService {
       throw error;
     }
   }
-  async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
   async listCatalog(query: PropertyCatalogQueryDto): Promise<PropertyCatalogResponseDto> {
     const { properties, total } =
       await this.propertiesRepository.findAvailablePage(
