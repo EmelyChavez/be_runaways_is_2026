@@ -118,8 +118,24 @@ export class PropertiesRepository {
     });
   }
 
+  findOwnedForManagement(ownerId: string, id: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.findFirst({ where: { id, ownerId } });
+  }
+
+  updateStatus(id: string, status: PropertyStatus, transaction: Prisma.TransactionClient) {
+    return transaction.property.update({ where: { id }, data: { status } });
+  }
+
+  softDelete(id: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.update({ where: { id }, data: { status: PropertyStatus.DELETED } });
+  }
+
   transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>) {
     return this.prisma.$transaction(operation);
+  }
+
+  serializableTransaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction(operation, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   updateOwned(

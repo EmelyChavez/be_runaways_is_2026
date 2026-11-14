@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
-import type { CreatePropertyRequestDto, UpdatePropertyRequestDto } from '@Properties/dto';
+import type { CreatePropertyRequestDto, UpdatePropertyRequestDto, UpdatePropertyStatusDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import { Prisma, PropertyStatus } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
@@ -88,6 +88,45 @@ export class PropertiesService {
       throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
     }
     return property;
+  }
+
+  async updateOwnedStatus(ownerId: string, id: string, dto: UpdatePropertyStatusDto) {
+    return this.propertiesRepository.serializableTransaction(async (transaction) => {
+      const property = await this.propertiesRepository.findOwnedForManagement(ownerId, id, transaction);
+      if (!property) {
+        throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+      }
+      if (property.status === PropertyStatus.DELETED) {
+        throw new ConflictException({ code: 'PROPERTY_DELETED', message: 'No se puede cambiar el estado de un bien ELIMINADO.' });
+      }
+      if ((await this.propertiesRepository.countActiveBookings(id, transaction)) > 0) {
+        throw new ConflictException({
+          code: 'PROPERTY_STATUS_CHANGE_BLOCKED',
+          message: 'No se puede cambiar el estado ni eliminar un bien con reservas PENDIENTE O PAGADA',
+        });
+      }
+      const updated = await this.propertiesRepository.updateStatus(id, dto.status, transaction);
+      return { id: updated.id, status: updated.status, statusChangedAt: updated.updatedAt };
+    });
+  }
+
+  async deleteOwned(ownerId: string, id: string): Promise<void> {
+    await this.propertiesRepository.serializableTransaction(async (transaction) => {
+      const property = await this.propertiesRepository.findOwnedForManagement(ownerId, id, transaction);
+      if (!property) {
+        throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+      }
+      if (property.status === PropertyStatus.DELETED) {
+        throw new ConflictException({ code: 'PROPERTY_ALREADY_DELETED', message: 'El bien ya está ELIMINADO.' });
+      }
+      if ((await this.propertiesRepository.countActiveBookings(id, transaction)) > 0) {
+        throw new ConflictException({
+          code: 'PROPERTY_DELETE_BLOCKED',
+          message: 'No se puede cambiar el estado ni eliminar un bien con reservas PENDIENTE O PAGADA',
+        });
+      }
+      await this.propertiesRepository.softDelete(id, transaction);
+    });
   }
 
   async updateOwned(

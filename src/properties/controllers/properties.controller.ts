@@ -2,10 +2,14 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
+  Patch,
   Put,
   Query,
   UploadedFiles,
@@ -32,6 +36,7 @@ import {
   CreatePropertyResponseDto,
   PropertyCatalogQueryDto,
   UpdatePropertyRequestDto,
+  UpdatePropertyStatusDto,
 } from '@Properties/dto';
 import { PropertiesService, type PropertyImageFile } from '@Properties/services';
 import { Role, type User } from '@PrismaClient';
@@ -142,6 +147,35 @@ export class PropertiesController {
   ): Promise<CreatePropertyResponseDto> {
     const property = await this.propertiesService.updateOwned(user.id, id, dto, files ?? []);
     return CreatePropertyResponseDto.fromEntity(property);
+  }
+
+  @Patch(':id/status')
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Pausa o reactiva una publicación propia' })
+  @ApiOkResponse({ description: 'Estado actualizado.', schema: { example: { id: 'uuid', status: 'PAUSED', statusChangedAt: '2026-11-13T12:00:00.000Z' } } })
+  @ApiBadRequestResponse({ description: 'ID UUID o estado inválido.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un OWNER puede cambiar el estado.' })
+  @ApiNotFoundResponse({ description: 'El bien no existe o no pertenece al arrendador.' })
+  @ApiConflictResponse({ description: 'El bien fue eliminado o tiene reservas PENDING o PAID.' })
+  updateStatus(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdatePropertyStatusDto,
+  ) {
+    return this.propertiesService.updateOwnedStatus(user.id, id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.OWNER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Elimina una publicación propia' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un OWNER puede eliminar publicaciones.' })
+  @ApiNotFoundResponse({ description: 'El bien no existe o no pertenece al arrendador.' })
+  @ApiConflictResponse({ description: 'El bien ya fue eliminado o tiene reservas PENDING o PAID.' })
+  async delete(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    await this.propertiesService.deleteOwned(user.id, id);
   }
 
   @Get(':id')
