@@ -33,7 +33,7 @@ flowchart LR
 | `auth` | Registro, login, emisión y rotación de tokens, intentos de login y guards de autenticación/autorización. |
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
-| `properties` | Creación de bienes por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo de bienes disponibles mediante controlador, servicio y repositorio. |
+| `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo y detalle público de bienes disponibles. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
 | `common` | Utilidades y decoradores compartidos. |
