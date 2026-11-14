@@ -8,6 +8,7 @@ import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
 import type { CreatePropertyRequestDto, UpdatePropertyRequestDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
+import { Prisma, PropertyStatus } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
 import type { PropertyCatalogQueryDto } from '@Properties/dto';
 
@@ -168,13 +169,33 @@ export class PropertiesService {
       throw error;
     }
   }
-  async listCatalog(page: number): Promise<PropertyCatalogResponseDto> {
   async listCatalog(query: PropertyCatalogQueryDto): Promise<PropertyCatalogResponseDto> {
+    if (query.municipality && !query.department) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Debes indicar department para filtrar por municipality.',
+      });
+    }
+
+    const filters: Prisma.PropertyWhereInput = {
+      status: PropertyStatus.AVAILABLE,
+      ...(query.department && { department: { equals: query.department, mode: 'insensitive' } }),
+      ...(query.municipality && { municipality: { equals: query.municipality, mode: 'insensitive' } }),
+      ...(query.category && { category: query.category }),
+      ...(query.noDeposit === true && { securityDeposit: '0' }),
+      ...((query.minPrice !== undefined || query.maxPrice !== undefined) && {
+        pricePerDay: {
+          ...(query.minPrice !== undefined && { gte: query.minPrice }),
+          ...(query.maxPrice !== undefined && { lte: query.maxPrice }),
+        },
+      }),
+    };
+
     const { properties, total } =
       await this.propertiesRepository.findAvailablePage(
         query.page,
-        query.minPrice,
-        query.maxPrice,
+        filters,
+        query.q,
       );
 
     return {
