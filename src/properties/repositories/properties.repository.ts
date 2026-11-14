@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
-import type { CreatePropertyRequestDto } from '@Properties/dto';
+import type { CreatePropertyRequestDto, PropertyCatalogQueryDto } from '@Properties/dto';
 import { BookingStatus, Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
@@ -25,13 +25,8 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(
-    page: number,
-    minPrice?: string,
-    maxPrice?: string,
-    startDate?: string,
-    endDate?: string,
-  ) {
+  async findAvailablePage(query: PropertyCatalogQueryDto) {
+    const { page, minPrice, maxPrice, startDate, endDate } = query;
     const dateFilter =
       startDate !== undefined && endDate !== undefined
         ? {
