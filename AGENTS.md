@@ -31,6 +31,8 @@ revisión y consulta.
 | `docs/endpoints.md` | Rutas, métodos HTTP, parámetros y respuestas. |
 | `docs/flujos-autenticacion.md` | Registro, login, renovación de tokens y cierre de sesión. |
 | `docs/decisiones-tecnicas.md` | Patrones utilizados y justificación de las decisiones. |
+| `docs/RESUMEN_SISTEMA.md` | Resumen por módulos e historias, solo cuando se solicite actualizarlo. |
+| `docs/REPORTE_PRUEBAS_CONSOLIDADO.md` | Resultados acumulados de pruebas ejecutadas. |
 
 ## Mapa Oficial de Módulos e Historias de Usuario
 Para cualquier tarea de documentación, resúmenes o pruebas, respeta esta agrupación oficial del proyecto:
@@ -47,10 +49,10 @@ Para cualquier tarea de documentación, resúmenes o pruebas, respeta esta agrup
 
 ---
 
-## Protocolo de Resumen de documentacion (`RESUMEN_SISTEMA.md`- SOLO CUANDO SE INDIQUE)
+## Protocolo de Resumen de documentacion (`docs/RESUMEN_SISTEMA.md` - SOLO CUANDO SE INDIQUE)
 Cada vez que te proporcione una historia (con su ID, nombre, descripción y criterios de aceptación) para documentar o actualizar:
 1. Lee los archivos de documentación en `docs/` (`arquitectura.md`, `modelo-datos.md`, `endpoints.md`, `flujos-autenticacion.md`, `decisiones-tecnicas.md`), los criterios de aceptación proporcionados y los cambios del código fuente correspondientes a esa historia.
-2. Abre el archivo maestro `RESUMEN_SISTEMA.md` (o créalo si aún no existe).
+2. Abre el archivo maestro `docs/RESUMEN_SISTEMA.md` (o créalo si aún no existe).
 3. Ubica la sección correspondiente al **Módulo** al que pertenece la historia según el mapa superior (si aún no existe en el archivo, créala al final) y **ACTUALIZA** su contenido incorporando lo que aporta esta historia, sin duplicar el módulo y conservando intactos los resúmenes de los demás módulos que ya existan.
 4. Redacta en lenguaje claro, directo y sin relleno técnico innecesario, para que cualquier miembro del equipo pueda entenderlo en 1 minuto y explicarlo en una pizarra. Estructura la sección de cada módulo exactamente con estos 6 puntos (actualizando los puntos 1 al 5 con lo nuevo que agrega la historia y sumando su ficha en el punto 6):
    - **1. Qué hace el módulo:** (máximo 3 líneas).
@@ -62,29 +64,33 @@ Cada vez que te proporcione una historia (con su ID, nombre, descripción y crit
 
 ---
 
-## Protocolo de Pruebas Unitarias por Historia (`tests/unit/` - SOLO CUANDO SE INDIQUE)
+## Protocolo de Pruebas Unitarias por Historia (`test/unit/` - SOLO CUANDO SE INDIQUE)
 Cada vez que te solicite crear pruebas unitarias para una historia o servicio específico, actúa como **QA Engineer y Senior Developer** siguiendo estos 3 pasos estrictamente:
 1. **PLANIFICACIÓN (NO escribas código todavía):** Toma todos los criterios de aceptación proporcionados para la historia y diseña los casos de prueba unitarios cubriéndolos de forma **POSITIVA** (flujo feliz) y **NEGATIVA** (errores, datos vacíos, permisos inválidos). Muéstrame el plan en formato de lista o pseudocódigo indicando qué entrada se envía y qué salida/excepción se espera, para que yo lo revise y apruebe antes de continuar.
-2. **IMPLEMENTACIÓN:** Una vez que yo apruebe el plan, crea el archivo de prueba unitaria correspondiente a esa historia en `tests/unit/historia-[ID].spec.ts` (usando Jest con datos mockeados).
-3. **EJECUCIÓN Y REGISTRO:** Ejecuta las pruebas unitarias de esa historia en la terminal, verifica que todas pasen y agrega un resumen de estos resultados al archivo único `REPORTE_PRUEBAS_CONSOLIDADO.md` (sin borrar lo que ya exista).
+2. **IMPLEMENTACIÓN:** Una vez que yo apruebe el plan, crea el archivo de prueba unitaria correspondiente a esa historia en `test/unit/historia-[ID].spec.ts` (usando el runner configurado en el proyecto y datos mockeados).
+3. **EJECUCIÓN Y REGISTRO:** Ejecuta las pruebas unitarias de esa historia en la terminal, verifica que todas pasen y agrega un resumen de estos resultados al archivo único `docs/REPORTE_PRUEBAS_CONSOLIDADO.md` (sin borrar lo que ya exista).
 ---
 
-## Protocolo de Pruebas E2E de Flujo Completo con Playwright (`tests/e2e/` - SOLO CUANDO SE INDIQUE)
+## Protocolo de Pruebas E2E de Flujo Completo con Playwright (`test/e2e/` - SOLO CUANDO SE INDIQUE)
 - **NO ejecutes ni generes pruebas con Playwright por defecto** al terminar historias o módulos de backend, ya que requieren que el frontend del módulo esté terminado y conectado.
 - Ejecuta Playwright únicamente cuando te indique explícitamente que la aplicación completa (frontend y backend) está levantada en local/QA (ej. `http://localhost:3000`). Actúa como **QA Engineer y Senior Developer** siguiendo estos 5 pasos estrictamente:
   1. Verifica si Playwright está instalado en el proyecto; si no lo está, configúralo.
   2. **PLANIFICACIÓN (NO ejecutes todavía):** Diseña los casos de prueba funcionales **POSITIVOS** y **NEGATIVOS** cubriendo todos los criterios de aceptación de las historias del módulo y muéstramelos para revisión y aprobación antes de ejecutar.
-  3. Una vez aprobado el plan, crea o actualiza el archivo de prueba separado `tests/e2e/modulo-[N].spec.ts` y ejecútalo en modo visible (`--headed`) para observar cada acción en el navegador en tiempo real.
+  3. Una vez aprobado el plan, crea o actualiza el archivo de prueba separado `test/e2e/modulo-[N].spec.ts` y ejecútalo en modo visible (`--headed`) para observar cada acción en el navegador en tiempo real.
   4. Registra cada paso ejecutado, las validaciones realizadas, errores en consola o de red, y el resultado obtenido frente al esperado.
-  5. Consolida los resultados en `REPORTE_PRUEBAS_CONSOLIDADO.md` marcando el tipo como `E2E-UI`.
+  5. Consolida los resultados en `docs/REPORTE_PRUEBAS_CONSOLIDADO.md` marcando el tipo como `E2E`.
 
 ---
 
-## Estructura del Reporte Único (`REPORTE_PRUEBAS_CONSOLIDADO.md`)
-Siempre que se ejecuten pruebas (Unitarias, E2E-API o E2E-UI), abre el archivo único `REPORTE_PRUEBAS_CONSOLIDADO.md` (o créalo si no existe) y **AGREGA** los resultados sin borrar las pruebas anteriores, manteniendo:
-1. Un **resumen global actualizado** al inicio del archivo (Total ejecutadas, Aprobadas, Fallidas, desglosadas por Unitarias, E2E-API y E2E-UI).
-2. Una sección por módulo/historia con una tabla unificada que contenga estas columnas exactas:
-   - `ID de prueba` | `Tipo (Unitaria / E2E-API / E2E-UI)` | `Módulo / Historia` | `Descripción` | `Pasos ejecutados` | `Resultado esperado` | `Resultado obtenido` | `Estado (Aprobado / Fallido)`
+## Estructura del Reporte Único (`docs/REPORTE_PRUEBAS_CONSOLIDADO.md`)
+Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/REPORTE_PRUEBAS_CONSOLIDADO.md` (o créalo si no existe) y **AGREGA** los resultados sin borrar las pruebas anteriores, manteniendo:
+1. Un **resumen global actualizado** al inicio del archivo (Total ejecutadas, Aprobadas y Fallidas, desglosadas por Unitarias y E2E).
+2. Una sección por módulo/historia con una tabla unificada. Cada caso debe ocupar una fila e incluir exactamente estas columnas:
+   - `ID de prueba` | `Tipo` | `Módulo / Historia` | `Descripción` | `Pasos ejecutados` | `Resultado esperado` | `Resultado obtenido` | `Estado`
+   - `Tipo`: `Positiva` para el flujo esperado o válido y `Negativa` para errores, entradas inválidas o permisos denegados.
+   - `Módulo / Historia`: incluir número y nombre completo del módulo e ID y nombre completo de la historia.
+   - `Estado`: `Aprobado` o `Fallido`.
+   - La modalidad de ejecución (unitaria o E2E) se indica en el resumen global y en el nombre de la sección; `Tipo` clasifica cada caso como positivo o negativo.
 
 ## Stack
 - NestJS sobre PostgreSQL, con Prisma como ORM. Swagger en `/api/docs`. Prefijo global `/api/v1`.
