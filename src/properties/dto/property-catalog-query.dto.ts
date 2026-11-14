@@ -1,8 +1,13 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
+  IsString,
   Matches,
+  MaxLength,
+  MinLength,
   Min,
   Validate,
   ValidationArguments,
@@ -10,6 +15,7 @@ import {
   ValidatorConstraintInterface,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PropertyCategory } from '@PrismaClient';
 
 const POSITIVE_PRICE = /^(?=.*[1-9])\d{1,4}(?:\.\d{1,2})?$/;
 const DECIMAL_PRICE = /^(\d{1,4})(?:\.(\d{1,2}))?$/;
@@ -44,6 +50,41 @@ export class PropertyCatalogQueryDto {
   @IsInt({ message: 'La página debe ser un número entero.' })
   @Min(1, { message: 'La página debe ser mayor o igual a 1.' })
   page = 1;
+
+  @ApiPropertyOptional({ description: 'Texto a buscar en título, descripción y ubicación', minLength: 2, maxLength: 100 })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsString({ message: 'q debe ser texto.' })
+  @MinLength(2, { message: 'q debe tener al menos 2 caracteres.' })
+  @MaxLength(100, { message: 'q no puede superar 100 caracteres.' })
+  q?: string;
+
+  @ApiPropertyOptional({ description: 'Departamento del bien' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsString({ message: 'department debe ser texto.' })
+  department?: string;
+
+  @ApiPropertyOptional({ description: 'Municipio del bien' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsString({ message: 'municipality debe ser texto.' })
+  municipality?: string;
+
+  @ApiPropertyOptional({ enum: PropertyCategory, description: 'Categoría del bien' })
+  @IsOptional()
+  @IsEnum(PropertyCategory, { message: 'category debe ser PROPERTY o EQUIPMENT.' })
+  category?: PropertyCategory;
+
+  @ApiPropertyOptional({ description: 'Si es true, devuelve bienes con depósito de garantía igual a cero' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean({ message: 'noDeposit debe ser true o false.' })
+  noDeposit?: boolean;
 
   @ApiPropertyOptional({
     type: Number,
