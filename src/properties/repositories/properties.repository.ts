@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import type { CreatePropertyRequestDto } from '@Properties/dto';
-import { Prisma, PropertyStatus, type Property } from '@PrismaClient';
+import { BookingStatus, Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
 @Injectable()
@@ -25,9 +25,48 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(page: number, minPrice?: string, maxPrice?: string) {
+  async findAvailablePage(
+    page: number,
+    minPrice?: string,
+    maxPrice?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    const dateFilter =
+      startDate !== undefined && endDate !== undefined
+        ? {
+            NOT: {
+              OR: [
+                {
+                  bookings: {
+                    some: {
+                      startDate: { lte: this.toDatabaseDate(endDate) },
+                      endDate: { gte: this.toDatabaseDate(startDate) },
+                      OR: [
+                        { status: BookingStatus.PAID },
+                        {
+                          status: BookingStatus.PENDING,
+                          expiresAt: { gt: new Date() },
+                        },
+                      ],
+                    },
+                  },
+                },
+                {
+                  availabilityBlocks: {
+                    some: {
+                      startDate: { lte: this.toDatabaseDate(endDate) },
+                      endDate: { gte: this.toDatabaseDate(startDate) },
+                    },
+                  },
+                },
+              ],
+            },
+          }
+        : {};
     const where: Prisma.PropertyWhereInput = {
       status: PropertyStatus.AVAILABLE,
+      ...dateFilter,
       ...((minPrice !== undefined || maxPrice !== undefined) && {
         pricePerDay: {
           ...(minPrice !== undefined && { gte: minPrice }),
@@ -55,6 +94,10 @@ export class PropertiesRepository {
     ]);
 
     return { properties, total };
+  }
+
+  private toDatabaseDate(date: string): Date {
+    return new Date(`${date}T00:00:00.000Z`);
   }
 
   async findOwnerPage(ownerId: string, page: number) {

@@ -174,6 +174,8 @@ export class PropertiesService {
         query.page,
         query.minPrice,
         query.maxPrice,
+        query.startDate,
+        query.endDate,
       );
 
     return {
