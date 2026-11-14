@@ -14,11 +14,11 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | `{ refreshToken }` | `204`, sin cuerpo |
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
-| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N` | `TENANT` autenticado | `page` opcional; `minPrice` y `maxPrice` opcionales (0.01–9999.99) | `200`: catálogo paginado filtrado por precio; solo bienes `AVAILABLE` |
+| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | `TENANT` autenticado | Filtros opcionales de precio y fechas; las fechas se envían juntas | `200`: catálogo paginado filtrado por precio y disponibilidad; solo bienes `AVAILABLE` |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
-| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N` | `TENANT` autenticado | `page` opcional (por defecto 1); límites de precio opcionales, decimales positivos de 0.01 a 9999.99 | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE` dentro del rango inclusivo, más recientes primero |
+| `GET /api/v1/properties?page=N&minPrice=N&maxPrice=N&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | `TENANT` autenticado | `page` opcional; precios opcionales de 0.01 a 9999.99; fechas ISO opcionales, pero ambas o ninguna | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; bienes `AVAILABLE` dentro de los filtros, más recientes primero |
 
 ### Validación y errores de los endpoints implementados
 
@@ -30,8 +30,11 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 - Refresh inválido, vencido o revocado responde `401`. Logout es idempotente y responde `204`.
 - `/auth/me` responde `401` sin access token válido.
 - Catálogo: `400 VALIDATION_ERROR` si `page` no es un entero positivo, un precio es inválido o
-  `minPrice` es mayor que `maxPrice`; `401` sin sesión. Se puede enviar solo uno de los límites.
-  Los límites son inclusivos. Sin bienes disponibles que coincidan responde `200` con `data: []`
+  `minPrice` es mayor que `maxPrice`; las fechas deben enviarse juntas, ser fechas ISO válidas,
+  no estar en el pasado ni después de los próximos 90 días, y cubrir como máximo 30 días inclusivos.
+  También responde `400` si `startDate` es posterior a `endDate`. Los filtros de precio son
+  inclusivos y se puede enviar solo uno. El filtro de fechas excluye reservas `PAID`, reservas
+  `PENDING` aún vigentes y bloqueos del arrendador; sin coincidencias responde `200` con `data: []`
   y `total: 0`.
 - Detalle: `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de `TENANT`.
   Responde `404 PROPERTY_NOT_AVAILABLE` si el bien no existe o no está `AVAILABLE`, con el mensaje
