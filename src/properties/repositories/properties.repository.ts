@@ -25,15 +25,31 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(page: number, minPrice?: string, maxPrice?: string) {
+  async findAvailablePage(
+    page: number,
+    filters: Prisma.PropertyWhereInput,
+    q?: string,
+  ) {
+    const textConditions: Prisma.Sql[] = [];
+    if (q) {
+      textConditions.push(Prisma.sql`(
+        strpos(unaccent(lower(coalesce(title, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(description, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(department, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(municipality, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(address, ''))), unaccent(lower(${q}))) > 0
+      )`);
+    }
+
+    const matchingIds = textConditions.length
+      ? await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+          SELECT id FROM properties WHERE ${Prisma.join(textConditions, ' AND ')}
+        `)
+      : undefined;
+
     const where: Prisma.PropertyWhereInput = {
-      status: PropertyStatus.AVAILABLE,
-      ...((minPrice !== undefined || maxPrice !== undefined) && {
-        pricePerDay: {
-          ...(minPrice !== undefined && { gte: minPrice }),
-          ...(maxPrice !== undefined && { lte: maxPrice }),
-        },
-      }),
+      ...filters,
+      ...(matchingIds && { id: { in: matchingIds.map(({ id }) => id) } }),
     };
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
