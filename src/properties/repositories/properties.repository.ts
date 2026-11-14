@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
-import type { CreatePropertyRequestDto } from '@Properties/dto';
-import { Prisma, PropertyStatus, type Property } from '@PrismaClient';
+import type { CreatePropertyRequestDto, PropertyCatalogQueryDto } from '@Properties/dto';
+import { BookingStatus, Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
 @Injectable()
@@ -25,31 +25,49 @@ export class PropertiesRepository {
     });
   }
 
-  async findAvailablePage(
-    page: number,
-    filters: Prisma.PropertyWhereInput,
-    q?: string,
-  ) {
-    const textConditions: Prisma.Sql[] = [];
-    if (q) {
-      textConditions.push(Prisma.sql`(
-        strpos(unaccent(lower(coalesce(title, ''))), unaccent(lower(${q}))) > 0 OR
-        strpos(unaccent(lower(coalesce(description, ''))), unaccent(lower(${q}))) > 0 OR
-        strpos(unaccent(lower(coalesce(department, ''))), unaccent(lower(${q}))) > 0 OR
-        strpos(unaccent(lower(coalesce(municipality, ''))), unaccent(lower(${q}))) > 0 OR
-        strpos(unaccent(lower(coalesce(address, ''))), unaccent(lower(${q}))) > 0
-      )`);
-    }
-
-    const matchingIds = textConditions.length
-      ? await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-          SELECT id FROM properties WHERE ${Prisma.join(textConditions, ' AND ')}
-        `)
-      : undefined;
-
+  async findAvailablePage(query: PropertyCatalogQueryDto) {
+    const { page, minPrice, maxPrice, startDate, endDate } = query;
+    const dateFilter =
+      startDate !== undefined && endDate !== undefined
+        ? {
+            NOT: {
+              OR: [
+                {
+                  bookings: {
+                    some: {
+                      startDate: { lte: this.toDatabaseDate(endDate) },
+                      endDate: { gte: this.toDatabaseDate(startDate) },
+                      OR: [
+                        { status: BookingStatus.PAID },
+                        {
+                          status: BookingStatus.PENDING,
+                          expiresAt: { gt: new Date() },
+                        },
+                      ],
+                    },
+                  },
+                },
+                {
+                  availabilityBlocks: {
+                    some: {
+                      startDate: { lte: this.toDatabaseDate(endDate) },
+                      endDate: { gte: this.toDatabaseDate(startDate) },
+                    },
+                  },
+                },
+              ],
+            },
+          }
+        : {};
     const where: Prisma.PropertyWhereInput = {
-      ...filters,
-      ...(matchingIds && { id: { in: matchingIds.map(({ id }) => id) } }),
+      status: PropertyStatus.AVAILABLE,
+      ...dateFilter,
+      ...((minPrice !== undefined || maxPrice !== undefined) && {
+        pricePerDay: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      }),
     };
     const [properties, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
@@ -71,6 +89,10 @@ export class PropertiesRepository {
     ]);
 
     return { properties, total };
+  }
+
+  private toDatabaseDate(date: string): Date {
+    return new Date(`${date}T00:00:00.000Z`);
   }
 
   async findOwnerPage(ownerId: string, page: number) {
