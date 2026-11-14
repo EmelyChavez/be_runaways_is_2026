@@ -169,14 +169,7 @@ export class PropertiesService {
     }
   }
   async listCatalog(query: PropertyCatalogQueryDto): Promise<PropertyCatalogResponseDto> {
-    const { properties, total } =
-      await this.propertiesRepository.findAvailablePage(
-        query.page,
-        query.minPrice,
-        query.maxPrice,
-        query.startDate,
-        query.endDate,
-      );
+    const { properties, total } = await this.propertiesRepository.findAvailablePage(query);
 
     return {
       data: properties.map((property) => ({
