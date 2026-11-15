@@ -54,13 +54,12 @@ Cada vez que te proporcione una historia (con su ID, nombre, descripción y crit
 1. Lee los archivos de documentación en `docs/` (`arquitectura.md`, `modelo-datos.md`, `endpoints.md`, `flujos-autenticacion.md`, `decisiones-tecnicas.md`), los criterios de aceptación proporcionados y los cambios del código fuente correspondientes a esa historia.
 2. Abre el archivo maestro `docs/RESUMEN_SISTEMA.md` (o créalo si aún no existe).
 3. Ubica la sección correspondiente al **Módulo** al que pertenece la historia según el mapa superior (si aún no existe en el archivo, créala al final) y **ACTUALIZA** su contenido incorporando lo que aporta esta historia, sin duplicar el módulo y conservando intactos los resúmenes de los demás módulos que ya existan.
-4. Redacta en lenguaje claro, directo y sin relleno técnico innecesario, para que cualquier miembro del equipo pueda entenderlo en 1 minuto y explicarlo en una pizarra. Estructura la sección de cada módulo exactamente con estos 6 puntos (actualizando los puntos 1 al 5 con lo nuevo que agrega la historia y sumando su ficha en el punto 6):
-   - **1. Qué hace el módulo:** (máximo 3 líneas).
-   - **2. Pantallas involucradas y qué elementos principales tiene cada una:** *(Si la historia se implementó solo en backend y aún no existe vista en frontend, indícalo como "Pendiente de UI / Solo API por ahora" sin inventar componentes que aún no estén codificados; cuando se integre el frontend, actualiza este punto con las vistas reales).*
-   - **3. Roles y permisos:** (qué puede ver y hacer cada tipo de usuario: arrendador, arrendatario, admin).
-   - **4. Reglas de negocio y casos borde:** (validaciones, ordenamiento de listas, paginación y restricciones).
-   - **5. Dependencias con otros módulos:** (qué entidades, endpoints o tablas de otros compañeros consume o modifica).
-   - **6. Fichas rápidas por historia:** (agrega 3 líneas para esta historia indicando su ID, nombre, objetivo, endpoints/pantallas que toca y validación crítica; conserva las fichas de historias anteriores de este módulo).
+4. Resume para que una persona pueda explicar el módulo y el funcionamiento de cada historia sin convertir el archivo en otra documentación técnica. Usa esta estructura:
+   - **Módulo:** dos o tres oraciones sobre qué necesidad cubre, quién lo usa y cómo se relacionan sus funciones principales.
+   - **Historias:** una viñeta por historia con su ID y nombre, seguida de dos a cuatro oraciones que expliquen qué hace el usuario, cómo responde el sistema y cuál es el resultado importante o la regla de negocio que cambia el flujo.
+5. Conserva los resúmenes de las otras historias del módulo y actualiza solo lo necesario para integrar la nueva historia. No dupliques el propósito general del módulo.
+6. Mantén el resumen claro y suficiente para explicarlo oralmente en uno o dos minutos por módulo. Evita repetir rutas, formatos de respuesta, validaciones exhaustivas, paginación, dependencias internas y listas de campos que ya estén explicados en los documentos técnicos. Conserva las reglas de negocio esenciales cuando ayuden a entender cómo funciona la historia o por qué el sistema acepta o bloquea una acción.
+7. No inventes información ni completes historias sin criterios o implementación disponible. Si solo existe backend, puedes indicarlo brevemente una vez en el módulo como "Solo API por ahora"; añade las vistas cuando estén implementadas en frontend.
 
 ---
 

@@ -1,23 +1,19 @@
 # Resumen del sistema
 
+## Módulo 1: Catálogo de propiedades/equipo
+
+Este módulo reúne las publicaciones de bienes disponibles para alquilar. El arrendador administra sus propios bienes y el arrendatario consulta la información para decidir cuál reservar. Por ahora, estas funciones están disponibles mediante la API del backend.
+
+- **H5 — Pausar, reactivar o eliminar una publicación:** el arrendador puede pausar un bien para ocultarlo del catálogo y del detalle público, y reactivarlo para que vuelva a estar disponible. Si decide eliminarlo, el sistema lo marca como eliminado y conserva sus reseñas. Las reservas pendientes de pago o ya pagadas impiden pausar, reactivar o eliminar el bien.
+
 ## Módulo 2: Búsqueda y filtros
 
-**1. Qué hace el módulo:**  
-Permite al arrendatario consultar publicaciones disponibles mediante texto, ubicación y características. La API devuelve resultados paginados y la cantidad total que coincide.
+Este módulo ayuda al arrendatario a reducir el catálogo hasta encontrar bienes que se ajusten a su búsqueda. Las opciones se pueden combinar, así que cada criterio refina los resultados de los demás. Por ahora, la búsqueda está disponible mediante la API del backend.
 
-**2. Pantallas involucradas y qué elementos principales tiene cada una:**  
-Pendiente de UI / Solo API por ahora. La interfaz de búsqueda y el mensaje «No se encontraron resultados» corresponden al frontend.
+- **H6 — Búsqueda de bienes por criterios:** el arrendatario puede buscar por texto y acotar los resultados por departamento y municipio, categoría o bienes sin depósito. El sistema combina los criterios enviados y muestra solo publicaciones disponibles; si ninguna coincide, devuelve una lista vacía.
 
-**3. Roles y permisos:**  
-Arrendatario (`TENANT`): consulta el catálogo con sesión. Arrendador (`OWNER`) y administrador (`ADMIN`): no pueden consultar este endpoint; el catálogo está restringido a `TENANT`.
+## Módulo 7: Verificación de identidad/documentos
 
-**4. Reglas de negocio y casos borde:**  
-`GET /api/v1/properties` pagina a 12 resultados, ordenados del más reciente al más antiguo. Solo incluye bienes `AVAILABLE`; texto y filtros se combinan. El texto busca sin distinguir mayúsculas ni tildes en título, descripción y ubicación. Departamento y municipio comparan el valor completo sin distinguir mayúsculas; municipio requiere departamento. Categoría acepta `PROPERTY` o `EQUIPMENT`; `noDeposit=true` exige depósito igual a cero. Sin coincidencias, la API responde `200` con `data: []` y `total: 0`; el texto debe tener entre 2 y 100 caracteres.
+Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado. Por ahora, estas funciones están disponibles mediante la API del backend.
 
-**5. Dependencias con otros módulos:**  
-Lee `Property` y sus campos de estado, categoría, departamento, municipio, título, descripción, dirección, depósito y fecha de creación. Usa la sesión JWT y el rol del módulo de autenticación. El endpoint de detalle del catálogo también consulta reseñas y datos del arrendador.
-
-**6. Fichas rápidas por historia:**  
-- **H6 — Búsqueda de bienes por criterios:** permite encontrar publicaciones combinando texto y filtros de departamento/municipio, categoría y ausencia de depósito.
-- **Endpoint/pantalla:** `GET /api/v1/properties` (solo API por ahora; UI pendiente).
-- **Validación crítica:** cada filtro debe aplicarse junto con los demás y excluir bienes `PAUSED` o `DELETED`; sin coincidencias devuelve `data: []`, `total: 0`.
+- **H19 — Enviar documento de identidad para verificación:** el tenant selecciona DUI o pasaporte e informa el número y el archivo de identidad. El sistema valida que los datos y el archivo cumplan los formatos admitidos y registra el trámite como pendiente. Mientras espera revisión o si la cuenta ya está verificada, no acepta otro envío; después de un rechazo, permite presentar un documento nuevo.

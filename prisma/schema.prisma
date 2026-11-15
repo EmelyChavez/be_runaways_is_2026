@@ -66,6 +66,24 @@ enum ReviewType {
   OWNER_TO_RENTER
 }
 
+enum IdentityDocumentType {
+  DUI
+  PASSPORT
+}
+
+enum IdentityDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AccountStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   role         Role     @default(TENANT)
@@ -92,8 +110,24 @@ model Profile {
   userId     String  @unique @map("user_id") @db.Uuid
   user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   isVerified Boolean @default(false) @map("is_verified")
+  identityDocument IdentityDocument?
 
   @@map("profiles")
+}
+
+model IdentityDocument {
+  id              String                 @id @default(uuid()) @db.Uuid
+  profileId       String                 @unique @map("profile_id") @db.Uuid
+  profile         Profile                @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  documentType    IdentityDocumentType   @map("document_type")
+  documentNumber  String                 @map("document_number")
+  documentUrl      String                @map("document_url")
+  documentStatus  IdentityDocumentStatus @default(PENDING) @map("document_status")
+  submittedAt     DateTime               @default(now()) @map("submitted_at")
+  rejectionReason String?                @map("rejection_reason")
+  reviewedAt      DateTime?              @map("reviewed_at")
+
+  @@map("identity_document")
 }
 
 model LoginAttempt {
