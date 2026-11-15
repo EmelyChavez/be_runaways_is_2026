@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -19,7 +19,7 @@ import { Role } from '@PrismaClient';
 import type { User } from '@PrismaClient';
 import { ChangeRoleDto, RoleChangeResponseDto } from '@Profile/dto';
 import { ProfileRoleService } from '@Profile/services';
-import { MyIdentityDocumentResponseDto, SubmitIdentityDocumentDto, SubmitIdentityDocumentResponseDto } from '@IdentityDocument/dto';
+import { AdminIdentityDocumentQueryDto, MyIdentityDocumentResponseDto, RejectIdentityDocumentDto, SubmitIdentityDocumentDto, SubmitIdentityDocumentResponseDto } from '@IdentityDocument/dto';
 import { IdentityDocumentService } from '@IdentityDocument/services';
 import type { IdentityDocumentFile } from '@IdentityDocument/services';
 
@@ -77,6 +77,49 @@ export class ProfileController {
   @ApiNotFoundResponse({ description: 'No se encontró el perfil.' })
   getMyIdentityDocument(@CurrentUser() user: User) {
     return this.identityDocumentService.getMyStatus(user.id);
+  }
+
+  @Get('document/admin')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Lista documentos de identidad para revisión administrativa' })
+  @ApiOkResponse({ description: 'Documentos paginados por fecha de envío ascendente.' })
+  listIdentityDocumentsForAdmin(@Query() query: AdminIdentityDocumentQueryDto) {
+    return this.identityDocumentService.listForAdmin(query);
+  }
+
+  @Get('document/admin/:userId')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Consulta el documento y archivo privado para revisión' })
+  @ApiOkResponse({ description: 'Detalle del documento con enlace temporal al archivo privado.' })
+  @ApiNotFoundResponse({ description: 'No existe un documento para el usuario.' })
+  getIdentityDocumentForAdmin(@Param('userId', new ParseUUIDPipe()) userId: string) {
+    return this.identityDocumentService.getForAdmin(userId);
+  }
+
+  @Patch('document/admin/:userId/approve')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Aprueba un documento de identidad pendiente' })
+  @ApiOkResponse({ description: 'Documento aprobado y cuenta verificada.' })
+  @ApiNotFoundResponse({ description: 'No existe un documento para el usuario.' })
+  @ApiConflictResponse({ description: 'El documento ya fue revisado.' })
+  approveIdentityDocument(@Param('userId', new ParseUUIDPipe()) userId: string) {
+    return this.identityDocumentService.approveForAdmin(userId);
+  }
+
+  @Patch('document/admin/:userId/reject')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Rechaza un documento pendiente con un motivo' })
+  @ApiOkResponse({ description: 'Documento rechazado con el motivo y fecha de revisión.' })
+  @ApiBadRequestResponse({ description: 'El motivo debe tener entre 10 y 300 caracteres.' })
+  @ApiNotFoundResponse({ description: 'No existe un documento para el usuario.' })
+  @ApiConflictResponse({ description: 'El documento ya fue revisado.' })
+  rejectIdentityDocument(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body() dto: RejectIdentityDocumentDto,
+  ) {
+    return this.identityDocumentService.rejectForAdmin(userId, dto.rejectionReason);
   }
 
   @Patch('role')
