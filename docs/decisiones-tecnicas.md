@@ -84,3 +84,7 @@ Finalmente, la consulta del estado de verificación solo devuelve el estado y lo
 El proyecto usa Prisma como ORM y PostgreSQL como base. `PrismaService` configura el driver adapter
 de PostgreSQL en tiempo de ejecución, acorde con Prisma 7. Los repositorios inyectan ese servicio;
 los controladores no acceden directamente a la base.
+
+## Integración de verificación con notificaciones
+
+Al confirmar la aprobación o el rechazo de un documento, `IdentityDocumentService` invoca `NotificationsService.emit` para el usuario propietario del documento. El evento `DOCUMENT_REJECTED` recibe el motivo para completar su plantilla; `DOCUMENT_APPROVED` usa su plantilla fija. La llamada ocurre después de persistir el cambio de estado.

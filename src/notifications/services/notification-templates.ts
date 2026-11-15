@@ -49,6 +49,6 @@ export const notificationTemplates: Record<
   }),
   DOCUMENT_REJECTED: (d) => ({
     title: 'Documento rechazado',
-    message: `Tu documento fue rechazado. Motivo: ${d.reason}.`,
+    message: `Tu documento fue rechazado. Motivo: ${d.reason ?? ''}.`.slice(0, 250),
   }),
 };

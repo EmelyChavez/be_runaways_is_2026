@@ -13,8 +13,8 @@ export interface EmitInput {
   originModule: OriginModule;
   referenceId?: string | null;
   templateData?: Record<string, string>;
-  title: string;
-  message: string;
+  title?: string;
+  message?: string;
 }
 
 const TITLE_MAX = 100;
@@ -46,7 +46,7 @@ export class NotificationsService {
     const template = notificationTemplates[input.eventType];
     const { title, message } = template
       ? template(input.templateData ?? {})
-      : { title: input.title, message: input.message };
+      : { title: input.title ?? '', message: input.message ?? '' };
 
     const cleanTitle = title.trim();
     const cleanMessage = message.trim();
