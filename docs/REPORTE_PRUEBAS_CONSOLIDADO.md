@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 65 | 65 | 0 |
+| Unitarias | 86 | 86 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **65** | **65** | **0** |
+| **Total** | **86** | **86** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -198,3 +198,62 @@ Ejecución: `npm.cmd test -- test/unit/historia-H8.spec.ts` — Vitest reportó 
 | H19-U12 | Positiva | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Reenvío después de rechazo | Configurar documento REJECTED con motivo y enviar uno válido. | Se actualiza el registro a PENDING y se limpia el motivo previo. | Se actualizó a PENDING, se limpió el motivo y se solicitó borrar el archivo anterior. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H19.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
+
+## Módulo 7: Verificación de identidad/documentos — H20: Aprobar o rechazar documentos de identidad enviados (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H20-U01:** El administrador consulta documentos PENDING con página 1 y 10 documentos por página por defecto.
+- **H20-U02:** El sistema aplica el desplazamiento y el límite correspondientes a la página solicitada.
+- **H20-U03:** El listado incluye nombre, correo, tipo, número y fecha de envío del documento.
+- **H20-U04:** El sistema devuelve una lista vacía y total cero cuando no hay documentos pendientes.
+- **H20-U05:** El administrador puede consultar un documento pendiente y obtener un enlace temporal al archivo privado.
+- **H20-U06:** Al aprobar, el sistema cambia el documento a APPROVED, verifica el perfil y registra cuándo se revisó.
+- **H20-U07:** El sistema acepta un motivo de rechazo de 10 caracteres y guarda el documento como REJECTED con la fecha de revisión.
+- **H20-U08:** El sistema acepta un motivo de rechazo de 300 caracteres.
+- **H20-U09:** El sistema permite al rol ADMIN acceder a las rutas de revisión.
+- **H20-U21:** El repositorio filtra documentos PENDING, los ordena del más antiguo al más reciente y aplica el límite de 10.
+
+### Casos negativos ejecutados
+
+- **H20-U10:** El sistema rechaza un motivo ausente o vacío.
+- **H20-U11:** El sistema rechaza un motivo de 9 caracteres.
+- **H20-U12:** El sistema rechaza un motivo de 301 caracteres.
+- **H20-U13:** El sistema responde 404 al consultar un documento inexistente o que no está pendiente.
+- **H20-U14:** El sistema no permite volver a revisar un documento APPROVED.
+- **H20-U15:** El sistema no permite volver a revisar un documento REJECTED.
+- **H20-U16:** Una solicitud sin sesión recibe 401.
+- **H20-U17:** Un usuario TENANT no puede consultar ni revisar documentos.
+- **H20-U18:** Un usuario OWNER no puede consultar ni revisar documentos.
+- **H20-U19:** El guard de roles responde 401 cuando falta el usuario autenticado.
+- **H20-U20:** El sistema responde 409 si otra revisión concurrente ya modificó el documento.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H20-U01 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Paginación por defecto | Crear DTO sin parámetros y consultar el servicio. | Página 1 y pageSize 10; consultar pendientes desde el inicio. | DTO usó página 1 y límite 10; repositorio recibió skip 0 y take 10. | Aprobado |
+| H20-U02 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Paginación solicitada | Validar page 3 y pageSize 10; consultar servicio. | El repositorio recibe skip 20 y take 10. | class-validator aceptó la consulta y el repositorio recibió skip 20 y take 10. | Aprobado |
+| H20-U03 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Campos del listado | Listar un documento pendiente con usuario asociado. | La fila contiene usuario, correo, tipo, número y fecha de envío. | La respuesta incluyó todos los campos con los valores esperados. | Aprobado |
+| H20-U04 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Lista sin pendientes | Simular cero resultados y cero total. | Responde data vacía y total 0. | El servicio devolvió data [] y total 0. | Aprobado |
+| H20-U05 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Detalle y archivo pendiente | Consultar usuario con documento PENDING y generar enlace temporal. | El detalle incluye datos del documento y enlace privado firmado. | Se consultó el documento pendiente y se devolvió el enlace temporal esperado. | Aprobado |
+| H20-U06 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Aprobar documento | Fijar la hora, aprobar y revisar actualización transaccional y respuesta. | Documento APPROVED, perfil verificado y reviewedAt guardado. | El repositorio actualizó estado y perfil; la respuesta incluyó reviewedAt. | Aprobado |
+| H20-U07 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Rechazo con motivo mínimo | Enviar rejectionReason de 10 caracteres y revisar persistencia y respuesta. | Documento REJECTED con motivo y reviewedAt. | El motivo se guardó, el perfil quedó sin verificar y se devolvió reviewedAt. | Aprobado |
+| H20-U08 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Rechazo con motivo máximo | Validar y enviar rejectionReason de 300 caracteres. | El motivo se acepta y se guarda. | DTO válido y servicio aceptó los 300 caracteres. | Aprobado |
+| H20-U09 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Rol ADMIN autorizado | Leer metadata de las cuatro rutas y ejecutar RolesGuard como ADMIN. | Las rutas requieren ADMIN y el guard autoriza el rol. | Todas declaran ADMIN y RolesGuard devolvió true. | Aprobado |
+| H20-U10 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Motivo ausente, vacío o compuesto por espacios | Validar DTO sin rejectionReason y con cadena vacía; enviar un motivo de espacios al servicio. | Se rechazan los tres motivos y no inicia la transacción. | class-validator encontró errores para campo ausente y cadena vacía; el servicio respondió 400 al motivo de espacios sin iniciar transacción. | Aprobado |
+| H20-U11 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Motivo menor al mínimo | Validar y enviar rejectionReason de 9 caracteres. | Responde 400 y no inicia la transacción. | DTO inválido; servicio lanzó 400 sin iniciar transacción. | Aprobado |
+| H20-U12 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Motivo mayor al máximo | Validar y enviar rejectionReason de 301 caracteres. | Responde 400 y no inicia la transacción. | DTO inválido; servicio lanzó 400 sin iniciar transacción. | Aprobado |
+| H20-U13 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Documento inexistente o no pendiente | Simular que el repositorio no encuentra documento pendiente y consultar detalle. | Responde 404 y no genera enlace al archivo. | NotFoundException; no se generó enlace. | Aprobado |
+| H20-U14 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Documento ya aprobado | Intentar revisar un documento APPROVED. | Responde 409 y no inicia transacción. | ConflictException; transacción no invocada. | Aprobado |
+| H20-U15 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Documento ya rechazado | Intentar revisar un documento REJECTED. | Responde 409 y no inicia transacción. | ConflictException; transacción no invocada. | Aprobado |
+| H20-U16 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Solicitud sin sesión | Ejecutar JwtAuthGuard sin encabezado Authorization. | Guard responde 401. | El guard rechazó la solicitud con estado 401. | Aprobado |
+| H20-U17 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Rol TENANT sin permiso | Ejecutar RolesGuard con usuario TENANT. | Guard responde 403. | RolesGuard rechazó el rol con estado 403. | Aprobado |
+| H20-U18 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Rol OWNER sin permiso | Ejecutar RolesGuard con usuario OWNER. | Guard responde 403. | RolesGuard rechazó el rol con estado 403. | Aprobado |
+| H20-U19 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Usuario ausente en RolesGuard | Ejecutar RolesGuard sin usuario autenticado en la solicitud. | Guard responde 401. | RolesGuard rechazó la solicitud con estado 401. | Aprobado |
+| H20-U20 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Revisión concurrente | Simular que la actualización condicional no modifica filas. | Responde 409 y no verifica el perfil. | ConflictException con 409; perfil no actualizado. | Aprobado |
+| H20-U21 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Consulta de pendientes en repositorio | Ejecutar findPendingDocuments y countPendingDocuments con Prisma simulado. | Filtra PENDING, ordena submittedAt ascendente, omite 0 y toma 10. | Prisma recibió el filtro, orden ascendente y paginación esperados. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H20.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+
+Nota: no se probaron las notificaciones porque el servicio del Módulo 8 no existe todavía en este backend. Los mensajes, botones y estados visuales pertenecen al frontend y no se cubren con estas pruebas unitarias.
