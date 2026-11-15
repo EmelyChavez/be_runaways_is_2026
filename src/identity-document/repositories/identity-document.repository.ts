@@ -37,6 +37,17 @@ export class IdentityDocumentTransactionRepository {
       data,
     });
   }
+
+  reviewPending(userId: string, status: IdentityDocumentStatus, rejectionReason: string | null, reviewedAt: Date) {
+    return this.transaction.identityDocument.updateMany({
+      where: { documentStatus: 'PENDING', profile: { is: { userId } } },
+      data: { documentStatus: status, rejectionReason, reviewedAt },
+    });
+  }
+
+  setProfileVerified(userId: string, isVerified: boolean) {
+    return this.transaction.profile.update({ where: { userId }, data: { isVerified } });
+  }
 }
 
 @Injectable()
@@ -48,6 +59,39 @@ export class IdentityDocumentRepository {
       where: { userId },
       include: { identityDocument: true },
     });
+  }
+
+  findPendingDocuments(skip: number, take: number) {
+    return this.prisma.identityDocument.findMany({
+      where: { documentStatus: 'PENDING' },
+      include: { profile: { include: { user: true } } },
+      orderBy: { submittedAt: 'asc' }, skip, take,
+    });
+  }
+
+  countPendingDocuments() {
+    return this.prisma.identityDocument.count({ where: { documentStatus: 'PENDING' } });
+  }
+
+  findPendingDocumentForUser(userId: string) {
+    return this.prisma.identityDocument.findFirst({
+      where: { documentStatus: 'PENDING', profile: { is: { userId } } },
+      include: { profile: { include: { user: true } } },
+    });
+  }
+
+  findDocumentForUser(userId: string) {
+    return this.prisma.identityDocument.findFirst({
+      where: { profile: { is: { userId } } },
+      include: { profile: { include: { user: true } } },
+    });
+  }
+
+  withReviewTransaction<T>(operation: (repository: IdentityDocumentTransactionRepository) => Promise<T>) {
+    return this.prisma.$transaction(
+      (transaction) => operation(new IdentityDocumentTransactionRepository(transaction)),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   withTransaction<T>(operation: (repository: IdentityDocumentTransactionRepository) => Promise<T>) {
