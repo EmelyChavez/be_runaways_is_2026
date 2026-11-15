@@ -7,6 +7,7 @@ import { HealthModule } from '@Health';
 import { PrismaModule } from '@Prisma';
 import { ProfileModule } from '@Profile';
 import { PropertiesModule } from '@Properties';
+import { NotificationsModule } from '@Notifications';
 import { UsersModule } from '@Users';
 import { validateEnv } from '@Config';
 
@@ -24,6 +25,7 @@ import { validateEnv } from '@Config';
     AuthModule,
     ProfileModule,
     PropertiesModule,
+    NotificationsModule,
   ],
   providers: [
     {
