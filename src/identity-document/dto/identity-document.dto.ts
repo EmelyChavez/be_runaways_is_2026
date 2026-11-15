@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountStatus, IdentityDocumentStatus, IdentityDocumentType } from '@PrismaClient';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MinLength, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class SubmitIdentityDocumentDto {
   @ApiProperty({ enum: IdentityDocumentType })
@@ -37,4 +38,30 @@ export class MyIdentityDocumentResponseDto {
 
   @ApiProperty({ required: false })
   rejectionReason?: string;
+}
+
+export class AdminIdentityDocumentQueryDto {
+  @ApiProperty({ required: false, default: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @ApiProperty({ required: false, default: 10, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 10;
+}
+
+export class RejectIdentityDocumentDto {
+  @ApiProperty({ minLength: 10, maxLength: 300 })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(10)
+  @MaxLength(300)
+  rejectionReason!: string;
 }
