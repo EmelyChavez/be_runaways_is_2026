@@ -54,6 +54,22 @@ credenciales se leen de `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` y `CLOUDIN
 si la carga o el guardado del bien falla, se eliminan las imágenes subidas durante esa solicitud.
 Las credenciales no son necesarias para arrancar otros módulos, pero sí para publicar un bien.
 
+## Documentos de identidad en Cloudinary
+
+`IdentityDocumentCloudinaryService` gestiona los documentos de identidad de forma independiente a las imágenes de propiedades. Almacena archivos JPG, PNG y PDF en Cloudinary, como recursos privados de tipo `raw`, con un límite de 5 MB. Cada archivo utiliza un `public_id` aleatorio que no contiene información del usuario. El campo `identity_document.document_url` guarda la URL HTTPS del recurso autenticado, pero el GET de estado no la devuelve.
+
+El servicio valida el número de documento según el tipo seleccionado (`DUI` o `PASSPORT`), el formato, el MIME, la firma y el tamaño del archivo. También comprueba que el usuario no esté verificado ni tenga otro documento en estado `PENDING`.
+
+**Reemplazo de documentos rechazados**
+
+Cuando un usuario sube un nuevo documento después de que el anterior fue rechazado, se utiliza `updateMany` para actualizar el registro únicamente si el documento sigue sin estar `PENDING` y el perfil no está verificado. Esto evita reemplazar documentos cuando otra solicitud ya modificó su estado. Si no se cumplen las condiciones, responde `409 Conflict` y elimina el archivo nuevo de Cloudinary.
+
+**Eliminación y manejo de archivos**
+
+El documento anterior se elimina de Cloudinary únicamente después de confirmar que el nuevo se guardó correctamente en la base de datos. Si la actualización falla, se elimina el archivo nuevo para evitar dejar archivos sin registros asociados.
+
+Finalmente, la consulta del estado de verificación solo devuelve el estado y los metadatos de revisión, sin exponer el número de identidad ni una URL del archivo. La lectura del documento queda reservada para una ruta autorizada de revisión.
+
 ## Prisma y PostgreSQL
 
 El proyecto usa Prisma como ORM y PostgreSQL como base. `PrismaService` configura el driver adapter

@@ -33,6 +33,7 @@ flowchart LR
 | `auth` | Registro, login, emisión y rotación de tokens, intentos de login y guards de autenticación/autorización. |
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
+| `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y la consulta propia bajo `/profile/document`. Cloudinary almacena PDFs e imágenes autenticados bajo `runaways/documents`. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo y detalle público de bienes disponibles. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
@@ -50,6 +51,10 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
 - Cambio de rol: `ProfileController` → `ProfileRoleService` → `ProfileRoleRepository` y
   `TokenService`. El servicio aplica las reglas; el repositorio agrupa las lecturas y escrituras de
   base de datos en una transacción serializable.
+- Documento de identidad: `ProfileController` recibe `/profile/document` y delega a
+  `IdentityDocumentService`; ese servicio valida las reglas y coordina `IdentityDocumentRepository`
+  con `IdentityDocumentCloudinaryService`. El repositorio limita su responsabilidad a persistencia y
+  transacciones.
 - Publicación: `PropertiesController` recibe los campos y archivos multipart, `PropertiesService`
   valida las imágenes y coordina su carga a `CloudinaryService`; `PropertiesRepository` guarda el bien
   y las URLs seguras en PostgreSQL. Si falla la persistencia, elimina las imágenes cargadas durante
