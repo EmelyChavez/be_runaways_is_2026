@@ -56,6 +56,18 @@ export class IdentityDocumentCloudinaryService {
     await this.delete(this.getPublicIdFromUrl(secureUrl));
   }
 
+  getPrivateDownloadUrl(secureUrl: string): string {
+    this.ensureConfigured();
+    const publicId = this.getPublicIdFromUrl(secureUrl);
+    const format = publicId.split('.').at(-1) ?? 'pdf';
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: 'raw',
+      type: 'authenticated',
+      expires_at: Math.floor(Date.now() / 1000) + 300,
+      attachment: false,
+    });
+  }
+
   private getPublicIdFromUrl(secureUrl: string): string {
     const segments = new URL(secureUrl).pathname.split('/').filter(Boolean);
     const folderIndex = segments.findIndex((part, index) => part === 'runaways' && segments[index + 1] === 'documents');
