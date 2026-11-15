@@ -23,6 +23,7 @@ Diagrama conceptual de la base de datos del equipo:
 | `Booking` | Reserva una propiedad por un `tenant`, con fechas, subtotal, estado y fecha de expiración. |
 | `Deposit` | Depósito asociado 1 a 1 con una reserva; puede tener un `decidedBy` opcional y guarda monto, estado, montos devuelto/retenido y fechas de decisión. |
 | `Review` | Reseña asociada a una reserva (`reservationId` referencia `Booking.id`), un bien, autor y usuario objetivo. `RENTER_TO_PROPERTY` requiere `propertyRating`; `OWNER_TO_RENTER` no la usa. `userRating` siempre es obligatorio. Ambas puntuaciones van de 1 a 5 y `comment` admite hasta 200 caracteres. |
+| `Notification` | Aviso dirigido a un usuario con evento, módulo de origen, título (máximo 100), mensaje (máximo 250), referencia UUID opcional, estado `UNREAD`/`READ` y marcas de tiempo. |
 
 ## Bloqueos de disponibilidad
 
@@ -40,3 +41,6 @@ los considera junto con las reservas `PAID` y `PENDING` vigentes al consultar di
 - `IdentityDocumentType`: `DUI`, `PASSPORT`.
 - `IdentityDocumentStatus`: `PENDING`, `APPROVED`, `REJECTED`.
 - `AccountStatus`: `UNVERIFIED`, `PENDING`, `VERIFIED`, `REJECTED` (estado calculado que devuelve la consulta del perfil).
+- `NotificationStatus`: `UNREAD`, `READ`.
+- `OriginModule`: `RESERVATIONS`, `PAYMENTS`, `MESSAGING`, `VERIFICATION`.
+- `NotificationEventType`: `RESERVATION_CREATED`, `PAYMENT_CONFIRMED`, `RESERVATION_CANCELED_EXPIRED`, `RESERVATION_FINISHED`, `MESSAGE_NEW`, `DEPOSIT_RETURNED`, `DEPOSIT_RETURNED_AUTO`, `DEPOSIT_RETAINED`, `DOCUMENT_APPROVED`, `DOCUMENT_REJECTED`.

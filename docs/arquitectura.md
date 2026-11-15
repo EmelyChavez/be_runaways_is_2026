@@ -35,6 +35,7 @@ flowchart LR
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y la consulta propia bajo `/profile/document`. Cloudinary almacena PDFs e imágenes autenticados bajo `runaways/documents`. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo y detalle público de bienes disponibles. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
+| `notifications` | Servicio interno unificado para aplicar plantillas, validar y persistir avisos dirigidos a usuarios. Exporta `NotificationsService.emit` para que otros módulos lo invoquen; no expone una ruta HTTP al cliente. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
 | `common` | Utilidades y decoradores compartidos. |

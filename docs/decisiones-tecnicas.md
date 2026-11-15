@@ -10,6 +10,15 @@ y concentran consultas, escrituras y transacciones. Los controladores se limitan
 Esto permite mantener reglas fuera de los controladores y probar los servicios sin acoplarlos al
 formato de consultas de Prisma.
 
+## Envío interno de notificaciones
+
+`NotificationsService.emit` es la fachada única para que otros módulos soliciten avisos. Las
+plantillas centralizan el formato de los eventos conocidos; el repositorio valida la existencia del
+destinatario antes de crear la fila. La función se exporta desde `NotificationsModule` sin controlador
+HTTP, porque esta historia define el envío entre módulos y no establece credenciales para exponer un
+endpoint interno a clientes. Los enums `OriginModule` usan valores en inglés: `RESERVATIONS`,
+`PAYMENTS`, `MESSAGING` y `VERIFICATION`.
+
 ## Autenticación y transporte de sesión
 
 El backend conserva JWT Bearer porque es el contrato que implementa actualmente. El access token es
