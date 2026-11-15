@@ -160,6 +160,7 @@ model Property {
 
   bookings Booking[]
   reviews  Review[]
+  availabilityBlocks NoAvailability[]
 
   @@index([ownerId, status])
   @@map("properties")
@@ -185,6 +186,18 @@ model Booking {
   @@index([tenantId, status])
   @@index([propertyId, status])
   @@map("bookings")
+}
+
+model NoAvailability {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  startDate  DateTime @map("start_date") @db.Date
+  endDate    DateTime @map("end_date") @db.Date
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([propertyId, startDate, endDate])
+  @@map("no_availabilities")
 }
 
 model Review {

@@ -8,7 +8,7 @@ import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
 import type { CreatePropertyRequestDto, UpdatePropertyRequestDto, UpdatePropertyStatusDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
-import { Prisma, PropertyStatus } from '@PrismaClient';
+import { BookingStatus, Prisma, PropertyStatus } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
 import type { PropertyCatalogQueryDto } from '@Properties/dto';
 
@@ -228,6 +228,35 @@ export class PropertiesService {
           ...(query.maxPrice !== undefined && { lte: query.maxPrice }),
         },
       }),
+      ...(query.startDate !== undefined && query.endDate !== undefined && {
+        NOT: {
+          OR: [
+            {
+              bookings: {
+                some: {
+                  startDate: { lte: this.toDatabaseDate(query.endDate) },
+                  endDate: { gte: this.toDatabaseDate(query.startDate) },
+                  OR: [
+                    { status: BookingStatus.PAID },
+                    {
+                      status: BookingStatus.PENDING,
+                      expiresAt: { gt: new Date() },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              availabilityBlocks: {
+                some: {
+                  startDate: { lte: this.toDatabaseDate(query.endDate) },
+                  endDate: { gte: this.toDatabaseDate(query.startDate) },
+                },
+              },
+            },
+          ],
+        },
+      }),
     };
 
     const { properties, total } =
@@ -246,6 +275,10 @@ export class PropertiesService {
       page: query.page,
       pageSize: CATALOG_PAGE_SIZE,
     };
+  }
+
+  private toDatabaseDate(date: string): Date {
+    return new Date(`${date}T00:00:00.000Z`);
   }
 
   async getDetail(id: string) {
