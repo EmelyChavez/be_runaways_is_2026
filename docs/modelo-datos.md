@@ -23,6 +23,11 @@ Diagrama conceptual de la base de datos del equipo:
 | `Deposit` | Depósito asociado 1 a 1 con una reserva; puede tener un `decidedBy` opcional y guarda monto, estado, montos devuelto/retenido y fechas de decisión. |
 | `Review` | Reseña asociada a una reserva (`reservationId` referencia `Booking.id`), un bien, autor y usuario objetivo. `RENTER_TO_PROPERTY` requiere `propertyRating`; `OWNER_TO_RENTER` no la usa. `userRating` siempre es obligatorio. Ambas puntuaciones van de 1 a 5 y `comment` admite hasta 200 caracteres. |
 
+## Bloqueos de disponibilidad
+
+`NoAvailability` registra los periodos que el arrendador bloquea para una propiedad. El filtro del catálogo
+los considera junto con las reservas `PAID` y `PENDING` vigentes al consultar disponibilidad.
+
 ## Enums actuales
 
 - `Role`: `TENANT`, `OWNER`, `ADMIN`.

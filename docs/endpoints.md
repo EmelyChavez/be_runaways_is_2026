@@ -14,11 +14,11 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | `{ refreshToken }` | `204`, sin cuerpo |
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
-| `GET /api/v1/properties` | `TENANT` autenticado | Query opcionales: `page`, `q` (2–100 caracteres), `department`, `municipality`, `category` (`PROPERTY`/`EQUIPMENT`), `noDeposit` (`true`/`false`), `minPrice` y `maxPrice` (0.01–9999.99) | `200`: catálogo paginado filtrado por todos los criterios indicados; solo bienes `AVAILABLE` |
+| `GET /api/v1/properties` | `TENANT` autenticado | Query opcionales: `page`, `q` (2–100 caracteres), `department`, `municipality`, `category` (`PROPERTY`/`EQUIPMENT`), `noDeposit` (`true`/`false`), `minPrice` y `maxPrice` (0.01–9999.99), `startDate` y `endDate` (ambas o ninguna; `YYYY-MM-DD`) | `200`: catálogo paginado filtrado por todos los criterios indicados; solo bienes `AVAILABLE` libres durante el periodo solicitado |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
-| `GET /api/v1/properties` | `TENANT` autenticado | `page` opcional (por defecto 1); `q` busca sin distinguir mayúsculas ni tildes en título, descripción, departamento, municipio y dirección; `department` puede enviarse solo y `municipality` requiere `department`; permite `category`, `noDeposit=true` (depósito igual a cero), y límites de precio | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; solo bienes `AVAILABLE`, criterios combinados con AND, más recientes primero |
+| `GET /api/v1/properties` | `TENANT` autenticado | `page` opcional (por defecto 1); `q` busca sin distinguir mayúsculas ni tildes en título, descripción, departamento, municipio y dirección; `department` puede enviarse solo y `municipality` requiere `department`; permite `category`, `noDeposit=true` (depósito igual a cero), límites de precio y `startDate`/`endDate` juntos | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; solo bienes `AVAILABLE` y sin traslapes con reservas activas ni bloqueos de fechas, criterios combinados con AND, más recientes primero |
 
 ### Validación y errores de los endpoints implementados
 
@@ -46,6 +46,13 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 
 Las respuestas de usuario no incluyen `passwordHash`. El backend devuelve tokens en JSON y no
 establece una cookie HTTP.
+
+### Filtro de disponibilidad del catálogo
+
+`GET /api/v1/properties` acepta `startDate` y `endDate` juntos en formato `YYYY-MM-DD`. El rango debe comenzar
+hoy o después, no puede superar 30 días inclusivos ni terminar después de los próximos 90 días. Los resultados
+excluyen propiedades con reservas `PAID`, reservas `PENDING` cuyo plazo de pago no haya vencido o bloqueos del
+arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `PENDING` vencidas no ocupan fechas.
 
 ## Rutas planificadas en `AGENTS.md`
 
