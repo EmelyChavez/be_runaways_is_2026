@@ -16,6 +16,7 @@ Diagrama conceptual de la base de datos del equipo:
 |---|---|
 | `User` | Cuenta con `id` UUID, `role`, `name`, email único, `passwordHash`, `isActive`, `createdAt` y `updatedAt`. |
 | `Profile` | Perfil con `id`, `userId` único y `isVerified`. El registro crea el perfil junto a la cuenta. |
+| `IdentityDocument` | Tabla `identity_document`, relacionada 1:1 con `Profile`: `documentType`, `documentNumber`, `documentUrl`, `documentStatus`, `submittedAt`, `rejectionReason` y `reviewedAt`. `documentUrl` guarda la URL HTTPS del recurso autenticado de Cloudinary; no se incluye en la respuesta de estado. |
 | `RefreshToken` | Sesión renovable. Guarda `tokenHash` único, `userId`, `expiresAt`, `revokedAt` y `createdAt`; nunca almacena el refresh token en claro. |
 | `LoginAttempt` | Contador por identificador HMAC (`keyHash`), con `attempts`, inicio de ventana, vencimiento y `lockedUntil`. No guarda el correo en claro. |
 | `Property` | Bien de un `owner` con título (máximo 100 caracteres), descripción, categoría, ubicación, precio, depósito, arreglo `images` y estado. `images` es `String[]` con URLs seguras de Cloudinary. |
@@ -31,3 +32,6 @@ Diagrama conceptual de la base de datos del equipo:
 - `BookingStatus`: `PENDING`, `PAID`, `COMPLETED`, `CANCELED`.
 - `DepositStatus`: `PENDING`, `RETURNED`, `RETAINED`, `PARTIALLY_RETAINED`.
 - `ReviewType`: `RENTER_TO_PROPERTY`, `OWNER_TO_RENTER`.
+- `IdentityDocumentType`: `DUI`, `PASSPORT`.
+- `IdentityDocumentStatus`: `PENDING`, `APPROVED`, `REJECTED`.
+- `AccountStatus`: `UNVERIFIED`, `PENDING`, `VERIFIED`, `REJECTED` (estado calculado que devuelve la consulta del perfil).

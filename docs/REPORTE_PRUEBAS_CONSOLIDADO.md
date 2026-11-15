@@ -4,36 +4,39 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 38 | 38 | 0 |
+| Unitarias | 50 | 50 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **38** | **38** | **0** |
+| **Total** | **50** | **50** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
 
-### Casos de prueba ejecutados
+### Casos positivos ejecutados
 
-1. **H5-U01 — Pausar publicación AVAILABLE:** actualizar a PAUSED y devolver id, status y statusChangedAt.
-2. **H5-U02 — Reactivar publicación PAUSED:** actualizar a AVAILABLE y devolver la fecha de cambio.
-3. **H5-U03 — Eliminación lógica:** marcar como DELETED y conservar reseñas relacionadas.
-4. **H5-U04 — Rol requerido OWNER:** verificar OWNER en ambos endpoints.
-5. **H5-U05 — Arrendador autorizado:** verificar acceso del OWNER mediante RolesGuard.
-6. **H5-U06 — Visibilidad:** verificar filtros de catálogo, detalle público y Mis publicaciones.
-7. **H5-U07 — Estado destino inválido:** rechazar DELETED como estado destino.
-8. **H5-U08 — Bien ajeno o inexistente al cambiar estado:** responder 404 sin actualizar.
-9. **H5-U09 — Bien ajeno o inexistente al eliminar:** responder 404 sin eliminar.
-10. **H5-U10 — Reserva PENDING:** bloquear cambio de estado y eliminación con 409 y el mensaje acordado.
-11. **H5-U11 — Reserva PAID:** bloquear cambio de estado y eliminación con 409 y el mensaje acordado.
-12. **H5-U12 — Bien DELETED:** rechazar el cambio de estado con 409.
-13. **H5-U13 — Eliminación repetida:** rechazar con 409 un bien ya DELETED.
-14. **H5-U14 — Sin sesión:** responder 401.
-15. **H5-U15 — Rol TENANT:** responder 403.
-16. **H5-U16 — Rol ADMIN:** responder 403.
-17. **H5-U17 — Sin usuario autenticado:** responder 401.
-18. **H5-U18 — UUID inválido:** responder 400 en ambas rutas.
-19. **H5-U19 — Estados de reservas activas:** verificar que el conteo incluya PENDING y PAID.
+- **H5-U01:** El arrendador puede pausar una publicación disponible y el sistema confirma el nuevo estado.
+- **H5-U02:** El arrendador puede reactivar una publicación pausada y el sistema vuelve a habilitarla.
+- **H5-U03:** El arrendador puede eliminar lógicamente un bien propio y sus reseñas se conservan.
+- **H5-U04:** Solo el rol OWNER puede gestionar el estado o eliminar una publicación.
+- **H5-U05:** El sistema autoriza al arrendador autenticado a gestionar sus publicaciones.
+- **H5-U06:** El catálogo y el detalle público ocultan bienes pausados o eliminados, y Mis publicaciones omite los eliminados.
+- **H5-U19:** El sistema considera reservas PENDING y PAID al comprobar si una publicación puede cambiar de estado o eliminarse.
 
-### Resultados de ejecución
+### Casos negativos ejecutados
+
+- **H5-U07:** El sistema no permite usar DELETED como estado de destino.
+- **H5-U08:** El sistema no permite cambiar el estado de un bien ajeno o inexistente.
+- **H5-U09:** El sistema no permite eliminar un bien ajeno o inexistente.
+- **H5-U10:** El sistema bloquea cambios y eliminación cuando el bien tiene una reserva PENDING.
+- **H5-U11:** El sistema bloquea cambios y eliminación cuando el bien tiene una reserva PAID.
+- **H5-U12:** El sistema no permite reactivar un bien que ya fue eliminado.
+- **H5-U13:** El sistema no permite eliminar nuevamente un bien que ya está eliminado.
+- **H5-U14:** Una solicitud sin sesión no puede gestionar publicaciones.
+- **H5-U15:** Un usuario con rol TENANT no puede gestionar ni eliminar publicaciones.
+- **H5-U16:** Un usuario con rol ADMIN no puede gestionar ni eliminar publicaciones.
+- **H5-U17:** El sistema no autoriza la operación cuando falta el usuario autenticado.
+- **H5-U18:** El sistema rechaza identificadores que no tengan formato UUID.
+
+### Tabla de resultados
 
 | ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
 |---|---|---|---|---|---|---|---|
@@ -62,29 +65,31 @@ Ejecución: `npm.cmd test -- test/unit/historia-H5.spec.ts` — Vitest reportó 
 
 ## Módulo 2: Búsqueda y filtros — H6: Búsqueda de bienes por criterios
 
-### Casos positivos
+### Casos positivos ejecutados
 
-1. **H6-CA01 — Búsqueda por texto:** enviar un q válido. Esperar los resultados y el total que devuelve el repositorio.
-2. **H6-CA02 — Búsqueda por ubicación:** enviar departamento y municipio. Esperar resultados que coincidan con ambos criterios.
-3. **H6-CA03 — Filtro por categoría:** enviar PROPERTY o EQUIPMENT. Esperar que solo se incluyan bienes de esa categoría.
-4. **H6-CA04 — Filtro “Sin depósito”:** enviar noDeposit=true. Esperar que se aplique el filtro de depósito igual a cero.
-5. **H6-CA05 — Combinación de criterios:** enviar texto, ubicación, categoría y noDeposit=true. Verificar que se combinen todos los filtros y que los resultados cumplan cada uno.
-6. **H6-CA06 — Actualizar búsqueda al modificar filtros:** invocar el servicio con una combinación y luego con otra. Esperar resultados y totales correspondientes a cada consulta.
-7. **H6-CA07 — Actualizar búsqueda al quitar un filtro:** invocar con varios filtros y luego omitir uno. Esperar que la segunda consulta use los filtros restantes y su propio total.
-8. **H6-CA08 — Sin coincidencias:** simular que el repositorio no encuentra publicaciones. Esperar data: [] y total: 0.
-9. **H6-CA09 — Solo publicaciones disponibles:** verificar que el servicio incluya AVAILABLE en todas las consultas.
+- **H6-U01:** El arrendatario puede buscar publicaciones disponibles por texto.
+- **H6-U02:** El arrendatario puede combinar texto, ubicación, categoría y filtro de depósito en una búsqueda.
+- **H6-U03:** El arrendatario puede limitar los resultados a bienes de categoría PROPERTY.
+- **H6-U04:** El arrendatario puede limitar los resultados a bienes de categoría EQUIPMENT.
+- **H6-U05:** El arrendatario puede filtrar por departamento sin indicar municipio.
+- **H6-U06:** El sistema actualiza los resultados cuando el arrendatario cambia o quita filtros.
+- **H6-U07:** Si ningún bien coincide, el sistema devuelve una lista vacía y total cero.
+- **H6-U08:** Solo el rol TENANT tiene acceso al catálogo de búsqueda.
+- **H6-U09:** El sistema autoriza al arrendatario autenticado a buscar en el catálogo.
 
-### Casos negativos
+### Casos negativos ejecutados
 
-1. **H6-CA10 — Municipio sin departamento:** esperar 400 VALIDATION_ERROR y que no se consulte el repositorio.
-2. **H6-CA11 — Texto demasiado corto o largo:** enviar menos de 2 o más de 100 caracteres. Esperar rechazo de validación.
-3. **H6-CA12 — Categoría inválida:** enviar un valor distinto de PROPERTY o EQUIPMENT. Esperar rechazo de validación.
-4. **H6-CA13 — Valor inválido para “Sin depósito”:** enviar noDeposit distinto de true o false. Esperar rechazo de validación.
-5. **H6-CA14 — Rol no autorizado:** consultar el catálogo como OWNER o ADMIN. Esperar 403.
-6. **H6-CA15 — Sin sesión:** consultar el catálogo sin autenticación. Esperar 401.
-7. **H6-CA16 — Publicación no disponible:** incluir registros PAUSED y DELETED en los datos simulados y verificar que la consulta solo solicite AVAILABLE.
-
-### Resultados de ejecución
+- **H6-U10:** El sistema no permite filtrar por municipio si no se indica el departamento.
+- **H6-U11:** El sistema rechaza términos de búsqueda que no alcanzan la longitud mínima.
+- **H6-U12:** El sistema rechaza términos de búsqueda que superan la longitud máxima.
+- **H6-U13:** El sistema no acepta categorías distintas de PROPERTY o EQUIPMENT.
+- **H6-U14:** El sistema no acepta para el filtro sin depósito valores distintos de true o false.
+- **H6-U15:** Un usuario con rol OWNER no puede acceder al catálogo de búsqueda.
+- **H6-U16:** Una solicitud sin token de sesión no puede acceder al catálogo.
+- **H6-U17:** El sistema no autoriza la búsqueda si no hay un usuario autenticado.
+- **H6-U18:** El sistema rechaza el acceso al catálogo para el rol OWNER.
+- **H6-U19:** El sistema rechaza el acceso al catálogo para el rol ADMIN.
+### Tabla de resultados
 
 | ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
 |---|---|---|---|---|---|---|---|
@@ -109,3 +114,42 @@ Ejecución: `npm.cmd test -- test/unit/historia-H5.spec.ts` — Vitest reportó 
 | H6-U19 | Negativa | Módulo 2: Búsqueda y filtros / H6: Búsqueda de bienes por criterios | Rol ADMIN no autorizado | Ejecutar RolesGuard con usuario ADMIN. | Guard responde 403. | Rechazo con estado 403. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H6.spec.ts` — Vitest reportó 1 archivo aprobado y 19 pruebas aprobadas.
+
+
+## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H19-U01:** Solo el usuario TENANT puede enviar un documento para verificar su cuenta.
+- **H19-U02:** El tenant puede enviar un DUI válido con PDF y el sistema registra el documento como PENDING.
+- **H19-U03:** El tenant puede enviar un pasaporte alfanumérico válido de seis caracteres.
+- **H19-U12:** Después de un rechazo, el tenant puede enviar un documento nuevo y el trámite vuelve a PENDING.
+
+### Casos negativos ejecutados
+
+- **H19-U04:** El sistema no acepta un DUI cuyo número no cumple el formato 00000000-0.
+- **H19-U05:** El sistema no acepta un pasaporte con caracteres distintos de letras y números.
+- **H19-U06:** El sistema no permite enviar la solicitud si falta el archivo obligatorio.
+- **H19-U07:** El sistema no acepta archivos que superen el límite de 5 MB.
+- **H19-U08:** El sistema no acepta archivos con un formato distinto de JPG, PNG o PDF.
+- **H19-U09:** Los usuarios OWNER y ADMIN no pueden enviar documentos de identidad.
+- **H19-U10:** El sistema no permite enviar otro documento mientras el actual está PENDING.
+- **H19-U11:** El sistema no permite enviar documentos cuando la cuenta ya está verificada.
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H19-U01 | Positiva | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Rol TENANT requerido | Leer metadata del endpoint de envío. | Solo TENANT puede enviar. | Metadata declara únicamente TENANT. | Aprobado |
+| H19-U02 | Positiva | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Envío de DUI con archivo PDF válido | Enviar como TENANT un DUI válido y PDF con firma correcta; revisar carga, persistencia y respuesta. | Se guarda el documento con estado PENDING y se devuelve el tipo y fecha. | El archivo se carga y el repositorio recibe los datos con estado PENDING; respuesta esperada. | Aprobado |
+| H19-U03 | Positiva | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Pasaporte mínimo válido | Enviar pasaporte alfanumérico de 6 caracteres con PDF válido. | Se acepta y persiste el documento pendiente. | El documento fue aceptado y persistido. | Aprobado |
+| H19-U04 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | DUI con formato incorrecto | Enviar DUI con 7 dígitos antes del guion. | 400 VALIDATION_ERROR y no se carga archivo. | BadRequestException; carga no invocada. | Aprobado |
+| H19-U05 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Pasaporte con caracteres no alfanuméricos | Enviar pasaporte con guion. | 400 VALIDATION_ERROR y no se carga archivo. | BadRequestException; carga no invocada. | Aprobado |
+| H19-U06 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Archivo obligatorio ausente | Omitir el archivo. | 400 VALIDATION_ERROR. | BadRequestException; carga no invocada. | Aprobado |
+| H19-U07 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Archivo mayor de 5 MB | Simular archivo mayor al límite. | 400 y archivo no se carga. | BadRequestException; carga no invocada. | Aprobado |
+| H19-U08 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | MIME no permitido | Enviar text/plain. | 400 y archivo no se carga. | BadRequestException; carga no invocada. | Aprobado |
+| H19-U09 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Rol OWNER o ADMIN intenta enviar | Invocar el servicio con cada rol no permitido. | Ambos reciben 403 y no se consulta ni carga el documento. | Ambos rechazados con ForbiddenException antes de consultar perfil o cargar archivo. | Aprobado |
+| H19-U10 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Reenvío mientras hay documento pendiente | Configurar perfil con documento PENDING e intentar enviar otro. | 409 DOCUMENT_PENDING y no se carga otro archivo. | ConflictException; carga no invocada. | Aprobado |
+| H19-U11 | Negativa | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Envío con cuenta verificada | Configurar perfil verificado e intentar enviar documento. | 409 ACCOUNT_ALREADY_VERIFIED. | ConflictException; carga no invocada. | Aprobado |
+| H19-U12 | Positiva | Módulo 7: Verificación de identidad/documentos / H19: Enviar documento de identidad para verificación | Reenvío después de rechazo | Configurar documento REJECTED con motivo y enviar uno válido. | Se actualiza el registro a PENDING y se limpia el motivo previo. | Se actualizó a PENDING, se limpió el motivo y se solicitó borrar el archivo anterior. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H19.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
