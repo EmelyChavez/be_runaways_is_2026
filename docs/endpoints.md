@@ -1,4 +1,4 @@
-# Endpoints
+﻿# Endpoints
 
 Prefijo global: `/api/v1`. Swagger: `/api/docs`. Las rutas implementadas corresponden a controladores
 existentes en `src/`; las planificadas aún no tienen controlador.
@@ -18,6 +18,10 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/profile/document` | `TENANT` autenticado | `multipart/form-data`: `documentType` (`DUI`/`PASSPORT`), `documentNumber`, `documentUrl` como archivo JPG/PNG/PDF (máximo 5 MB) | `201`: `{ documentType, documentStatus: "PENDING", documentSubmittedAt }` |
 | `GET /api/v1/profile/document` | `TENANT` o `OWNER` autenticado | Sin parámetros | `200`: `{ accountStatus: UNVERIFIED/PENDING/VERIFIED/REJECTED, documentType?, documentSubmittedAt?, rejectionReason? }`; sin URL ni número del documento |
+| `GET /api/v1/profile/document/admin` | `ADMIN` | Query opcional: `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data: [{ userId, name, email, documentType, documentNumber, documentSubmittedAt }], total, page, pageSize }`; solo documentos `PENDING`, en orden ascendente por envío |
+| `GET /api/v1/profile/document/admin/:userId` | `ADMIN` | `userId` UUID | `200`: detalle del documento `PENDING` y `documentUrl` temporal para abrir el archivo privado; `404` si no existe o ya fue revisado |
+| `PATCH /api/v1/profile/document/admin/:userId/approve` | `ADMIN` | `userId` UUID | `200`: `{ userId, documentStatus: "APPROVED", isVerified: true, reviewedAt }` |
+| `PATCH /api/v1/profile/document/admin/:userId/reject` | `ADMIN` | `userId` UUID; `{ rejectionReason }` de 10 a 300 caracteres | `200`: `{ userId, documentStatus: "REJECTED", rejectionReason, reviewedAt }` |
 | `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
 | `GET /api/v1/properties` | `TENANT` autenticado | `page` opcional (por defecto 1); `q` busca sin distinguir mayúsculas ni tildes en título, descripción, departamento, municipio y dirección; `department` puede enviarse solo y `municipality` requiere `department`; permite `category`, `noDeposit=true` (depósito igual a cero), límites de precio y `startDate`/`endDate` juntos | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; solo bienes `AVAILABLE`, criterios combinados con AND, más recientes primero |
 | `PATCH /api/v1/properties/:id/status` | `OWNER` autenticado, dueño | `id` UUID; `{ "status": "AVAILABLE" | "PAUSED" }` | `200`: `{ id, status, statusChangedAt }`; bloqueado si hay reservas `PENDING` o `PAID` |
@@ -66,7 +70,7 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 
 | Área | Rutas | Acceso previsto |
 |---|---|---|
-| Verificación | `GET /api/v1/admin/verifications`; `PATCH /api/v1/admin/verifications/:userId/approve`; `PATCH /api/v1/admin/verifications/:userId/reject` | `ADMIN` |
+| Verificación | Implementada en la tabla de endpoints con rutas `/api/v1/profile/document/admin` | `ADMIN` |
 | Bienes | `GET /api/v1/properties/:id/availability`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | `TENANT`, `OWNER` o dueño según ruta |
 | Bloqueos de fechas | `POST /api/v1/properties/:id/blocks`; `GET /api/v1/properties/:id/blocks`; `DELETE /api/v1/blocks/:id` | `OWNER` dueño |
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
