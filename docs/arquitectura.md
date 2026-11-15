@@ -1,4 +1,4 @@
-# Arquitectura del backend
+﻿# Arquitectura del backend
 
 Este documento describe la organización implementada actualmente en el backend NestJS. Los módulos
 de producto que todavía no tienen controlador o servicio en `src/` se consideran pendientes de
@@ -33,7 +33,7 @@ flowchart LR
 | `auth` | Registro, login, emisión y rotación de tokens, intentos de login y guards de autenticación/autorización. |
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
-| `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y la consulta propia bajo `/profile/document`. Cloudinary almacena PDFs e imágenes autenticados bajo `runaways/documents`. |
+| `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo y detalle público de bienes disponibles. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
 | `notifications` | Servicio interno unificado para aplicar plantillas, validar y persistir avisos dirigidos a usuarios. Exporta `NotificationsService.emit` para que otros módulos lo invoquen; no expone una ruta HTTP al cliente. |
 | `health` | Health check público. |

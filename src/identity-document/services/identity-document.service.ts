@@ -11,6 +11,7 @@ import { AccountStatus, IdentityDocumentStatus, IdentityDocumentType, Prisma, Ro
 import type { User } from '@PrismaClient';
 import type { SubmitIdentityDocumentDto } from '@IdentityDocument/dto';
 import type { MyIdentityDocumentResponseDto } from '@IdentityDocument/dto';
+import type { AdminIdentityDocumentQueryDto } from '@IdentityDocument/dto';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -139,6 +140,83 @@ export class IdentityDocumentService {
           ? { rejectionReason: document.rejectionReason }
           : {}),
       }),
+    };
+  }
+
+  async listForAdmin(query: AdminIdentityDocumentQueryDto) {
+    const [documents, total] = await Promise.all([
+      this.repository.findPendingDocuments((query.page - 1) * query.pageSize, query.pageSize),
+      this.repository.countPendingDocuments(),
+    ]);
+    return {
+      data: documents.map(({ profile, documentType, documentNumber, submittedAt }) => ({
+        userId: profile.userId,
+        name: profile.user.name,
+        email: profile.user.email,
+        documentType,
+        documentNumber,
+        documentSubmittedAt: submittedAt.toISOString(),
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  async getForAdmin(userId: string) {
+    const document = await this.repository.findPendingDocumentForUser(userId);
+    if (!document) throw new NotFoundException({ code: 'DOCUMENT_NOT_FOUND', message: 'No se encontró el documento.' });
+    return {
+      userId,
+      name: document.profile.user.name,
+      email: document.profile.user.email,
+      documentType: document.documentType,
+      documentNumber: document.documentNumber,
+      documentStatus: document.documentStatus,
+      documentSubmittedAt: document.submittedAt.toISOString(),
+      documentUrl: this.cloudinary.getPrivateDownloadUrl(document.documentUrl),
+      rejectionReason: document.rejectionReason ?? undefined,
+      reviewedAt: document.reviewedAt?.toISOString(),
+    };
+  }
+
+  async approveForAdmin(userId: string) {
+    return this.reviewForAdmin(userId, IdentityDocumentStatus.APPROVED, null);
+  }
+
+  async rejectForAdmin(userId: string, reason: string) {
+    if (typeof reason !== 'string' || reason.trim().length < 10 || reason.trim().length > 300) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'El motivo debe tener entre 10 y 300 caracteres.' });
+    }
+    return this.reviewForAdmin(userId, IdentityDocumentStatus.REJECTED, reason.trim());
+  }
+
+  private async reviewForAdmin(userId: string, status: IdentityDocumentStatus, reason: string | null) {
+    const document = await this.repository.findDocumentForUser(userId);
+    if (!document) throw new NotFoundException({ code: 'DOCUMENT_NOT_FOUND', message: 'No se encontró el documento.' });
+    if (document.documentStatus !== IdentityDocumentStatus.PENDING) {
+      throw new ConflictException({ code: 'DOCUMENT_ALREADY_REVIEWED', message: 'El documento ya fue revisado.' });
+    }
+    const reviewedAt = new Date();
+    let count: number;
+    try {
+      count = await this.repository.withReviewTransaction(async (transaction) => {
+        const update = await transaction.reviewPending(userId, status, reason, reviewedAt);
+        if (update.count === 1) await transaction.setProfileVerified(userId, status === IdentityDocumentStatus.APPROVED);
+        return update.count;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException({ code: 'DOCUMENT_ALREADY_REVIEWED', message: 'El documento ya fue revisado.' });
+      }
+      throw error;
+    }
+    if (count !== 1) throw new ConflictException({ code: 'DOCUMENT_ALREADY_REVIEWED', message: 'El documento ya fue revisado.' });
+    return {
+      userId,
+      documentStatus: status,
+      ...(reason ? { rejectionReason: reason } : { isVerified: true }),
+      reviewedAt: reviewedAt.toISOString(),
     };
   }
 }
