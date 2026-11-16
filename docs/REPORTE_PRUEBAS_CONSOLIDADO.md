@@ -161,6 +161,53 @@ Ejecución: `npm.cmd test -- test/unit/historia-H6.spec.ts` — Vitest reportó 
 
 Ejecución: `npm.cmd test -- test/unit/historia-H8.spec.ts` — Vitest reportó 1 archivo aprobado y 15 pruebas aprobadas.
 
+## Módulo 3: Reservas y calendario de disponibilidad — H9: Consulta de disponibilidad de un bien (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H9-U01:** El arrendatario obtiene el rango de disponibilidad de 90 días desde la fecha actual de El Salvador.
+- **H9-U02:** El rango de fechas comprende 90 días inclusivos desde hoy.
+- **H9-U03:** Las fechas de reservas PENDING se incluyen como ocupadas.
+- **H9-U04:** Las fechas de reservas PAID se incluyen como ocupadas.
+- **H9-U05:** Los días bloqueados por el arrendador se incluyen como ocupados.
+- **H9-U06:** Los periodos fuera del horizonte se recortan y los periodos traslapados no duplican días.
+- **H9-U08:** El arrendador puede consultar su propio bien y los roles TENANT y OWNER están autorizados.
+- **H9-U09:** La consulta obtiene solo rangos de fechas, sin datos personales de las reservas.
+
+### Casos negativos ejecutados
+
+- **H9-U11:** Las reservas CANCELLED y COMPLETED no se consideran ocupadas.
+- **H9-U12:** Un bien inexistente, PAUSED o DELETED responde 404 con el mensaje «Este bien ya no está disponible».
+- **H9-U15:** El arrendador no puede consultar la disponibilidad de un bien ajeno.
+- **H9-U16:** El rol ADMIN recibe 403.
+- **H9-U17:** Una solicitud sin sesión recibe 401.
+- **H9-U18:** Un identificador que no sea UUID válido recibe 400.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H9-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Respuesta de disponibilidad | Consultar como TENANT un bien AVAILABLE y revisar los campos devueltos. | Devuelve `propertyId`, `from`, `to` y `occupiedDates`. | La respuesta contiene los cuatro campos y el rango esperado. | Aprobado |
+| H9-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Rango de 90 días en El Salvador | Fijar la hora y consultar disponibilidad. | `from` es hoy y `to` completa 90 días inclusivos. | Respuesta del 2026-11-14 al 2027-02-11, 90 días inclusivos. | Aprobado |
+| H9-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Reserva PENDING ocupa fechas | Simular periodo PENDING y consultar disponibilidad. | Todos los días del periodo aparecen en `occupiedDates`. | Se devolvieron los días de la reserva PENDING. | Aprobado |
+| H9-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Reserva PAID ocupa fechas | Simular periodo PAID y consultar disponibilidad. | Todos los días del periodo aparecen en `occupiedDates`. | Se devolvieron los días de la reserva PAID. | Aprobado |
+| H9-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Bloqueo del arrendador | Simular bloqueo de tres días y consultar disponibilidad. | Los tres días aparecen como ocupados. | Se devolvieron los tres días del bloqueo. | Aprobado |
+| H9-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Periodos fuera del horizonte | Simular rangos que cruzan los límites de `from` y `to`. | Solo se devuelven días dentro del horizonte. | Los periodos se recortaron a 2026-11-14 y 2027-02-11. | Aprobado |
+| H9-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Periodos traslapados | Simular dos periodos parcialmente superpuestos. | Las fechas salen ordenadas y sin duplicados. | Se devolvió una lista única y ordenada. | Aprobado |
+| H9-U08 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Consulta del arrendador propietario | Consultar como OWNER y verificar el propietario enviado al repositorio. | La consulta se limita al usuario autenticado. | Se envió `ownerId` junto con `propertyId`. | Aprobado |
+| H9-U09 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Consulta sin datos personales | Inspeccionar filtros y campos seleccionados en Prisma y la respuesta del servicio. | Solo se seleccionan fechas de reservas PENDING/PAID y bloqueos; no se expone quién reservó. | Prisma seleccionó inicio y fin, y la respuesta no incluye `tenant`, `tenantId` ni reservas. | Aprobado |
+| H9-U10 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Roles permitidos | Inspeccionar metadata y ejecutar RolesGuard como TENANT y OWNER. | Ambos roles pasan el guard. | La metadata incluye ambos roles y el guard autorizó a ambos. | Aprobado |
+| H9-U11 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Estados CANCELLED y COMPLETED | Inspeccionar el filtro de reservas usado por Prisma. | Solo PENDING y PAID se consultan como ocupadas. | El filtro incluye PENDING y PAID; excluye CANCELLED y COMPLETED. | Aprobado |
+| H9-U12 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Bien inexistente | Simular que el repositorio no encuentra el bien y consultar disponibilidad. | Responde 404 con el mensaje establecido y no consulta rangos. | NotFoundException 404 con «Este bien ya no está disponible»; no se consultaron rangos. | Aprobado |
+| H9-U13 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Bien PAUSED | Simular bien no elegible y consultar disponibilidad. | Responde 404 con el mensaje establecido. | NotFoundException 404; no se consultaron rangos. | Aprobado |
+| H9-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Bien DELETED | Simular bien no elegible y consultar disponibilidad. | Responde 404 con el mensaje establecido. | NotFoundException 404; no se consultaron rangos. | Aprobado |
+| H9-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Bien ajeno al arrendador | Consultar como OWNER un bien que no aparece asociado a su usuario. | Responde 404 sin consultar rangos. | NotFoundException 404; se filtró por `ownerId` y no se consultaron rangos. | Aprobado |
+| H9-U16 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Rol ADMIN | Ejecutar RolesGuard como ADMIN. | Responde 403. | RolesGuard rechazó el rol con estado 403. | Aprobado |
+| H9-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Solicitud sin sesión | Ejecutar JwtAuthGuard sin encabezado Authorization. | Responde 401. | JwtAuthGuard rechazó la solicitud con estado 401. | Aprobado |
+| H9-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H9: Consulta de disponibilidad de un bien | Identificador no UUID | Pasar texto inválido al ParseUUIDPipe. | Responde 400. | El pipe rechazó el identificador con BadRequestException. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H9.spec.ts` — Vitest reportó 1 archivo aprobado y 18 pruebas aprobadas.
+
 ## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
 
 ### Casos positivos ejecutados

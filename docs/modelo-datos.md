@@ -27,8 +27,7 @@ Diagrama conceptual de la base de datos del equipo:
 
 ## Bloqueos de disponibilidad
 
-`NoAvailability` registra los periodos que el arrendador bloquea para una propiedad. El filtro del catálogo
-los considera junto con las reservas `PAID` y `PENDING` vigentes al consultar disponibilidad.
+`NoAvailability` registra los periodos que el arrendador bloquea para una propiedad. El catálogo y el calendario los consideran junto con las reservas `PAID` y `PENDING`; la respuesta de disponibilidad solo expone los días ocupados, nunca la identidad del arrendatario.
 
 ## Enums actuales
 

@@ -188,4 +188,19 @@ export class PropertiesController {
   getDetail(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.propertiesService.getDetail(id);
   }
+
+  @Get(':id/availability')
+  @Roles(Role.TENANT, Role.OWNER)
+  @ApiOperation({ summary: 'Consulta los días ocupados de un bien durante los próximos 90 días' })
+  @ApiOkResponse({ description: 'Rango consultado y fechas ocupadas, sin datos de las reservas.' })
+  @ApiBadRequestResponse({ description: 'El ID no es un UUID válido.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un arrendatario o arrendador puede consultar disponibilidad.' })
+  @ApiNotFoundResponse({ description: 'Este bien ya no está disponible o no pertenece al arrendador.' })
+  getAvailability(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.propertiesService.getAvailability(id, user.id, user.role);
+  }
 }

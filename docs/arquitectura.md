@@ -34,7 +34,7 @@ flowchart LR
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
-| `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo y detalle público de bienes disponibles. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
+| `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
 | `notifications` | Servicio interno unificado para aplicar plantillas, validar y persistir avisos dirigidos a usuarios. Exporta `NotificationsService.emit` para que otros módulos lo invoquen; no expone una ruta HTTP al cliente. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
