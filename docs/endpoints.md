@@ -14,10 +14,10 @@ actual; los endpoints nunca reciben el destinatario desde el cliente.
 | Método y ruta | Acceso | Request | Respuesta exitosa |
 |---|---|---|---|
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
-| `GET /api/v1/notifications` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | `page` opcional (1); `limit` opcional (10, máximo 100) | `200`: `{ data, total, page, limit, totalPages }`, en orden descendente de emisión |
-| `GET /api/v1/notifications/unread-count` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | Sin parámetros | `200`: `{ unreadCount }` |
-| `PATCH /api/v1/notifications/:id/read` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | `id` UUID | `200`: notificación actualizada a `READ`; `403` si pertenece a otro usuario, `404` si no existe |
-| `PATCH /api/v1/notifications/read-all` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | Sin parámetros | `200`: `{ updatedCount }` |
+| `GET /api/v1/notifications` | Sesión (`TENANT` o `OWNER`) | `page` opcional (1); `limit` opcional (10, máximo 100) | `200`: `{ data, total, page, limit, totalPages }`, en orden descendente de emisión |
+| `GET /api/v1/notifications/unread-count` | Sesión (`TENANT` o `OWNER`) | Sin parámetros | `200`: `{ unreadCount }` |
+| `PATCH /api/v1/notifications/:id/read` | Sesión (`TENANT` o `OWNER`) | `id` UUID | `200`: notificación actualizada a `READ`; `403` si pertenece a otro usuario o el rol no está permitido, `404` si no existe |
+| `PATCH /api/v1/notifications/read-all` | Sesión (`TENANT` o `OWNER`) | Sin parámetros | `200`: `{ updatedCount }` |
 | `POST /api/v1/auth/register` | Público | `{ name, email, password }` | `201`: `{ id, email, role, name }` |
 | `POST /api/v1/auth/login` | Público | `{ email, password }` | `200`: `{ accessToken, refreshToken, expiresIn, user }` |
 | `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | `{ refreshToken }` | `200`: nuevo par de tokens y usuario |

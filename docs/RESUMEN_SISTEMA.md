@@ -30,6 +30,8 @@ Este módulo permite que el arrendatario envíe su documento para verificar la c
 
 ## Módulo 8: Notificaciones
 
-Este módulo centraliza la generación y el registro de avisos para arrendadores y arrendatarios. Sus plantillas dan un formato uniforme a eventos de reservas, pagos, depósitos de garantía, mensajería y verificación, y las notificaciones se guardan como no leídas. Solo API por ahora.
+Este módulo centraliza la generación de avisos y permite que cada usuario consulte y organice su propia bandeja. Las notificaciones se guardan como no leídas, se pueden marcar individualmente o todas y el contador refleja las pendientes. Solo API por ahora.
 
 - **H22 — Centralizar la generación y despacho de notificaciones:** los módulos solicitan avisos mediante un servicio común, que valida los datos, selecciona la plantilla del evento y registra la notificación para su destinatario. La revisión administrativa de documentos ya utiliza este flujo: al aprobar, se notifica la verificación de la cuenta; al rechazar, se comunica el motivo.
+
+- **H23 — Consultar y gestionar notificaciones:** el usuario autenticado consulta sus notificaciones ordenadas de la más reciente a la más antigua, junto con su estado, fecha y módulo de origen. Puede marcar una notificación o todas como leídas y consultar cuántas siguen pendientes.

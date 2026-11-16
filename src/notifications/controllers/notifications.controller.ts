@@ -16,7 +16,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CurrentUser } from '@Auth/decorators';
+import { CurrentUser, Roles } from '@Auth/decorators';
+import { Role } from '@PrismaClient';
 import type { User } from '@PrismaClient';
 import { NotificationQueryDto } from '../dto/index.js';
 import { NotificationsService } from '../services/index.js';
@@ -24,6 +25,7 @@ import { NotificationsService } from '../services/index.js';
 @ApiTags('notifications')
 @ApiBearerAuth()
 @Controller('notifications')
+@Roles(Role.TENANT, Role.OWNER)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
