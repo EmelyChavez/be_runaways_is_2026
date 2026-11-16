@@ -8,6 +8,7 @@ import { PrismaModule } from '@Prisma';
 import { ProfileModule } from '@Profile';
 import { PropertiesModule } from '@Properties';
 import { NotificationsModule } from '@Notifications';
+import { BookingsModule } from '@Bookings';
 import { UsersModule } from '@Users';
 import { validateEnv } from '@Config';
 
@@ -26,6 +27,7 @@ import { validateEnv } from '@Config';
     ProfileModule,
     PropertiesModule,
     NotificationsModule,
+    BookingsModule,
   ],
   providers: [
     {

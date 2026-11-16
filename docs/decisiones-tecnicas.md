@@ -88,3 +88,17 @@ los controladores no acceden directamente a la base.
 ## Integración de verificación con notificaciones
 
 Al confirmar la aprobación o el rechazo de un documento, `IdentityDocumentService` invoca `NotificationsService.emit` para el usuario propietario del documento. El evento `DOCUMENT_REJECTED` recibe el motivo para completar su plantilla; `DOCUMENT_APPROVED` usa su plantilla fija. La llamada ocurre después de persistir el cambio de estado.
+
+## Creación y vencimiento de reservas
+
+`BookingsService` valida fechas de calendario en horario de El Salvador, cuenta los días incluyendo
+inicio y fin, calcula el subtotal desde el precio guardado y establece `expiresAt` a 24 horas. La
+comprobación de traslapes con reservas `PAID`, `PENDING` no vencidas y bloqueos, junto con la creación
+`PENDING`, ocurre en una transacción serializable. Un conflicto de serialización se traduce al mismo
+`409 DATES_UNAVAILABLE` que una fecha ocupada, de modo que dos solicitudes concurrentes no confirman
+el mismo periodo.
+
+Un proceso periódico del módulo cambia reservas pendientes vencidas a `CANCELED` con una actualización
+condicional sobre el estado y vencimiento; solo el proceso que cambia la fila emite notificaciones de
+cancelación para arrendatario y arrendador. Los eventos usan `RESERVATION_CREATED` y
+`RESERVATION_CANCELED_EXPIRED` con el origen enum `RESERVATIONS`.

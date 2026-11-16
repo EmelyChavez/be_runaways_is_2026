@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 120 | 120 | 0 |
+| Unitarias | 153 | 153 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **120** | **120** | **0** |
+| **Total** | **153** | **153** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -403,3 +403,79 @@ Ejecución: `npm.cmd test -- test/unit/historia-H22.spec.ts` — Vitest reportó
 | H23-U16 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Filtro de destinatario y orden en persistencia | Inspeccionar la consulta Prisma de lista para un usuario y página. | Prisma filtra por destinatario y ordena `createdAt` descendente. | La consulta incluyó `recipientId`, orden descendente, `skip: 0` y `take: 10`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H23.spec.ts` — Vitest reportó 1 archivo aprobado y 16 pruebas aprobadas.
+
+## Módulo 3: Reservas y calendario de disponibilidad — H10: Reserva de un bien por un periodo (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H10-U01:** El arrendatario TENANT verificado crea una reserva dentro de una transacción serializable.
+- **H10-U02:** El sistema cuenta inicio y fin y calcula el subtotal con el precio guardado del bien.
+- **H10-U03:** Si inicio y fin coinciden, el periodo cuenta como un día.
+- **H10-U04:** La reserva queda PENDING y vence 24 horas después.
+- **H10-U05:** La respuesta incluye el mensaje de confirmación y el plazo de pago.
+- **H10-U06:** Al crear la reserva, se notifica al arrendador con RESERVATION_CREATED y origen RESERVATIONS.
+- **H10-U07:** Se permite crear una reserva cuando el periodo no tiene traslapes ni bloqueos.
+- **H10-U08:** Mis reservas filtra por el tenant autenticado y aplica estado y paginación.
+- **H10-U09:** Reservas de mis bienes filtra por el owner autenticado e incluye el nombre del arrendatario.
+- **H10-U10:** Al vencer una reserva PENDING, el servicio solicita notificaciones para ambas partes.
+- **H10-U11:** El DTO acepta UUID y fechas válidas con formato YYYY-MM-DD.
+- **H10-U12:** Las rutas declaran TENANT para reserva y consulta propia, y OWNER para consultar reservas de sus bienes.
+
+### Casos negativos ejecutados
+
+- **H10-U13a/b:** Se rechazan fechas inexistentes o con formato inválido.
+- **H10-U14:** Se rechaza una fecha de fin anterior al inicio.
+- **H10-U15:** Se rechaza un periodo mayor a 30 días inclusivos.
+- **H10-U16a/b:** Se rechazan fechas anteriores a hoy o posteriores al horizonte de 90 días.
+- **H10-U17:** Se rechaza un propertyId que no sea UUID.
+- **H10-U18:** Se rechazan campos no permitidos en el cuerpo de la solicitud.
+- **H10-U19:** Un perfil no verificado recibe 403 y no se crea la reserva.
+- **H10-U20:** Un bien inexistente o no disponible responde 404.
+- **H10-U21:** Un traslape con reserva activa responde 409 y no crea otra reserva.
+- **H10-U22:** Un traslape con bloqueo responde 409 y no crea una reserva.
+- **H10-U23:** Un conflicto de serialización concurrente responde 409 con el mensaje de fechas ocupadas.
+- **H10-U24:** OWNER y ADMIN reciben 403 al intentar crear una reserva.
+- **H10-U25:** Una solicitud sin sesión recibe 401.
+- **H10-U26:** La consulta del arrendatario no incluye reservas de otros usuarios.
+- **H10-U27:** La consulta del arrendador no incluye reservas de bienes ajenos.
+- **H10-U28a/d:** Se rechazan estado, página, tamaño de página o propertyId inválidos en las consultas.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H10-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Crear como arrendatario verificado | Simular perfil verificado, bien disponible y periodo libre; llamar al servicio. | Crea dentro de una transacción serializable. | Se verificó el perfil, se consultó el bien y se creó la reserva dentro de la transacción. | Aprobado |
+| H10-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Subtotal inclusivo de tres días | Reservar del 2026-11-20 al 2026-11-22 con precio diario 50.00. | Cuenta 3 días y subtotal 150.00. | El repositorio recibió el periodo inclusivo y subtotal 150.00. | Aprobado |
+| H10-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo de un día | Enviar la misma fecha de inicio y fin con precio diario 50.00. | Cuenta 1 día y subtotal 50.00. | El periodo tuvo un día y subtotal 50.00. | Aprobado |
+| H10-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado y vencimiento inicial | Crear reserva con reloj fijo y revisar persistencia y respuesta. | Estado PENDING y vencimiento exactamente 24 horas después. | Respuesta PENDING; expiresAt quedó en 2026-11-17T18:00:00.000Z. | Aprobado |
+| H10-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mensaje de confirmación | Crear una reserva válida y revisar el mensaje de respuesta. | Incluye «Reserva creada. Tienes 24 horas para pagarla.». | La respuesta contiene el mensaje esperado. | Aprobado |
+| H10-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Aviso al arrendador | Crear reserva y revisar argumentos de NotificationsService.emit. | Se notifica al owner con RESERVATION_CREATED y RESERVATIONS. | Se llamó emit con destinatario, evento, origen y referencia esperados. | Aprobado |
+| H10-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo libre | Simular ausencia de reservas activas y bloqueos, y crear reserva. | La solicitud crea la reserva. | Se consultaron ambos traslapes y se creó la reserva. | Aprobado |
+| H10-U08 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mis reservas y paginación | Consultar con tenant autenticado, page 2, pageSize 5 y status PENDING. | Devuelve solo las reservas del tenant con filtros y paginación. | El repositorio recibió tenantId y filtros; respuesta incluyó total y page solicitados. | Aprobado |
+| H10-U09 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Reservas de bienes propios | Consultar como owner con propertyId y estado, incluyendo tenant relacionado. | Devuelve reserva de bien propio con tenant.name. | Repositorio recibió ownerId y la respuesta incluyó el nombre del arrendatario. | Aprobado |
+| H10-U10 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Vencimiento y avisos a ambas partes | Procesar una reserva vencida devuelta por el repositorio. | Se cancela y se emite aviso al tenant y al owner. | Se solicitó el procesamiento y se emitieron dos avisos RESERVATION_CANCELED_EXPIRED. | Aprobado |
+| H10-U11 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | DTO con datos válidos | Validar propertyId UUID y fechas válidas. | DTO válido. | class-validator no encontró errores. | Aprobado |
+| H10-U12 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Roles de las rutas | Inspeccionar metadata y ejecutar RolesGuard para TENANT. | TENANT puede reservar y consultar sus reservas; OWNER consulta las suyas. | Metadata declaró los roles esperados y el guard autorizó TENANT. | Aprobado |
+| H10-U13a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fecha inexistente | Enviar 2026-02-30 como fecha de inicio. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U13b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Formato de fecha inválido | Enviar fecha con formato DD-MM-YYYY. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 y no consulta el repositorio. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo mayor a 30 días | Enviar periodo inclusivo de 31 días. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U16a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fechas pasadas | Enviar fechas anteriores a hoy. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U16b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fuera del horizonte | Enviar fecha final posterior a los próximos 90 días. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId inválido | Validar DTO con valor no UUID. | DTO inválido con error 400 al pasar por ValidationPipe. | class-validator encontró errores en propertyId. | Aprobado |
+| H10-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Campo adicional no permitido | Enviar subtotal adicional usando ValidationPipe estricto. | Rechaza la solicitud con 400. | ValidationPipe lanzó BadRequestException. | Aprobado |
+| H10-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Perfil sin verificar | Simular isVerified false e intentar crear. | Responde 403 y no crea la reserva. | ForbiddenException; no se buscó el bien ni se creó reserva. | Aprobado |
+| H10-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Bien inexistente o no disponible | Simular que no se encuentra bien AVAILABLE. | Responde 404 y no crea la reserva. | NotFoundException; no se creó reserva. | Aprobado |
+| H10-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con reserva activa | Simular una reserva activa en fechas coincidentes. | Responde 409 DATES_UNAVAILABLE. | ConflictException con mensaje de fechas no disponibles; no se creó reserva. | Aprobado |
+| H10-U22 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con bloqueo | Simular bloqueo del arrendador en el periodo solicitado. | Responde 409 DATES_UNAVAILABLE. | ConflictException; no se creó reserva. | Aprobado |
+| H10-U23 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitudes concurrentes | Simular error de serialización Prisma P2034. | Responde 409 con mensaje para elegir otras fechas. | El error P2034 se convirtió a DATES_UNAVAILABLE. | Aprobado |
+| H10-U24 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | OWNER y ADMIN intentan reservar | Ejecutar RolesGuard con OWNER y ADMIN en endpoint de creación. | Ambos reciben 403. | RolesGuard rechazó ambos roles con estado 403. | Aprobado |
+| H10-U25 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitud sin sesión | Ejecutar JwtAuthGuard sin Authorization. | Responde 401. | JwtAuthGuard rechazó la solicitud con estado 401. | Aprobado |
+| H10-U26 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de Mis reservas | Inspeccionar filtros Prisma para la consulta del arrendatario. | findMany y count filtran por tenantId autenticado. | Ambas consultas recibieron únicamente el tenantId de sesión. | Aprobado |
+| H10-U27 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de reservas del arrendador | Inspeccionar filtro de propietario y selección del tenant. | Limita por property.ownerId y solo selecciona tenant.name. | Prisma recibió ownerId autenticado y seleccionó únicamente el nombre del tenant. | Aprobado |
+| H10-U28a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Página inválida | Validar page 0. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U28b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Tamaño de página fuera del máximo | Validar pageSize 101. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U28c | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado inválido | Validar status UNKNOWN. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U28d | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId de filtro inválido | Validar propertyId no UUID en consulta OWNER. | DTO inválido. | class-validator encontró errores. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó 1 archivo aprobado y 33 pruebas aprobadas.
