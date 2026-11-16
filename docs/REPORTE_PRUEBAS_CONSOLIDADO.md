@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 153 | 153 | 0 |
+| Unitarias | 192 | 192 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **153** | **153** | **0** |
+| **Total** | **192** | **192** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -479,3 +479,61 @@ Ejecución: `npm.cmd test -- test/unit/historia-H23.spec.ts` — Vitest reportó
 | H10-U28d | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId de filtro inválido | Validar propertyId no UUID en consulta OWNER. | DTO inválido. | class-validator encontró errores. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó 1 archivo aprobado y 33 pruebas aprobadas.
+
+
+## Módulo 3: Reservas y calendario de disponibilidad — H12: Bloqueo de fechas no disponibles (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H12-U01:** El arrendador crea un bloqueo válido y recibe sus datos principales.
+- **H12-U02:** La lista incluye bloqueos que terminan hoy o después, ordenados por inicio.
+- **H12-U03:** Si no hay bloqueos vigentes, el sistema devuelve una lista vacía.
+- **H12-U04:** El arrendador puede eliminar un bloqueo de su propio bien.
+- **H12-U05:** Los días bloqueados aparecen como ocupados en el calendario.
+- **H12-U06:** Al eliminar un bloqueo, sus días vuelven a estar libres si ninguna reserva los ocupa.
+- **H12-U07:** Las rutas de bloqueos permiten el acceso al rol OWNER.
+
+### Casos negativos ejecutados
+
+- **H12-U08:** El sistema rechaza fechas ausentes, con formato inválido o inexistentes en el calendario.
+- **H12-U09:** El sistema no permite iniciar un bloqueo antes de hoy.
+- **H12-U10:** El sistema no permite que la fecha de fin sea anterior a la de inicio.
+- **H12-U11:** El sistema no permite fechas posteriores al horizonte de 90 días.
+- **H12-U12:** El sistema rechaza traslapes con otro bloqueo.
+- **H12-U13:** El sistema rechaza traslapes con reservas PENDING.
+- **H12-U14:** El sistema rechaza traslapes con reservas PAID.
+- **H12-U15:** El sistema no permite bloquear un bien ajeno o inexistente.
+- **H12-U16:** El sistema no permite consultar bloqueos de un bien ajeno o inexistente.
+- **H12-U17:** El sistema responde que no encuentra un bloqueo inexistente al eliminarlo.
+- **H12-U18:** El sistema no permite eliminar un bloqueo perteneciente a otro arrendador.
+- **H12-U19:** Los roles TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401.
+- **H12-U20:** El sistema rechaza identificadores que no tengan formato UUID en las tres rutas.
+- **H12-U21:** Un conflicto de serialización al crear se convierte en 409.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H12-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Crear bloqueo válido | Simular bien propio y periodo libre; llamar al servicio de creación. | Guarda el bloqueo en transacción serializable y responde con id, propertyId, fechas y createdAt. | Se verificó propiedad, se consultaron traslapes y se creó el bloqueo; la respuesta incluyó los cinco campos. | Aprobado |
+| H12-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Listado vigente ordenado | Invocar el repositorio para listar bloqueos desde hoy. | Filtra endDate mayor o igual a hoy y ordena por startDate ascendente. | Prisma recibió el filtro inclusivo y el orden ascendente por inicio. | Aprobado |
+| H12-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Lista vacía | Consultar los bloqueos del bien propio cuando el repositorio no devuelve filas. | Devuelve una lista vacía. | El servicio devolvió `[]`. | Aprobado |
+| H12-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Eliminar bloqueo propio | Simular bloqueo y bien del OWNER; solicitar eliminación. | Elimina el bloqueo propio y la operación termina sin cuerpo. | El servicio verificó propiedad y llamó al repositorio para eliminar el bloqueo. | Aprobado |
+| H12-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Días bloqueados en calendario | Devolver un bloqueo de tres días y consultar disponibilidad. | Los tres días aparecen en `occupiedDates`. | La respuesta incluyó 2026-11-20, 2026-11-21 y 2026-11-22. | Aprobado |
+| H12-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Liberar días al eliminar | Consultar disponibilidad antes y después de eliminar el bloqueo, sin reservas presentes. | Los días ocupados por el bloqueo dejan de aparecer tras eliminarlo. | Antes aparecieron tres días y después la lista quedó vacía. | Aprobado |
+| H12-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Rol OWNER permitido | Inspeccionar metadata y ejecutar RolesGuard para las tres rutas. | Las tres rutas declaran OWNER y el guard lo autoriza. | La metadata y el guard confirmaron el acceso OWNER en crear, listar y eliminar. | Aprobado |
+| H12-U08 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fechas inválidas o ausentes | Validar DTO sin fechas, con formato no ISO y con día inexistente. | El DTO produce errores de validación que se traducen a 400. | class-validator encontró errores para los tres cuerpos inválidos. | Aprobado |
+| H12-U09 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Inicio anterior a hoy | Enviar inicio 2026-11-15 con reloj fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U10 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 antes de consultar o escribir en el repositorio. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U11 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fecha fuera de horizonte | Enviar fecha 2027-02-14 con hoy fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U12 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con otro bloqueo | Simular bloqueo previo en el mismo periodo e intentar crear otro. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U13 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PENDING | Simular reserva PENDING que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PAID | Simular reserva PAID que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al crear | Simular que el bien no pertenece al arrendador de sesión. | Responde 404 y no crea bloqueo. | NotFoundException 404; no se creó el bloqueo. | Aprobado |
+| H12-U16 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al consultar | Simular que no se encuentra un bien propio y consultar su lista. | Responde 404 y no consulta los bloqueos. | NotFoundException 404; listAvailabilityBlocks no fue llamado. | Aprobado |
+| H12-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo inexistente al eliminar | Simular que la consulta del bloqueo no encuentra resultado. | Responde 404 y no elimina registros. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo de otro arrendador | Simular bloqueo existente cuyo bien no pertenece al usuario. | Responde 404 y conserva el bloqueo. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Sesión o rol no autorizado | Ejecutar RolesGuard como TENANT, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401. | RolesGuard rechazó roles y falta de usuario; JwtAuthGuard rechazó la solicitud sin token con 401. | Aprobado |
+| H12-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | UUID inválido | Pasar un ID inválido por ParseUUIDPipe para cada una de las tres rutas. | Cada ruta rechaza el ID con 400. | ParseUUIDPipe lanzó BadRequestException en las tres comprobaciones. | Aprobado |
+| H12-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Conflicto de serialización | Simular error Prisma P2034 durante la transacción de creación. | Responde 409 DATES_UNAVAILABLE. | El servicio convirtió P2034 en ConflictException con code DATES_UNAVAILABLE. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.

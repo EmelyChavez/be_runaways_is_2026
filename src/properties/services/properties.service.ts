@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
-import type { CreatePropertyRequestDto, UpdatePropertyRequestDto, UpdatePropertyStatusDto } from '@Properties/dto';
+import { AvailabilityBlockResponseDto, type CreateAvailabilityBlockDto, type CreatePropertyRequestDto, type UpdatePropertyRequestDto, type UpdatePropertyStatusDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import { BookingStatus, Prisma, PropertyStatus, Role } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
@@ -348,6 +348,84 @@ export class PropertiesService {
       to: to.toISOString().slice(0, 10),
       occupiedDates: [...occupied].sort(),
     };
+  }
+
+  async createAvailabilityBlock(ownerId: string, propertyId: string, dto: CreateAvailabilityBlockDto) {
+    const { startDate, endDate } = this.validateAvailabilityBlockPeriod(dto.startDate, dto.endDate);
+    try {
+      const block = await this.propertiesRepository.serializableTransaction(async (transaction) => {
+        const property = await this.propertiesRepository.findOwnedForAvailability(ownerId, propertyId, transaction);
+        if (!property) {
+          throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+        }
+        const [overlappingBlock, overlappingBooking] = await Promise.all([
+          this.propertiesRepository.findOverlappingAvailabilityBlock(propertyId, startDate, endDate, transaction),
+          this.propertiesRepository.findOverlappingActiveBooking(propertyId, startDate, endDate, transaction),
+        ]);
+        if (overlappingBlock || overlappingBooking) throw this.availabilityBlockConflict();
+        return this.propertiesRepository.createAvailabilityBlock(propertyId, startDate, endDate, transaction);
+      });
+      return AvailabilityBlockResponseDto.fromEntity(block);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw this.availabilityBlockConflict();
+      }
+      throw error;
+    }
+  }
+
+  async listAvailabilityBlocks(ownerId: string, propertyId: string) {
+    const property = await this.propertiesRepository.findOwnedProperty(ownerId, propertyId);
+    if (!property) {
+      throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien no existe o no te pertenece.' });
+    }
+    const blocks = await this.propertiesRepository.listAvailabilityBlocks(propertyId, this.getTodayInElSalvador());
+    return blocks.map((block) => AvailabilityBlockResponseDto.fromEntity(block));
+  }
+
+  async deleteAvailabilityBlock(ownerId: string, blockId: string): Promise<void> {
+    const block = await this.propertiesRepository.findAvailabilityBlockById(blockId);
+    if (!block) {
+      throw new NotFoundException({ code: 'AVAILABILITY_BLOCK_NOT_FOUND', message: 'El bloqueo no existe.' });
+    }
+    const property = await this.propertiesRepository.findOwnedProperty(ownerId, block.propertyId);
+    if (!property) {
+      throw new NotFoundException({ code: 'AVAILABILITY_BLOCK_NOT_FOUND', message: 'El bloqueo no existe.' });
+    }
+    await this.propertiesRepository.deleteAvailabilityBlock(blockId);
+  }
+
+  private validateAvailabilityBlockPeriod(start: string, end: string) {
+    if (!this.isDateOnly(start) || !this.isDateOnly(end)) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Las fechas deben usar el formato YYYY-MM-DD.' });
+    }
+    const startDate = new Date(`${start}T00:00:00.000Z`);
+    const endDate = new Date(`${end}T00:00:00.000Z`);
+    if (!Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime()) ||
+      startDate.toISOString().slice(0, 10) !== start || endDate.toISOString().slice(0, 10) !== end) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Las fechas indicadas no son válidas.' });
+    }
+    if (endDate < startDate) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'La fecha de fin no puede ser anterior a la fecha de inicio.' });
+    }
+    const today = this.getTodayInElSalvador();
+    const lastAvailableDate = new Date(today);
+    lastAvailableDate.setUTCDate(lastAvailableDate.getUTCDate() + AVAILABILITY_DAYS - 1);
+    if (startDate < today || endDate > lastAvailableDate) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Las fechas deben estar dentro de los próximos 90 días.' });
+    }
+    return { startDate, endDate };
+  }
+
+  private isDateOnly(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  private availabilityBlockConflict(): ConflictException {
+    return new ConflictException({
+      code: 'DATES_UNAVAILABLE',
+      message: 'Las fechas se traslapan con otro bloqueo o con una reserva PENDIENTE o PAGADA.',
+    });
   }
 
   private getTodayInElSalvador(): Date {

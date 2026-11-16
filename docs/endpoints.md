@@ -26,6 +26,9 @@ actual; los endpoints nunca reciben el destinatario desde el cliente.
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
 | `GET /api/v1/properties/:id/availability` | `TENANT` autenticado o `OWNER` dueño | `id` UUID | `200`: `{ propertyId, from, to, occupiedDates }`; fechas ISO `YYYY-MM-DD`, desde hoy hasta el día 90 inclusive |
+| `POST /api/v1/properties/:id/blocks` | `OWNER` autenticado, dueño | `id` UUID; `{ startDate, endDate }` (`YYYY-MM-DD`) | `201`: `{ id, propertyId, startDate, endDate, createdAt }`; `400` fechas inválidas/fuera del horizonte, `404` bien ajeno o inexistente, `409` traslape con bloqueo o reserva `PENDING`/`PAID` |
+| `GET /api/v1/properties/:id/blocks` | `OWNER` autenticado, dueño | `id` UUID | `200`: lista de bloqueos con fin hoy o posterior, ordenada por inicio; vacía si no hay bloqueos vigentes |
+| `DELETE /api/v1/blocks/:id` | `OWNER` autenticado, propietario del bien bloqueado | `id` UUID del bloqueo | `204`, sin cuerpo; `404` bloqueo inexistente o ajeno |
 | `POST /api/v1/bookings` | `TENANT` autenticado y verificado | `{ propertyId, startDate, endDate }` (`YYYY-MM-DD`) | `201`: reserva `PENDING`, subtotal calculado, `expiresAt` y mensaje de confirmación |
 | `GET /api/v1/bookings/mine` | `TENANT` autenticado | `status` opcional, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas del arrendatario autenticado |
 | `GET /api/v1/owner/bookings` | `OWNER` autenticado | `propertyId` y `status` opcionales, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas de bienes del arrendador, incluyendo `tenant.name` |
