@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 86 | 86 | 0 |
+| Unitarias | 104 | 104 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **86** | **86** | **0** |
+| **Total** | **104** | **104** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -257,3 +257,54 @@ Ejecución: `npm.cmd test -- test/unit/historia-H19.spec.ts` — Vitest reportó
 Ejecución: `npm.cmd test -- test/unit/historia-H20.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
 
 Nota: no se probaron las notificaciones porque el servicio del Módulo 8 no existe todavía en este backend. Los mensajes, botones y estados visuales pertenecen al frontend y no se cubren con estas pruebas unitarias.
+
+## Módulo 8: Notificaciones — H22: Centralizar la generación y despacho de notificaciones (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H22-U01:** El servicio persiste una notificación válida como `UNREAD` y devuelve el registro con su fecha de creación.
+- **H22-U02:** El servicio acepta un título de 100 caracteres y un mensaje de 250 caracteres.
+- **H22-U03:** El servicio genera los títulos y mensajes de plantilla para los diez eventos definidos.
+- **H22-U04:** El servicio acepta los cuatro valores definidos para `OriginModule`.
+- **H22-U05:** El servicio guarda `null` cuando no se proporciona la referencia opcional.
+- **H22-U06:** El repository delega la creación a Prisma y devuelve el registro resultante.
+- **H22-U07:** Al aprobar un documento, se solicita una notificación `DOCUMENT_APPROVED` para su usuario.
+- **H22-U08:** Al rechazar un documento, se solicita una notificación `DOCUMENT_REJECTED` con el motivo.
+
+### Casos negativos ejecutados
+
+- **H22-U09:** El servicio rechaza la ausencia de destinatario y no persiste una notificación.
+- **H22-U10:** El servicio rechaza un destinatario con UUID inválido.
+- **H22-U11:** El servicio responde 404 cuando el destinatario no existe y no persiste una notificación.
+- **H22-U12:** El servicio rechaza un evento fuera de `NotificationEventType`.
+- **H22-U13:** El servicio rechaza un título ausente o vacío.
+- **H22-U14:** El servicio rechaza un título de más de 100 caracteres.
+- **H22-U15:** El servicio rechaza un mensaje ausente o vacío.
+- **H22-U16:** El servicio rechaza un mensaje de más de 250 caracteres.
+- **H22-U17:** El servicio rechaza un módulo de origen ausente o fuera de `OriginModule`.
+- **H22-U18:** El servicio rechaza una referencia opcional con UUID inválido.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H22-U01 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Registro y estado por defecto | Invocar `emit` con datos válidos y referencia UUID. | El repository recibe la notificación como `UNREAD`; se devuelve el registro con fecha de creación. | El payload incluyó los datos esperados y estado `UNREAD`; el resultado devolvió la fecha configurada por el mock. | Aprobado |
+| H22-U02 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Límites máximos permitidos | Invocar `emit` con título de 100 y mensaje de 250 caracteres. | La solicitud se acepta y se crea la notificación. | La llamada terminó correctamente y devolvió la notificación `UNREAD`. | Aprobado |
+| H22-U03 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Plantillas de los eventos definidos | Invocar `emit` para los diez tipos de evento con datos de plantilla representativos. | Cada evento genera el título y mensaje unificados correspondientes. | Los diez eventos devolvieron los títulos y fragmentos de mensaje esperados. | Aprobado |
+| H22-U04 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Módulos de origen válidos | Invocar `emit` usando cada valor de `OriginModule`. | Los cuatro valores son aceptados y persistidos. | `RESERVATIONS`, `PAYMENTS`, `MESSAGING` y `VERIFICATION` fueron aceptados. | Aprobado |
+| H22-U05 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Referencia opcional omitida | Invocar `emit` sin `referenceId` y revisar el payload de creación. | La notificación se crea con referencia nula. | El repository recibió `referenceId: null`. | Aprobado |
+| H22-U06 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Persistencia delegada a Prisma | Invocar `NotificationsRepository.create` con Prisma simulado. | Prisma recibe `notification.create({ data })` y el repository devuelve el registro. | Se llamó a Prisma con el payload esperado y se devolvió el registro simulado. | Aprobado |
+| H22-U07 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Aviso de documento aprobado | Aprobar un documento pendiente y observar la llamada al servicio de notificaciones. | Se solicita `DOCUMENT_APPROVED` para el usuario, con origen `VERIFICATION` y referencia del documento. | `emit` recibió el destinatario, evento, origen y referencia esperados. | Aprobado |
+| H22-U08 | Positiva | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Aviso de documento rechazado | Rechazar un documento pendiente con motivo válido. | Se solicita `DOCUMENT_REJECTED` y se proporciona el motivo a la plantilla. | `emit` recibió el evento y `templateData` con el motivo esperado. | Aprobado |
+| H22-U09 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Destinatario ausente | Invocar `emit` sin `recipientId`. | Responde 400 y no persiste la notificación. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U10 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | UUID de destinatario inválido | Invocar `emit` con texto que no tiene formato UUID. | Responde 400. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U11 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Destinatario inexistente | Configurar el repository para no encontrar el UUID y llamar `emit`. | Responde 404 y no persiste la notificación. | Se lanzó `NotFoundException`; `create` no fue llamado. | Aprobado |
+| H22-U12 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Evento inválido | Invocar `emit` con un valor fuera de `NotificationEventType`. | Responde 400 y no persiste la notificación. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U13 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Título ausente o vacío | Invocar `emit` sin título y con título compuesto por espacios. | Ambos casos responden 400 y no persisten. | Ambos casos lanzaron `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U14 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Título fuera de límite | Invocar `emit` con título de 101 caracteres. | Responde 400 y no persiste. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U15 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Mensaje ausente o vacío | Invocar `emit` sin mensaje y con mensaje compuesto por espacios. | Ambos casos responden 400 y no persisten. | Ambos casos lanzaron `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U16 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Mensaje fuera de límite | Invocar `emit` con mensaje de 251 caracteres. | Responde 400 y no persiste. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U17 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Módulo de origen ausente o inválido | Invocar `emit` sin origen y con valor fuera de `OriginModule`. | Ambos casos responden 400 y no persisten. | Ambos casos lanzaron `BadRequestException`; `create` no fue llamado. | Aprobado |
+| H22-U18 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Referencia UUID inválida | Invocar `emit` con `referenceId` mal formado. | Responde 400 y no persiste. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H22.spec.ts` — Vitest reportó 1 archivo aprobado y 18 pruebas aprobadas.

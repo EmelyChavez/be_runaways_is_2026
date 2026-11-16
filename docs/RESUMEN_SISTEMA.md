@@ -20,4 +20,10 @@ Este módulo permite que el arrendatario envíe su documento para verificar la c
 
 - **H19 — Enviar documento de identidad para verificación:** el tenant selecciona DUI o pasaporte e informa el número y el archivo de identidad. El sistema valida que los datos y el archivo cumplan los formatos admitidos y registra el trámite como pendiente. Mientras espera revisión o si la cuenta ya está verificada, no acepta otro envío; después de un rechazo, permite presentar un documento nuevo.
 
-- **H20 — Aprobar o rechazar documentos de identidad:** el administrador consulta los documentos pendientes y revisa el archivo antes de decidir. Al aprobar, el sistema marca el documento como aprobado y la cuenta como verificada; al rechazar, guarda el motivo. Ambas decisiones registran cuándo se revisaron. Solo API por ahora; el servicio de notificaciones del Módulo 8 aún no está implementado en este backend.
+- **H20 — Aprobar o rechazar documentos de identidad:** el administrador consulta los documentos pendientes y revisa el archivo antes de decidir. Al aprobar, el sistema marca el documento como aprobado y la cuenta como verificada; al rechazar, guarda el motivo. Ambas decisiones registran cuándo se revisaron. Solo API por ahora; al aprobar o rechazar, el sistema también solicita una notificación para el usuario.
+
+## Módulo 8: Notificaciones
+
+Este módulo centraliza la generación y el registro de avisos para arrendadores y arrendatarios. Sus plantillas dan un formato uniforme a eventos de reservas, pagos, depósitos de garantía, mensajería y verificación, y las notificaciones se guardan como no leídas. Solo API por ahora.
+
+- **H22 — Centralizar la generación y despacho de notificaciones:** los módulos solicitan avisos mediante un servicio común, que valida los datos, selecciona la plantilla del evento y registra la notificación para su destinatario. La revisión administrativa de documentos ya utiliza este flujo: al aprobar, se notifica la verificación de la cuenta; al rechazar, se comunica el motivo.

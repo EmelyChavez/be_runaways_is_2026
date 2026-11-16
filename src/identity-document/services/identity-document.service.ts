@@ -222,6 +222,8 @@ export class IdentityDocumentService {
         : NotificationEventType.DOCUMENT_REJECTED,
       originModule: OriginModule.VERIFICATION,
       referenceId: document.id,
+      title: 'Documento revisado',
+      message: 'El resultado de la revisión de tu documento está disponible.',
       ...(reason ? { templateData: { reason } } : {}),
     });
     return {

@@ -13,8 +13,8 @@ export interface EmitInput {
   originModule: OriginModule;
   referenceId?: string | null;
   templateData?: Record<string, string>;
-  title?: string;
-  message?: string;
+  title: string;
+  message: string;
 }
 
 const TITLE_MAX = 100;
@@ -32,6 +32,12 @@ export class NotificationsService {
     if (!input.recipientId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.recipientId)) {
       throw new BadRequestException('destinatario_id es obligatorio');
     }
+    if (typeof input.title !== 'string' || input.title.trim().length === 0 || input.title.length > TITLE_MAX) {
+      throw new BadRequestException(`título inválido (1 a ${TITLE_MAX} caracteres)`);
+    }
+    if (typeof input.message !== 'string' || input.message.trim().length === 0 || input.message.length > MESSAGE_MAX) {
+      throw new BadRequestException(`mensaje inválido (1 a ${MESSAGE_MAX} caracteres)`);
+    }
     if (!Object.values(OriginModule).includes(input.originModule)) {
       throw new BadRequestException('modulo_origen no existe');
     }
@@ -46,7 +52,7 @@ export class NotificationsService {
     const template = notificationTemplates[input.eventType];
     const { title, message } = template
       ? template(input.templateData ?? {})
-      : { title: input.title ?? '', message: input.message ?? '' };
+      : { title: input.title, message: input.message };
 
     const cleanTitle = title.trim();
     const cleanMessage = message.trim();
