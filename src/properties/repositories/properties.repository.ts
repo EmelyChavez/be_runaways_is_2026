@@ -122,6 +122,67 @@ export class PropertiesRepository {
     return transaction.property.findFirst({ where: { id, ownerId } });
   }
 
+  findOwnedForAvailability(ownerId: string, propertyId: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.findFirst({ where: { id: propertyId, ownerId }, select: { id: true } });
+  }
+
+  findOwnedProperty(ownerId: string, propertyId: string) {
+    return this.prisma.property.findFirst({ where: { id: propertyId, ownerId }, select: { id: true } });
+  }
+
+  findOverlappingAvailabilityBlock(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.noAvailability.findFirst({
+      where: { propertyId, startDate: { lte: endDate }, endDate: { gte: startDate } },
+      select: { id: true },
+    });
+  }
+
+  findOverlappingActiveBooking(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.booking.findFirst({
+      where: {
+        propertyId,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+        status: { in: [BookingStatus.PENDING, BookingStatus.PAID] },
+      },
+      select: { id: true },
+    });
+  }
+
+  createAvailabilityBlock(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.noAvailability.create({ data: { propertyId, startDate, endDate } });
+  }
+
+  listAvailabilityBlocks(propertyId: string, from: Date) {
+    return this.prisma.noAvailability.findMany({
+      where: { propertyId, endDate: { gte: from } },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  findAvailabilityBlockById(id: string) {
+    return this.prisma.noAvailability.findUnique({ where: { id } });
+  }
+
+  deleteAvailabilityBlock(id: string) {
+    return this.prisma.noAvailability.delete({ where: { id } });
+  }
+
   updateStatus(id: string, status: PropertyStatus, transaction: Prisma.TransactionClient) {
     return transaction.property.update({ where: { id }, data: { status } });
   }
