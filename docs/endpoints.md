@@ -15,6 +15,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
+| `GET /api/v1/properties/:id/availability` | `TENANT` autenticado o `OWNER` dueño | `id` UUID | `200`: `{ propertyId, from, to, occupiedDates }`; fechas ISO `YYYY-MM-DD`, desde hoy hasta el día 90 inclusive |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/profile/document` | `TENANT` autenticado | `multipart/form-data`: `documentType` (`DUI`/`PASSPORT`), `documentNumber`, `documentUrl` como archivo JPG/PNG/PDF (máximo 5 MB) | `201`: `{ documentType, documentStatus: "PENDING", documentSubmittedAt }` |
 | `GET /api/v1/profile/document` | `TENANT` o `OWNER` autenticado | Sin parámetros | `200`: `{ accountStatus: UNVERIFIED/PENDING/VERIFIED/REJECTED, documentType?, documentSubmittedAt?, rejectionReason? }`; sin URL ni número del documento |
@@ -46,6 +47,11 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 - Detalle: `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de `TENANT`.
   Responde `404 PROPERTY_NOT_AVAILABLE` si el bien no existe o no está `AVAILABLE`, con el mensaje
   «Este bien no existe o no está disponible».
+- Disponibilidad (H9): `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de
+  `TENANT` y `OWNER`. `OWNER` solo puede consultar bienes propios. Responde `404 PROPERTY_NOT_AVAILABLE`
+  y «Este bien ya no está disponible» cuando el bien no existe, está `PAUSED`/`DELETED` o no pertenece
+  al arrendador autenticado. `occupiedDates` combina días de reservas `PENDING`/`PAID` y bloqueos del
+  arrendador dentro de los 90 días desde hoy en El Salvador; no incluye datos de quién reservó.
 - Gestión de publicaciones: el cambio de estado solo acepta `AVAILABLE` o `PAUSED`; `400` para
   estado o UUID inválido, `401` sin sesión, `403` para rol distinto de `OWNER`, `404` si el bien no
   existe o pertenece a otro usuario y `409` si está `DELETED` o tiene reservas `PENDING`/`PAID`.
@@ -71,7 +77,7 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 | Área | Rutas | Acceso previsto |
 |---|---|---|
 | Verificación | Implementada en la tabla de endpoints con rutas `/api/v1/profile/document/admin` | `ADMIN` |
-| Bienes | `GET /api/v1/properties/:id/availability`; `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | `TENANT`, `OWNER` o dueño según ruta |
+| Bienes | `PATCH /api/v1/properties/:id/status`; `DELETE /api/v1/properties/:id` | `OWNER` dueño |
 | Bloqueos de fechas | `POST /api/v1/properties/:id/blocks`; `GET /api/v1/properties/:id/blocks`; `DELETE /api/v1/blocks/:id` | `OWNER` dueño |
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import type { CreatePropertyRequestDto } from '@Properties/dto';
-import { Prisma, PropertyStatus, type Property } from '@PrismaClient';
+import { BookingStatus, Prisma, PropertyStatus, type Property } from '@PrismaClient';
 
 const CATALOG_PAGE_SIZE = 12;
 @Injectable()
@@ -177,6 +177,36 @@ export class PropertiesRepository {
         owner: { select: { id: true, name: true } },
       },
     });
+  }
+
+  findAvailabilityProperty(id: string, ownerId?: string) {
+    return this.prisma.property.findFirst({
+      where: {
+        id,
+        status: PropertyStatus.AVAILABLE,
+        ...(ownerId && { ownerId }),
+      },
+      select: { id: true },
+    });
+  }
+
+  async findOccupiedRanges(propertyId: string, from: Date, to: Date) {
+    const [bookings, blocks] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: {
+          propertyId,
+          status: { in: [BookingStatus.PENDING, BookingStatus.PAID] },
+          startDate: { lte: to },
+          endDate: { gte: from },
+        },
+        select: { startDate: true, endDate: true },
+      }),
+      this.prisma.noAvailability.findMany({
+        where: { propertyId, startDate: { lte: to }, endDate: { gte: from } },
+        select: { startDate: true, endDate: true },
+      }),
+    ]);
+    return [...bookings, ...blocks];
   }
 
   findPropertyRating(propertyId: string) {

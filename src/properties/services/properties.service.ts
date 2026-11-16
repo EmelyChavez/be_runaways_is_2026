@@ -8,13 +8,15 @@ import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
 import type { CreatePropertyRequestDto, UpdatePropertyRequestDto, UpdatePropertyStatusDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
-import { BookingStatus, Prisma, PropertyStatus } from '@PrismaClient';
+import { BookingStatus, Prisma, PropertyStatus, Role } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
 import type { PropertyCatalogQueryDto } from '@Properties/dto';
 
 const CATALOG_PAGE_SIZE = 12;
 const MAX_IMAGES = 5;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const EL_SALVADOR_TIME_ZONE = 'America/El_Salvador';
+const AVAILABILITY_DAYS = 90;
 
 export interface PropertyImageFile {
   buffer: Buffer;
@@ -313,5 +315,49 @@ export class PropertiesService {
       ownerReviewCount: ownerRating._count._all,
       reviews,
     };
+  }
+
+  async getAvailability(id: string, userId: string, role: Role) {
+    const property = await this.propertiesRepository.findAvailabilityProperty(
+      id,
+      role === Role.OWNER ? userId : undefined,
+    );
+    if (!property) {
+      throw new NotFoundException({
+        code: 'PROPERTY_NOT_AVAILABLE',
+        message: 'Este bien ya no está disponible',
+      });
+    }
+
+    const from = this.getTodayInElSalvador();
+    const to = new Date(from);
+    to.setUTCDate(to.getUTCDate() + AVAILABILITY_DAYS - 1);
+    const ranges = await this.propertiesRepository.findOccupiedRanges(property.id, from, to);
+    const occupied = new Set<string>();
+    for (const range of ranges) {
+      const start = new Date(Math.max(range.startDate.getTime(), from.getTime()));
+      const end = new Date(Math.min(range.endDate.getTime(), to.getTime()));
+      for (const day = new Date(start); day <= end; day.setUTCDate(day.getUTCDate() + 1)) {
+        occupied.add(day.toISOString().slice(0, 10));
+      }
+    }
+
+    return {
+      propertyId: property.id,
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+      occupiedDates: [...occupied].sort(),
+    };
+  }
+
+  private getTodayInElSalvador(): Date {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: EL_SALVADOR_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+    return new Date(`${values.year}-${values.month}-${values.day}T00:00:00.000Z`);
   }
 }
