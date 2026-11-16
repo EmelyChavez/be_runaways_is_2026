@@ -16,11 +16,13 @@ Este módulo ayuda al arrendatario a reducir el catálogo hasta encontrar bienes
 
 ## Módulo 3: Reservas y calendario de disponibilidad
 
-Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la reserva de un bien. El calendario y la creación de reservas consideran los periodos ya ocupados; las reservas pendientes tienen un plazo para pagarse y liberan las fechas al vencer. El arrendador puede consultar las reservas de sus propios bienes.
+Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la reserva de un bien; el calendario y las reservas consideran los periodos ocupados, y las reservas pendientes liberan las fechas si vencen sin pago. El arrendador consulta las solicitudes de sus bienes y bloquea fechas en que no los ofrecerá. Por ahora, estas funciones están disponibles mediante la API del backend.
 
 - **H9 — Consulta de disponibilidad de un bien:** el arrendatario consulta el calendario de 90 días de un bien antes de solicitar una reserva. El sistema marca como ocupados los días incluidos en reservas PENDIENTES o PAGADAS y en bloqueos del arrendador; las reservas CANCELADAS y FINALIZADAS no ocupan fechas. La respuesta solo indica qué fechas están ocupadas, sin revelar quién reservó; si el bien está pausado o eliminado, el sistema informa que ya no está disponible.
 
 - **H10 — Reserva de un bien por un periodo:** el arrendatario elige un periodo y confirma la solicitud; el sistema calcula el subtotal usando el precio del bien y crea una reserva pendiente si las fechas siguen disponibles. La reserva ocupa el periodo durante 24 horas para que pueda pagarse; si vence sin pago, se cancela y libera las fechas. El arrendatario consulta sus propias reservas y el arrendador las solicitudes de sus bienes.
+
+- **H12 — Bloqueo de fechas no disponibles:** el arrendador bloquea un periodo de su bien para que no pueda ser reservado y, después de confirmar, puede eliminar ese bloqueo. El sistema muestra los bloqueos vigentes ordenados por fecha y refleja esos días como ocupados en el calendario; no acepta fechas fuera del rango permitido ni periodos que se traslapen con otro bloqueo o con una reserva pendiente o pagada.
 
 ## Módulo 7: Verificación de identidad/documentos
 

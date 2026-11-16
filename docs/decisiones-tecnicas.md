@@ -10,6 +10,15 @@ y concentran consultas, escrituras y transacciones. Los controladores se limitan
 Esto permite mantener reglas fuera de los controladores y probar los servicios sin acoplarlos al
 formato de consultas de Prisma.
 
+## Bloqueos de disponibilidad
+
+El controlador limita el acceso a `OWNER` y utiliza DTOs para el cuerpo y la respuesta. La validación
+del rango (fecha local de El Salvador, orden y horizonte de 90 días), autorización de propiedad y
+decisión de conflicto viven en `PropertiesService`; `PropertiesRepository` solo encapsula las
+consultas y persistencia Prisma. La creación usa una transacción serializable para evitar que
+solicitudes concurrentes creen bloqueos incompatibles con otros bloqueos o reservas `PENDING`/`PAID`.
+Los días son inclusivos, igual que en las reservas.
+
 ## Envío interno de notificaciones
 
 `NotificationsService.emit` es la fachada única para que otros módulos soliciten avisos. Las

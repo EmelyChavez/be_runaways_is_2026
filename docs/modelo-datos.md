@@ -27,6 +27,10 @@ Diagrama conceptual de la base de datos del equipo:
 
 ## Bloqueos de disponibilidad
 
+H12 crea y administra estos periodos con `id`, `propertyId`, `startDate`, `endDate` y `createdAt`.
+Los días son inclusivos, y solo el arrendador propietario puede crearlos o eliminarlos. El listado
+incluye bloqueos cuyo fin es hoy o posterior y los ordena por fecha de inicio; los bloqueos también forman parte de `occupiedDates` del calendario.
+
 `NoAvailability` registra los periodos que el arrendador bloquea para una propiedad. El catálogo y el calendario los consideran junto con las reservas `PAID` y `PENDING`; la respuesta de disponibilidad solo expone los días ocupados, nunca la identidad del arrendatario.
 
 ## Enums actuales
