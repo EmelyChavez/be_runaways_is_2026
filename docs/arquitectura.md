@@ -35,6 +35,7 @@ flowchart LR
 | `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. |
+| `bookings` | Creación de reservas pendientes, validación de disponibilidad y perfil verificado, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
 | `notifications` | Servicio interno unificado para emitir avisos y API autenticada para consultar la bandeja, el contador de no leídas y marcar notificaciones propias como leídas. El destinatario de cada consulta se obtiene de la sesión. |
 | `health` | Health check público. |
 | `prisma` | Configura y exporta el cliente Prisma para los repositorios. |
@@ -60,6 +61,11 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   valida las imágenes y coordina su carga a `CloudinaryService`; `PropertiesRepository` guarda el bien
   y las URLs seguras en PostgreSQL. Si falla la persistencia, elimina las imágenes cargadas durante
   esa solicitud.
+- Reserva: `BookingsController` obtiene el arrendatario de la sesión y delega a `BookingsService`.
+  El servicio valida el periodo y la verificación de cuenta; `BookingsRepository` comprueba reservas y
+  bloqueos y crea la reserva en una transacción serializable. Después solicita el aviso al arrendador
+  mediante `NotificationsService`. El servicio de reservas también procesa periódicamente reservas
+  `PENDING` cuyo plazo de pago venció, las cambia a `CANCELED` y solicita avisos a ambas partes.
 
 ## Validación y documentación HTTP
 

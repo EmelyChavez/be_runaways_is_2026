@@ -20,7 +20,7 @@ Diagrama conceptual de la base de datos del equipo:
 | `RefreshToken` | Sesión renovable. Guarda `tokenHash` único, `userId`, `expiresAt`, `revokedAt` y `createdAt`; nunca almacena el refresh token en claro. |
 | `LoginAttempt` | Contador por identificador HMAC (`keyHash`), con `attempts`, inicio de ventana, vencimiento y `lockedUntil`. No guarda el correo en claro. |
 | `Property` | Bien de un `owner` con título (máximo 100 caracteres), descripción, categoría, ubicación, precio, depósito, arreglo `images` y estado. `images` es `String[]` con URLs seguras de Cloudinary. |
-| `Booking` | Reserva una propiedad por un `tenant`, con fechas, subtotal, estado y fecha de expiración. |
+| `Booking` | Reserva un bien por un `tenant`, con periodo inclusivo, subtotal calculado desde `Property.pricePerDay`, estado y `expiresAt`. Una reserva nueva queda `PENDING`; al vencer sin pago pasa a `CANCELED` y deja de ocupar las fechas. |
 | `Deposit` | Depósito asociado 1 a 1 con una reserva; puede tener un `decidedBy` opcional y guarda monto, estado, montos devuelto/retenido y fechas de decisión. |
 | `Review` | Reseña asociada a una reserva (`reservationId` referencia `Booking.id`), un bien, autor y usuario objetivo. `RENTER_TO_PROPERTY` requiere `propertyRating`; `OWNER_TO_RENTER` no la usa. `userRating` siempre es obligatorio. Ambas puntuaciones van de 1 a 5 y `comment` admite hasta 200 caracteres. |
 | `Notification` | Aviso dirigido a un usuario con evento, módulo de origen, título (máximo 100), mensaje (máximo 250), referencia UUID opcional, estado `UNREAD`/`READ` y marcas de tiempo. |

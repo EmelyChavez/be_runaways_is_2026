@@ -16,9 +16,11 @@ Este módulo ayuda al arrendatario a reducir el catálogo hasta encontrar bienes
 
 ## Módulo 3: Reservas y calendario de disponibilidad
 
-Este módulo ayuda al arrendatario a consultar fechas disponibles antes de solicitar una reserva. El calendario considera tanto las reservas activas como los bloqueos definidos por el arrendador, y permite que este consulte los bloqueos de sus propios bienes.
+Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la reserva de un bien. El calendario y la creación de reservas consideran los periodos ya ocupados; las reservas pendientes tienen un plazo para pagarse y liberan las fechas al vencer. El arrendador puede consultar las reservas de sus propios bienes.
 
 - **H9 — Consulta de disponibilidad de un bien:** el arrendatario consulta el calendario de 90 días de un bien antes de solicitar una reserva. El sistema marca como ocupados los días incluidos en reservas PENDIENTES o PAGADAS y en bloqueos del arrendador; las reservas CANCELADAS y FINALIZADAS no ocupan fechas. La respuesta solo indica qué fechas están ocupadas, sin revelar quién reservó; si el bien está pausado o eliminado, el sistema informa que ya no está disponible.
+
+- **H10 — Reserva de un bien por un periodo:** el arrendatario elige un periodo y confirma la solicitud; el sistema calcula el subtotal usando el precio del bien y crea una reserva pendiente si las fechas siguen disponibles. La reserva ocupa el periodo durante 24 horas para que pueda pagarse; si vence sin pago, se cancela y libera las fechas. El arrendatario consulta sus propias reservas y el arrendador las solicitudes de sus bienes.
 
 ## Módulo 7: Verificación de identidad/documentos
 
