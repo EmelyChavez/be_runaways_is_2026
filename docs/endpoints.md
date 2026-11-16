@@ -63,12 +63,12 @@ actual; los endpoints nunca reciben el destinatario desde el cliente.
 - Detalle: `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de `TENANT`.
   Responde `404 PROPERTY_NOT_AVAILABLE` si el bien no existe o no está `AVAILABLE`, con el mensaje
   «Este bien no existe o no está disponible».
-- Disponibilidad (H9): `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de
+- Disponibilidad: `400` si `id` no es UUID, `401` sin sesión y `403` para roles distintos de
   `TENANT` y `OWNER`. `OWNER` solo puede consultar bienes propios. Responde `404 PROPERTY_NOT_AVAILABLE`
   y «Este bien ya no está disponible» cuando el bien no existe, está `PAUSED`/`DELETED` o no pertenece
   al arrendador autenticado. `occupiedDates` combina días de reservas `PENDING`/`PAID` y bloqueos del
   arrendador dentro de los 90 días desde hoy en El Salvador; no incluye datos de quién reservó.
-- Reservas (H10): `POST /api/v1/bookings` responde `400 VALIDATION_ERROR` para fechas inválidas,
+- Reservas: `POST /api/v1/bookings` responde `400 VALIDATION_ERROR` para fechas inválidas,
   fecha final anterior, fechas fuera de los próximos 90 días o periodos mayores de 30 días; `401`
   sin sesión; `403` para roles distintos de `TENANT` o perfil sin verificar; `404 PROPERTY_NOT_AVAILABLE`
   si el bien no existe o no está `AVAILABLE`; y `409 DATES_UNAVAILABLE` si una reserva activa o un
