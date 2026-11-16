@@ -197,7 +197,7 @@ Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/
 ### Reportes
 | Método y ruta | Rol |
 |---|---|
-| `GET /api/v1/income/report` | OWNER; H24, ingresos acumulados con filtros opcionales `from` y `to` |
+| `GET /api/v1/income/reports` | OWNER, ingresos acumulados con filtros opcionales `from` y `to` |
 | `GET /api/v1/owner/reports/income/by-property` | OWNER |
 | `GET /api/v1/owner/reports/ratings` | OWNER |
 | `GET /api/v1/owner/reports/occupancy` | OWNER |

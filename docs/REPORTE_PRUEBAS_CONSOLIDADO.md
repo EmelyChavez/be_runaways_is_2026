@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 192 | 192 | 0 |
+| Unitarias | 204 | 204 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **192** | **192** | **0** |
+| **Total** | **204** | **204** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -537,3 +537,42 @@ Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó
 | H12-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Conflicto de serialización | Simular error Prisma P2034 durante la transacción de creación. | Responde 409 DATES_UNAVAILABLE. | El servicio convirtió P2034 en ConflictException con code DATES_UNAVAILABLE. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+
+## Módulo 9: Panel de reportes para el arrendador — H24: Ingresos totales (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H24-U01:** El sistema suma los alquileres de reservas pagadas y finalizadas y devuelve los montos con dos decimales.
+- **H24-U02:** El sistema suma el monto retenido de depósitos retenidos o parcialmente retenidos.
+- **H24-U03:** El sistema filtra alquileres por fecha de pago y depósitos por fecha de decisión.
+- **H24-U04:** El sistema limita el cálculo a propiedades del arrendador autenticado.
+- **H24-U05:** El sistema muestra `0.00` en todos los montos cuando no hay ingresos.
+- **H24-U06:** El sistema permite consultar el reporte al usuario autenticado con rol `OWNER`.
+
+### Casos negativos ejecutados
+
+- **H24-U07:** El sistema excluye reservas pendientes o canceladas y depósitos pendientes o devueltos.
+- **H24-U08:** El sistema rechaza fechas ISO inválidas en `from` o `to` con error 400.
+- **H24-U09:** El sistema rechaza una fecha `to` anterior a `from` con `400 VALIDATION_ERROR`.
+- **H24-U10:** El sistema rechaza la consulta sin sesión con 401.
+- **H24-U11:** El sistema deniega el reporte a `TENANT` con 403.
+- **H24-U12:** El sistema deniega el reporte a `ADMIN` con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H24-U01 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Suma de alquileres pagados y finalizados | Simular agregado de `rentalAmount` por 450.00 y consultar el servicio. | Devuelve alquileres y total como `450.00`, con los demás montos a `0.00`. | El servicio devolvió `rentalIncome: 450.00`, `totalIncome: 450.00` y formato de dos decimales. | Aprobado |
+| H24-U02 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Suma del monto retenido | Simular agregado de `retainedAmount` por 75.50 y consultar el servicio. | Devuelve depósito retenido y total como `75.50`. | El servicio devolvió `retainedDepositIncome: 75.50` y `totalIncome: 75.50`. | Aprobado |
+| H24-U03 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Filtros por fecha según tipo de ingreso | Consultar el repositorio con límites desde 2026-11-01 hasta 2026-11-30. | Prisma filtra pagos por `createdAt` y depósitos por `decidedAt`, incluyendo los límites. | Las dos agregaciones recibieron sus filtros de fecha correspondientes y los límites inclusivos. | Aprobado |
+| H24-U04 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Propiedades del arrendador autenticado | Ejecutar las dos consultas con el ID del arrendador y revisar el filtro relacionado. | Ambas consultas filtran las reservas mediante `booking.property.ownerId` de la sesión. | Las consultas Prisma incluyeron el `ownerId` recibido en ambas relaciones de reserva y propiedad. | Aprobado |
+| H24-U05 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Período sin ingresos | Simular agregados vacíos y consultar sin fechas. | Devuelve `0.00` para alquileres, depósitos retenidos y total; `from` y `to` son `null`. | El servicio devolvió los tres montos como `0.00` y ambos límites como `null`. | Aprobado |
+| H24-U06 | Positiva | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Acceso del rol OWNER | Ejecutar `RolesGuard` con una sesión `OWNER` y metadata requerida `OWNER`. | El guard permite el acceso al reporte. | `RolesGuard` permitió la consulta del usuario `OWNER`. | Aprobado |
+| H24-U07 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Exclusión de estados no elegibles | Inspeccionar agregaciones para pagos y depósitos. | Pagos solo consideran reservas `PAID`/`COMPLETED` y depósitos solo `RETAINED`/`PARTIALLY_RETAINED`. | Prisma recibió los estados admitidos y suma `rentalAmount` y `retainedAmount`, excluyendo los demás estados. | Aprobado |
+| H24-U08 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Formato de fechas inválido | Validar `from` y `to` con texto inválido y fecha inexistente. | El DTO produce errores de validación que responden 400. | class-validator rechazó ambos valores para los dos parámetros. | Aprobado |
+| H24-U09 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Rango de fechas invertido | Consultar con `from: 2026-11-20` y `to: 2026-11-01`. | Responde 400 con código `VALIDATION_ERROR`. | El servicio lanzó `BadRequestException` con `VALIDATION_ERROR`. | Aprobado |
+| H24-U10 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Consulta sin sesión | Ejecutar `JwtAuthGuard` sin encabezado Bearer. | El guard rechaza la solicitud con 401. | Se lanzó `UnauthorizedException`. | Aprobado |
+| H24-U11 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Rol TENANT no permitido | Ejecutar `RolesGuard` para `TENANT` en la ruta H24. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
+| H24-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H24. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
