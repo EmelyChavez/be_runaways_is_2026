@@ -6,13 +6,18 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 ## Implementados
 
 El servicio interno de notificaciones de H22 se invoca mediante `NotificationsService.emit` desde
-otros módulos del backend; no tiene endpoint HTTP expuesto. Los eventos con plantilla generan el
-título y mensaje unificados; los avisos sin plantilla usan los textos proporcionados. La notificación
-se crea como `UNREAD` y el destinatario inexistente produce `404 RECIPIENT_NOT_FOUND`.
+otros módulos del backend. Los eventos con plantilla generan el título y mensaje unificados; los
+avisos sin plantilla usan los textos proporcionados. La notificación se crea como `UNREAD` y el
+destinatario inexistente produce `404 RECIPIENT_NOT_FOUND`. H23 expone la bandeja para la sesión
+actual; los endpoints nunca reciben el destinatario desde el cliente.
 
 | Método y ruta | Acceso | Request | Respuesta exitosa |
 |---|---|---|---|
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
+| `GET /api/v1/notifications` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | `page` opcional (1); `limit` opcional (10, máximo 100) | `200`: `{ data, total, page, limit, totalPages }`, en orden descendente de emisión |
+| `GET /api/v1/notifications/unread-count` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | Sin parámetros | `200`: `{ unreadCount }` |
+| `PATCH /api/v1/notifications/:id/read` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | `id` UUID | `200`: notificación actualizada a `READ`; `403` si pertenece a otro usuario, `404` si no existe |
+| `PATCH /api/v1/notifications/read-all` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | Sin parámetros | `200`: `{ updatedCount }` |
 | `POST /api/v1/auth/register` | Público | `{ name, email, password }` | `201`: `{ id, email, role, name }` |
 | `POST /api/v1/auth/login` | Público | `{ email, password }` | `200`: `{ accessToken, refreshToken, expiresIn, user }` |
 | `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | `{ refreshToken }` | `200`: nuevo par de tokens y usuario |
@@ -42,6 +47,9 @@ se crea como `UNREAD` y el destinatario inexistente produce `404 RECIPIENT_NOT_F
   fallos en la ventana definida responde `429`. Una cuenta deshabilitada responde `403`.
 - Refresh inválido, vencido o revocado responde `401`. Logout es idempotente y responde `204`.
 - `/auth/me` responde `401` sin access token válido.
+- Notificaciones: todas las rutas requieren sesión. La bandeja y el contador solo consultan registros
+  de la identidad autenticada; marcar una notificación ajena responde `403`, y un ID inexistente
+  responde `404`. La página debe ser un entero positivo y el límite entre 1 y 100; por defecto es 10.
 - Catálogo: `400 VALIDATION_ERROR` si `page` no es un entero positivo, `q` tiene menos de 2 o más de 100 caracteres, `category` o `noDeposit` son inválidos, un precio es inválido o
   `minPrice` es mayor que `maxPrice`; `401` sin sesión. Se puede enviar solo uno de los límites.
   Los límites son inclusivos. La búsqueda textual ignora mayúsculas y tildes; la búsqueda textual y
