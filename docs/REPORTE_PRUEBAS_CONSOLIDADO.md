@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 104 | 104 | 0 |
+| Unitarias | 120 | 120 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **104** | **104** | **0** |
+| **Total** | **120** | **120** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -355,3 +355,51 @@ Nota: no se probaron las notificaciones porque el servicio del Módulo 8 no exis
 | H22-U18 | Negativa | Módulo 8: Notificaciones / H22: Centralizar la generación y despacho de notificaciones | Referencia UUID inválida | Invocar `emit` con `referenceId` mal formado. | Responde 400 y no persiste. | Se lanzó `BadRequestException`; `create` no fue llamado. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H22.spec.ts` — Vitest reportó 1 archivo aprobado y 18 pruebas aprobadas.
+
+
+## Módulo 8: Notificaciones — H23: Consultar y gestionar notificaciones (Pruebas unitarias)
+
+### Casos positivos ejecutados
+
+- **H23-U01:** El usuario autenticado puede consultar sus notificaciones ordenadas de la más reciente a la más antigua.
+- **H23-U02:** Cada notificación incluye título, mensaje, fecha y hora de emisión, módulo de origen y estado, junto con los datos de paginación.
+- **H23-U03:** El sistema devuelve la bandeja paginada de 10 en 10 registros por defecto.
+- **H23-U04:** El usuario puede consultar la página siguiente sin repetir notificaciones de la página anterior.
+- **H23-U05:** El contador muestra la cantidad de notificaciones `UNREAD` del usuario autenticado.
+- **H23-U06:** El usuario puede marcar una notificación propia como `READ` y el contador de no leídas disminuye en uno.
+- **H23-U07:** El usuario puede marcar todas sus notificaciones pendientes como leídas y el sistema devuelve la cantidad actualizada.
+- **H23-U08:** Si no hay notificaciones, el sistema devuelve una lista vacía y total cero.
+- **H23-U09:** Los usuarios autenticados con rol `TENANT` o `OWNER` pueden consultar y gestionar su propia bandeja.
+- **H23-U16:** El repositorio limita la consulta al usuario autenticado y ordena los registros por fecha descendente.
+
+### Casos negativos ejecutados
+
+- **H23-U10:** El sistema rechaza una página cero o negativa con respuesta 400.
+- **H23-U11:** El sistema rechaza un límite no entero, menor que 1 o mayor que 100 con respuesta 400.
+- **H23-U12:** El sistema no permite marcar como leída una notificación de otro usuario y responde 403.
+- **H23-U13:** El sistema responde 404 cuando se intenta marcar una notificación inexistente.
+- **H23-U14:** Una solicitud sin sesión no puede consultar ni modificar la bandeja y recibe 401.
+- **H23-U15:** El usuario con rol `ADMIN` no puede consultar ni gestionar la bandeja y recibe 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H23-U01 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Bandeja ordenada para el usuario actual | Consultar la página inicial con el ID del usuario y comparar fechas consecutivas. | Se consultan solo sus registros, del más reciente al más antiguo. | El servicio consulta con el ID de sesión y la lista queda en orden descendente. | Aprobado |
+| H23-U02 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Datos de cada notificación y paginación | Consultar bandeja con avisos de estados y orígenes distintos. | La respuesta conserva título, mensaje, fecha, origen, estado y metadatos de página. | La respuesta contiene los campos de aviso y `total`, `page`, `limit` y `totalPages`. | Aprobado |
+| H23-U03 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Límite predeterminado de página | Crear el DTO por defecto y consultar con sus valores. | La primera página consulta 10 registros. | El DTO usa página 1 y límite 10; el repositorio recibe `skip: 0`, `take: 10`. | Aprobado |
+| H23-U04 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Consulta de página siguiente | Consultar página 2 con límite 10 y revisar el desplazamiento solicitado. | La consulta empieza después de los primeros 10 registros. | El repositorio recibe `skip: 10`, `take: 10`. | Aprobado |
+| H23-U05 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Contador de no leídas | Consultar el contador del usuario autenticado. | Devuelve `{ unreadCount: 2 }` para dos registros `UNREAD`. | El servicio delegó el conteo con el ID del usuario y devolvió 2. | Aprobado |
+| H23-U06 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Marcar una notificación como leída | Consultar contador, marcar aviso propio y consultar contador nuevamente. | La notificación cambia a `READ` y el contador baja en uno. | La respuesta quedó en `READ`; el contador pasó de 2 a 1. | Aprobado |
+| H23-U07 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Marcar todas como leídas | Solicitar marcado en lote para el usuario actual. | Actualiza sus pendientes y devuelve `updatedCount`. | El repositorio se invocó con el ID del usuario y la respuesta fue `{ updatedCount: 2 }`. | Aprobado |
+| H23-U08 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Bandeja sin notificaciones | Simular lista y total vacíos y consultar la página inicial. | Devuelve lista vacía y total cero. | La respuesta fue `{ data: [], total: 0, page: 1, limit: 10, totalPages: 0 }`. | Aprobado |
+| H23-U09 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Acceso para roles permitidos | Ejecutar `RolesGuard` para `TENANT` y `OWNER`. | Ambos roles pueden acceder con sesión. | El guard permitió el acceso para ambos roles. | Aprobado |
+| H23-U10 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Página cero o negativa | Validar DTO con página 0 y -1. | Ambos valores son rechazados con error 400. | La validación produjo errores para ambos valores. | Aprobado |
+| H23-U11 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Límite de página inválido | Validar DTO con límite 0, 101, decimal y texto no numérico. | Todos los valores inválidos son rechazados con error 400. | La validación produjo errores para los cuatro valores. | Aprobado |
+| H23-U12 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Aviso perteneciente a otro usuario | Intentar marcar un aviso cuyo `recipientId` es distinto al usuario de sesión. | Responde 403 y no modifica el aviso. | Se lanzó `ForbiddenException` y `markRead` no fue invocado. | Aprobado |
+| H23-U13 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Aviso inexistente | Intentar marcar un ID que no existe. | Responde 404 y no modifica registros. | Se lanzó `NotFoundException` y `markRead` no fue invocado. | Aprobado |
+| H23-U14 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Consulta sin sesión | Ejecutar `JwtAuthGuard` sin encabezado de autorización. | El guard rechaza la solicitud con 401. | Se lanzó `UnauthorizedException`. | Aprobado |
+| H23-U15 | Negativa | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en las rutas de notificaciones. | El guard rechaza el acceso con respuesta 403. | Se lanzó `ForbiddenException`. | Aprobado |
+| H23-U16 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Filtro de destinatario y orden en persistencia | Inspeccionar la consulta Prisma de lista para un usuario y página. | Prisma filtra por destinatario y ordena `createdAt` descendente. | La consulta incluyó `recipientId`, orden descendente, `skip: 0` y `take: 10`. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H23.spec.ts` — Vitest reportó 1 archivo aprobado y 16 pruebas aprobadas.
