@@ -10,6 +10,7 @@ import { PropertiesModule } from '@Properties';
 import { NotificationsModule } from '@Notifications';
 import { BookingsModule } from '@Bookings';
 import { UsersModule } from '@Users';
+import { IncomeModule } from '@Income';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -28,6 +29,7 @@ import { validateEnv } from '@Config';
     PropertiesModule,
     NotificationsModule,
     BookingsModule,
+    IncomeModule,
   ],
   providers: [
     {
