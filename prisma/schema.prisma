@@ -84,6 +84,31 @@ enum AccountStatus {
   REJECTED
 }
 
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+enum OriginModule {
+  RESERVATIONS
+  PAYMENTS
+  MESSAGING
+  VERIFICATION
+}
+
+enum NotificationEventType {
+  RESERVATION_CREATED
+  PAYMENT_CONFIRMED
+  RESERVATION_CANCELED_EXPIRED
+  RESERVATION_FINISHED
+  MESSAGE_NEW
+  DEPOSIT_RETURNED
+  DEPOSIT_RETURNED_AUTO
+  DEPOSIT_RETAINED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   role         Role     @default(TENANT)
@@ -101,6 +126,7 @@ model User {
   depositsDecided Deposit[]      @relation("DepositDecidedBy")
   reviewsAuthored Review[]       @relation("ReviewAuthor")
   reviewsReceived Review[]       @relation("ReviewTargetUser")
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -139,6 +165,23 @@ model LoginAttempt {
 
   @@index([expiresAt])
   @@map("login_attempts")
+}
+
+model Notification {
+  id           String                @id @default(uuid()) @db.Uuid
+  recipientId  String                @map("recipient_id") @db.Uuid
+  recipient    User                  @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  eventType    NotificationEventType @map("event_type")
+  originModule OriginModule          @map("origin_module")
+  title        String                @db.VarChar(100)
+  message      String                @db.VarChar(250)
+  referenceId  String?               @map("reference_id") @db.Uuid
+  status       NotificationStatus    @default(UNREAD)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  @@index([recipientId, status])
+  @@map("notifications")
 }
 
 model Property {

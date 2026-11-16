@@ -12,6 +12,8 @@ import type { User } from '@PrismaClient';
 import type { SubmitIdentityDocumentDto } from '@IdentityDocument/dto';
 import type { MyIdentityDocumentResponseDto } from '@IdentityDocument/dto';
 import type { AdminIdentityDocumentQueryDto } from '@IdentityDocument/dto';
+import { NotificationsService } from '@Notifications/services';
+import { NotificationEventType, OriginModule } from '@PrismaClient';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -26,6 +28,7 @@ export class IdentityDocumentService {
   constructor(
     private readonly repository: IdentityDocumentRepository,
     private readonly cloudinary: IdentityDocumentCloudinaryService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async submit(user: User, dto: SubmitIdentityDocumentDto, file?: IdentityDocumentFile) {
@@ -212,6 +215,17 @@ export class IdentityDocumentService {
       throw error;
     }
     if (count !== 1) throw new ConflictException({ code: 'DOCUMENT_ALREADY_REVIEWED', message: 'El documento ya fue revisado.' });
+    await this.notifications.emit({
+      recipientId: userId,
+      eventType: status === IdentityDocumentStatus.APPROVED
+        ? NotificationEventType.DOCUMENT_APPROVED
+        : NotificationEventType.DOCUMENT_REJECTED,
+      originModule: OriginModule.VERIFICATION,
+      referenceId: document.id,
+      title: 'Documento revisado',
+      message: 'El resultado de la revisión de tu documento está disponible.',
+      ...(reason ? { templateData: { reason } } : {}),
+    });
     return {
       userId,
       documentStatus: status,

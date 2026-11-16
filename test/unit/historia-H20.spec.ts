@@ -20,6 +20,7 @@ describe('H20: aprobar o rechazar documentos de identidad', () => {
   const reviewPending = vi.fn();
   const setProfileVerified = vi.fn();
   const getPrivateDownloadUrl = vi.fn();
+  const emitNotification = vi.fn();
   let service: IdentityDocumentService;
 
   const submittedAt = new Date('2026-11-10T12:30:00.000Z');
@@ -48,6 +49,7 @@ describe('H20: aprobar o rechazar documentos de identidad', () => {
     setProfileVerified.mockResolvedValue({ userId: 'user-1', isVerified: true });
     withReviewTransaction.mockImplementation((operation) => operation({ reviewPending, setProfileVerified }));
     getPrivateDownloadUrl.mockReturnValue('https://cloudinary.test/signed/private.pdf');
+    emitNotification.mockResolvedValue({});
     service = new IdentityDocumentService(
       {
         findPendingDocuments,
@@ -57,6 +59,7 @@ describe('H20: aprobar o rechazar documentos de identidad', () => {
         withReviewTransaction,
       } as never,
       { getPrivateDownloadUrl } as never,
+      { emit: emitNotification } as never,
     );
   });
 

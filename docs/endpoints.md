@@ -5,6 +5,11 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 
 ## Implementados
 
+El servicio interno de notificaciones de H22 se invoca mediante `NotificationsService.emit` desde
+otros módulos del backend; no tiene endpoint HTTP expuesto. Los eventos con plantilla generan el
+título y mensaje unificados; los avisos sin plantilla usan los textos proporcionados. La notificación
+se crea como `UNREAD` y el destinatario inexistente produce `404 RECIPIENT_NOT_FOUND`.
+
 | Método y ruta | Acceso | Request | Respuesta exitosa |
 |---|---|---|---|
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
@@ -82,9 +87,8 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
 | Mensajería | `GET /api/v1/conversations`; `GET /api/v1/conversations/:id/messages`; `POST /api/v1/conversations/:id/messages` | Sesión; mensajes limitados a participantes |
-| Notificaciones | `POST /api/v1/notifications/internal`; `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
+| Notificaciones | `NotificationsService.emit` (función interna); `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
 | Reportes del arrendador | `GET /api/v1/owner/reports/income`; `GET /api/v1/owner/reports/income/by-property`; `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
-| Notificaciones | `POST /api/v1/notifications/internal`; `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión según ruta |
 | Reportes del arrendador | `GET /api/v1/owner/reports/income`; `GET /api/v1/owner/reports/income/by-property`; `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
 
 Los parámetros y respuestas de las rutas planificadas se documentarán al implementar cada historia.

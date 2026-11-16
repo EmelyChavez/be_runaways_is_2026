@@ -47,6 +47,8 @@
       "@IdentityDocument/*": ["./src/identity-document/*/index.ts"],
       "@Properties": ["./src/properties/index.ts"],
       "@Properties/*": ["./src/properties/*/index.ts"],
+        "@Notifications": ["./src/notifications/index.ts"],
+        "@Notifications/*": ["./src/notifications/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
       "@Health/*": ["./src/health/*/index.ts"],
       "@Prisma": ["./src/prisma/index.ts"],
