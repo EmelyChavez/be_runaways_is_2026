@@ -14,6 +14,12 @@ Este módulo ayuda al arrendatario a reducir el catálogo hasta encontrar bienes
 
 - **H8 — Filtrar publicaciones por fechas disponibles:** el arrendatario puede indicar las fechas de inicio y fin del periodo en que necesita el bien. El sistema muestra solo las publicaciones sin reservas pagadas, reservas pendientes cuyo plazo de pago de 24 horas siga vigente ni fechas bloqueadas por el arrendador durante ese periodo; las reservas canceladas, finalizadas o pendientes vencidas no ocupan fechas.
 
+## Módulo 3: Reservas y calendario de disponibilidad
+
+Este módulo ayuda al arrendatario a consultar fechas disponibles antes de solicitar una reserva. El calendario considera tanto las reservas activas como los bloqueos definidos por el arrendador, y permite que este consulte los bloqueos de sus propios bienes.
+
+- **H9 — Consulta de disponibilidad de un bien:** el arrendatario consulta el calendario de 90 días de un bien antes de solicitar una reserva. El sistema marca como ocupados los días incluidos en reservas PENDIENTES o PAGADAS y en bloqueos del arrendador; las reservas CANCELADAS y FINALIZADAS no ocupan fechas. La respuesta solo indica qué fechas están ocupadas, sin revelar quién reservó; si el bien está pausado o eliminado, el sistema informa que ya no está disponible.
+
 ## Módulo 7: Verificación de identidad/documentos
 
 Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado. Por ahora, estas funciones están disponibles mediante la API del backend.
