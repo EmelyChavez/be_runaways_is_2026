@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   NotificationEventType,
   OriginModule,
@@ -77,5 +77,34 @@ export class NotificationsService {
       referenceId: input.referenceId ?? null,
       status: NotificationStatus.UNREAD,
     });
+  }
+
+  async list(recipientId: string, page: number, limit: number) {
+    const [data, total] = await Promise.all([
+      this.repo.listForRecipient(recipientId, (page - 1) * limit, limit),
+      this.repo.countForRecipient(recipientId),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async unreadCount(recipientId: string) {
+    return { unreadCount: await this.repo.countUnread(recipientId) };
+  }
+
+  async markRead(recipientId: string, id: string) {
+    const notification = await this.repo.findById(id);
+    if (!notification) {
+      throw new NotFoundException({ code: 'NOTIFICATION_NOT_FOUND', message: 'La notificación no existe.' });
+    }
+    if (notification.recipientId !== recipientId) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'No puedes modificar esta notificación.' });
+    }
+    await this.repo.markRead(id, recipientId);
+    return this.repo.findById(id);
+  }
+
+  async markAllRead(recipientId: string) {
+    const result = await this.repo.markAllRead(recipientId);
+    return { updatedCount: result.count };
   }
 }
