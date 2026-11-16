@@ -194,10 +194,10 @@ Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/
 | `PATCH /api/v1/notifications/:id/read` | Sesión | |
 | `PATCH /api/v1/notifications/read-all` | Sesión | |
 
-### Reportes del arrendador
+### Reportes
 | Método y ruta | Rol |
 |---|---|
-| `GET /api/v1/owner/reports/income` | OWNER |
+| `GET /api/v1/income/reports` | OWNER, ingresos acumulados con filtros opcionales `from` y `to` |
 | `GET /api/v1/owner/reports/income/by-property` | OWNER |
 | `GET /api/v1/owner/reports/ratings` | OWNER |
 | `GET /api/v1/owner/reports/occupancy` | OWNER |

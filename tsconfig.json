@@ -49,6 +49,8 @@
       "@Properties/*": ["./src/properties/*/index.ts"],
       "@Bookings": ["./src/bookings/index.ts"],
       "@Bookings/*": ["./src/bookings/*/index.ts"],
+      "@Income": ["./src/income/index.ts"],
+      "@Income/*": ["./src/income/*/index.ts"],
         "@Notifications": ["./src/notifications/index.ts"],
         "@Notifications/*": ["./src/notifications/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
