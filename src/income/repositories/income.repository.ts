@@ -37,4 +37,42 @@ export class IncomeRepository {
       _sum: { retainedAmount: true },
     });
   }
+
+  incomeByProperty(ownerId: string, from?: Date, to?: Date) {
+    const createdAt: Prisma.DateTimeFilter = {};
+    const decidedAt: Prisma.DateTimeNullableFilter = {};
+    if (from) {
+      createdAt.gte = from;
+      decidedAt.gte = from;
+    }
+    if (to) {
+      createdAt.lte = to;
+      decidedAt.lte = to;
+    }
+
+    return Promise.all([
+      this.prisma.property.findMany({
+        where: { ownerId },
+        select: { id: true, title: true, category: true },
+      }),
+      this.prisma.payment.findMany({
+        where: {
+          ...(from || to ? { createdAt } : {}),
+          booking: {
+            status: { in: [BookingStatus.PAID, BookingStatus.COMPLETED] },
+            property: { ownerId },
+          },
+        },
+        select: { rentalAmount: true, booking: { select: { propertyId: true } } },
+      }),
+      this.prisma.deposit.findMany({
+        where: {
+          state: { in: [DepositStatus.RETAINED, DepositStatus.PARTIALLY_RETAINED] },
+          ...(from || to ? { decidedAt: { ...decidedAt, not: null } } : {}),
+          booking: { property: { ownerId } },
+        },
+        select: { retainedAmount: true, booking: { select: { propertyId: true } } },
+      }),
+    ]).then(([properties, payments, deposits]) => ({ properties, payments, deposits }));
+  }
 }
