@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 344 | 344 | 0 |
+| Unitarias | 357 | 357 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **344** | **344** | **0** |
+| **Total** | **357** | **357** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -216,6 +216,47 @@ Ejecución: `npm.cmd test -- test/unit/historia-H2.spec.ts` — Vitest reportó 
 | H3-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Reserva requiere verificación | Intentar crear una reserva para un bien `verifiedOnly` con perfil no verificado. | Responde 403 `VERIFICATION_REQUIRED` y no crea la reserva. | El servicio respondió 403 con `VERIFICATION_REQUIRED`; `createPendingBooking` no fue invocado. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H3.spec.ts` — Vitest reportó 1 archivo aprobado y 10 pruebas aprobadas.
+
+## Módulo 1: Catálogo de propiedades/equipo — H4: Ver y editar mis publicaciones (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H4-U01:** La lista limita los resultados al arrendador autenticado, incluye estados `AVAILABLE` y `PAUSED`, ordena del más reciente al más antiguo y pagina de 12 en 12.
+- **H4-U02:** La lista devuelve metadatos de paginación y precios con dos decimales.
+- **H4-U03:** El arrendador puede consultar el detalle de una publicación propia para editarla.
+- **H4-U04:** El reemplazo integral actualiza los datos, conserva las imágenes elegidas y agrega nuevas fotos.
+- **H4-U05:** La edición permite conservar entre 1 y 5 fotos.
+- **H4-U06:** Con reservas activas, se pueden editar otros campos si precio y depósito no cambian.
+
+### Casos negativos ejecutados
+
+- **H4-U07:** El sistema responde 404 si el bien no existe o pertenece a otro arrendador al consultar o editarlo.
+- **H4-U08:** El sistema rechaza solicitudes sin sesión con 401 y deniega los roles `TENANT` y `ADMIN` con 403.
+- **H4-U09:** El sistema rechaza campos obligatorios o valores inválidos con error 400.
+- **H4-U10:** El sistema rechaza cambios que dejan cero o más de cinco fotos, o intentan quitar una foto ajena al bien.
+- **H4-U11:** Cambiar el precio de un bien con reservas `PENDING` o `PAID` responde 409 con el mensaje definido.
+- **H4-U12:** Cambiar el depósito de un bien con reservas `PENDING` o `PAID` responde 409 con el mensaje definido.
+- **H4-U13:** La carga de una foto mayor de 5 MB responde 413.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H4-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Filtro, orden y paginación de publicaciones propias | Consultar la primera página del repositorio de publicaciones del propietario. | Filtra por propietario y estados `AVAILABLE`/`PAUSED`, ordena por fecha descendente y devuelve hasta 12. | Prisma recibió esos estados y `ownerId`, `orderBy: createdAt desc`, `skip: 0`, `take: 12`. | Aprobado |
+| H4-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Metadatos y formato de precio | Consultar la página 2 con una publicación de precio 45.00. | Devuelve total, página, tamaño 12 y precio con dos decimales. | La respuesta incluyó `total: 13`, `page: 2`, `pageSize: 12` y `pricePerDay: "45.00"`. | Aprobado |
+| H4-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Consulta de detalle propio | Solicitar el detalle con el ID del arrendador y del bien. | Devuelve el detalle si el bien pertenece al arrendador. | El servicio consultó con ambos IDs y devolvió la publicación propia. | Aprobado |
+| H4-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Actualización de datos e imágenes | Enviar reemplazo integral, quitar una imagen, cargar una nueva y guardar. | Persiste los campos enviados y las imágenes restantes y nuevas; devuelve el bien actualizado. | El repositorio recibió los campos y la lista final de imágenes; la respuesta incluyó los datos actualizados. | Aprobado |
+| H4-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Límite permitido de fotos | Editar una vez conservando una foto y otra vez conservando cinco. | Ambas cantidades se aceptan. | Las dos actualizaciones completaron con sus cantidades finales de imágenes correspondientes. | Aprobado |
+| H4-U06 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Edición de campos no protegidos con reservas activas | Actualizar el título manteniendo el precio y el depósito, con reservas activas simuladas. | Permite el cambio de los demás campos. | La publicación se actualizó y no se consultó el conteo de reservas para bloquearla. | Aprobado |
+| H4-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Bien inexistente o ajeno | Consultar y editar un bien no encontrado bajo el ID del arrendador actual. | Ambas operaciones responden 404 y no actualizan el bien. | La consulta y la edición lanzaron `NotFoundException`; `updateOwned` no se ejecutó. | Aprobado |
+| H4-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Sesión y roles no permitidos | Ejecutar `JwtAuthGuard` sin token y `RolesGuard` con `TENANT` y `ADMIN`. | Sin sesión responde 401; los roles no autorizados reciben 403. | El guard devolvió 401 sin token y 403 para ambos roles; las rutas declaran `OWNER`. | Aprobado |
+| H4-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Validación del reemplazo integral | Validar payload vacío, título vacío, precio cero y categoría inválida. | Cada payload inválido produce errores de validación 400. | class-validator encontró errores en los cuatro payloads. | Aprobado |
+| H4-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cantidad e identidad de fotos inválida | Intentar dejar cero fotos, agregar suficientes para superar cinco y quitar una URL ajena. | Rechaza cada solicitud con error 400 y no actualiza el bien. | Los tres intentos lanzaron `BadRequestException`; la actualización no se realizó. | Aprobado |
+| H4-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cambio de precio con reservas activas | Cambiar el precio cuando el conteo de reservas activas es mayor que cero y revisar el filtro de estados. | Responde 409 con `PROPERTY_PRICE_CHANGE_BLOCKED`; el conteo incluye `PENDING` y `PAID`. | Se obtuvo 409 con el mensaje esperado; Prisma filtra `PENDING` y `PAID`, y no se actualizó el bien. | Aprobado |
+| H4-U12 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cambio de depósito con reservas activas | Cambiar el depósito cuando existen reservas activas. | Responde 409 con `PROPERTY_PRICE_CHANGE_BLOCKED` y no actualiza el bien. | El servicio devolvió 409 con el mensaje esperado y no invocó la actualización. | Aprobado |
+| H4-U13 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Archivo mayor de 5 MB | Enviar por PUT una foto que excede el límite del interceptor de carga. | Responde 413 antes de ejecutar la actualización. | Nest/Multer devolvió 413 y el servicio de actualización no fue llamado. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H4.spec.ts` — Vitest reportó 1 archivo aprobado y 13 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
