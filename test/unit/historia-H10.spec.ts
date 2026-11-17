@@ -223,8 +223,8 @@ describe('H10: reserva de un bien por un periodo', () => {
 
   describe('casos negativos', () => {
     it.each([
-      ['H10-U13a', 'fecha inexistente', '2026-02-30', '2026-03-01'],
-      ['H10-U13b', 'formato distinto de YYYY-MM-DD', '20-11-2026', '2026-11-22'],
+      ['H10-U13', 'fecha inexistente', '2026-02-30', '2026-03-01'],
+      ['H10-U14', 'formato distinto de YYYY-MM-DD', '20-11-2026', '2026-11-22'],
     ])('%s rechaza %s con 400', async (_testId, _description, invalidStart, invalidEnd) => {
       await expect(service.create(tenantId, {
         propertyId,
@@ -234,7 +234,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H10-U14 rechaza cuando la fecha de fin es anterior a la de inicio', async () => {
+    it('H10-U15 rechaza cuando la fecha de fin es anterior a la de inicio', async () => {
       await expect(service.create(tenantId, {
         propertyId,
         startDate: '2026-11-22',
@@ -243,7 +243,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H10-U15 rechaza periodos mayores de 30 días inclusivos', async () => {
+    it('H10-U16 rechaza periodos mayores de 30 días inclusivos', async () => {
       await expect(service.create(tenantId, {
         propertyId,
         startDate: '2026-11-16',
@@ -253,8 +253,8 @@ describe('H10: reserva de un bien por un periodo', () => {
     });
 
     it.each([
-      ['H10-U16a', 'fechas anteriores a hoy', '2026-11-15', '2026-11-16'],
-      ['H10-U16b', 'fecha final posterior a los próximos 90 días', '2027-02-13', '2027-02-14'],
+      ['H10-U17', 'fechas anteriores a hoy', '2026-11-15', '2026-11-16'],
+      ['H10-U18', 'fecha final posterior a los próximos 90 días', '2027-02-13', '2027-02-14'],
     ])('%s rechaza %s', async (_testId, _description, invalidStart, invalidEnd) => {
       await expect(service.create(tenantId, {
         propertyId,
@@ -264,13 +264,13 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H10-U17 rechaza un propertyId inválido con 400', async () => {
+    it('H10-U19 rechaza un propertyId inválido con 400', async () => {
       const dto = plainToInstance(CreateBookingDto, { propertyId: 'no-uuid', startDate, endDate });
 
       expect(await validate(dto)).not.toHaveLength(0);
     });
 
-    it('H10-U18 rechaza campos no declarados en el DTO', async () => {
+    it('H10-U20 rechaza campos no declarados en el DTO', async () => {
       const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
 
       await expect(pipe.transform(
@@ -279,7 +279,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       )).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('H10-U19 responde 403 si el perfil del arrendatario no está verificado', async () => {
+    it('H10-U21 responde 403 si el perfil del arrendatario no está verificado', async () => {
       findVerifiedProfile.mockResolvedValueOnce({ isVerified: false });
 
       await expect(service.create(tenantId, { propertyId, startDate, endDate }))
@@ -288,7 +288,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(createPendingBooking).not.toHaveBeenCalled();
     });
 
-    it('H10-U20 responde 404 cuando el bien no existe o no está AVAILABLE', async () => {
+    it('H10-U22 responde 404 cuando el bien no existe o no está AVAILABLE', async () => {
       findAvailableProperty.mockResolvedValueOnce(null);
 
       await expect(service.create(tenantId, { propertyId, startDate, endDate }))
@@ -296,7 +296,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(createPendingBooking).not.toHaveBeenCalled();
     });
 
-    it('H10-U21 responde 409 si las fechas se traslapan con una reserva activa', async () => {
+    it('H10-U23 responde 409 si las fechas se traslapan con una reserva activa', async () => {
       findOverlappingActiveBooking.mockResolvedValueOnce({ id: 'existing-booking' });
 
       await expect(service.create(tenantId, { propertyId, startDate, endDate }))
@@ -310,7 +310,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(createPendingBooking).not.toHaveBeenCalled();
     });
 
-    it('H10-U22 responde 409 si las fechas se traslapan con un bloqueo', async () => {
+    it('H10-U24 responde 409 si las fechas se traslapan con un bloqueo', async () => {
       findOverlappingBlock.mockResolvedValueOnce({ id: 'existing-block' });
 
       await expect(service.create(tenantId, { propertyId, startDate, endDate }))
@@ -318,7 +318,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(createPendingBooking).not.toHaveBeenCalled();
     });
 
-    it('H10-U23 convierte un conflicto de serialización concurrente en 409', async () => {
+    it('H10-U25 convierte un conflicto de serialización concurrente en 409', async () => {
       serializableTransaction.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError(
         'Transaction failed due to a write conflict or a deadlock. Please retry your transaction',
         { code: 'P2034', clientVersion: '7.10.0' },
@@ -328,7 +328,7 @@ describe('H10: reserva de un bien por un periodo', () => {
         .rejects.toMatchObject({ status: 409, response: { code: 'DATES_UNAVAILABLE' } });
     });
 
-    it('H10-U24 rechaza OWNER y ADMIN con 403', () => {
+    it('H10-U26 rechaza OWNER y ADMIN con 403', () => {
       const guard = new RolesGuard({ getAllAndOverride: () => [Role.TENANT] } as never);
 
       for (const role of [Role.OWNER, Role.ADMIN]) {
@@ -341,7 +341,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       }
     });
 
-    it('H10-U25 rechaza una solicitud sin sesión con 401', async () => {
+    it('H10-U27 rechaza una solicitud sin sesión con 401', async () => {
       const guard = new JwtAuthGuard(
         { getAllAndOverride: () => false } as never,
         { verifyAsync: vi.fn() } as never,
@@ -356,7 +356,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       await expect(guard.canActivate(context)).rejects.toMatchObject({ status: 401 });
     });
 
-    it('H10-U26 limita Mis reservas al tenantId autenticado en la consulta Prisma', async () => {
+    it('H10-U28 limita Mis reservas al tenantId autenticado en la consulta Prisma', async () => {
       const findMany = vi.fn().mockResolvedValue([]);
       const count = vi.fn().mockResolvedValue(0);
       const repository = new BookingsRepository({
@@ -370,7 +370,7 @@ describe('H10: reserva de un bien por un periodo', () => {
       expect(count.mock.calls[0][0].where).toEqual({ tenantId });
     });
 
-    it('H10-U27 limita Reservas de mis bienes al ownerId autenticado', async () => {
+    it('H10-U29 limita Reservas de mis bienes al ownerId autenticado', async () => {
       const findMany = vi.fn().mockResolvedValue([]);
       const count = vi.fn().mockResolvedValue(0);
       const repository = new BookingsRepository({
@@ -386,10 +386,10 @@ describe('H10: reserva de un bien por un periodo', () => {
     });
 
     it.each([
-      ['H10-U28a', { page: 0 }, BookingQueryDto],
-      ['H10-U28b', { pageSize: 101 }, BookingQueryDto],
-      ['H10-U28c', { status: 'UNKNOWN' }, BookingQueryDto],
-      ['H10-U28d', { propertyId: 'not-uuid' }, OwnerBookingQueryDto],
+      ['H10-U30', { page: 0 }, BookingQueryDto],
+      ['H10-U31', { pageSize: 101 }, BookingQueryDto],
+      ['H10-U32', { status: 'UNKNOWN' }, BookingQueryDto],
+      ['H10-U33', { propertyId: 'not-uuid' }, OwnerBookingQueryDto],
     ])('%s rechaza parámetros de consulta inválidos', async (_testId, query, DtoClass) => {
       const dto = plainToInstance(DtoClass, query);
 

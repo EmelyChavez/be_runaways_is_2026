@@ -191,7 +191,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       }
     });
 
-    it('H13-U18 ordena el historial de Prisma del más reciente al más antiguo', async () => {
+    it('H13-U06 ordena el historial de Prisma del más reciente al más antiguo', async () => {
       const findMany = vi.fn().mockResolvedValue([]);
       const repository = new PaymentsRepository({ transactionHistory: { findMany } } as never);
 
@@ -205,7 +205,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
   });
 
   describe('casos negativos', () => {
-    it('H13-U06 rechaza 0002 con el mensaje indicado sin cambiar la reserva', async () => {
+    it('H13-U07 rechaza 0002 con el mensaje indicado sin cambiar la reserva', async () => {
       const paymentPromise = service.pay(tenantId, { bookingId, last4Digits: '0002' });
       const rejection = expect(paymentPromise).rejects.toMatchObject({
         status: 400,
@@ -225,8 +225,8 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
     });
 
     it.each([
-      ['H13-U07a', 'cancelada', BookingStatus.CANCELED],
-      ['H13-U07b', 'vencida', BookingStatus.PENDING],
+      ['H13-U08', 'cancelada', BookingStatus.CANCELED],
+      ['H13-U09', 'vencida', BookingStatus.PENDING],
     ])('%s no permite consultar resumen de una reserva %s', async (_testId, description, status) => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({
         status,
@@ -237,8 +237,8 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
     });
 
     it.each([
-      ['H13-U08a', 'cancelada', BookingStatus.CANCELED],
-      ['H13-U08b', 'vencida', BookingStatus.PENDING],
+      ['H13-U10', 'cancelada', BookingStatus.CANCELED],
+      ['H13-U11', 'vencida', BookingStatus.PENDING],
     ])('%s no permite pagar una reserva %s ni genera registros', async (_testId, description, status) => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({
         status,
@@ -250,7 +250,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       expect(createPayment).not.toHaveBeenCalled();
     });
 
-    it('H13-U09 responde ALREADY_PAID al pagar una reserva ya pagada', async () => {
+    it('H13-U12 responde ALREADY_PAID al pagar una reserva ya pagada', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({ status: BookingStatus.PAID }));
 
       await expect(service.pay(tenantId, { bookingId, last4Digits: '4242' })).rejects.toMatchObject({
@@ -260,7 +260,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H13-U10 convierte una carrera de pago a ALREADY_PAID', async () => {
+    it('H13-U13 convierte una carrera de pago a ALREADY_PAID', async () => {
       findBookingForPayment
         .mockResolvedValueOnce(makeBooking())
         .mockResolvedValueOnce(makeBooking({ status: BookingStatus.PAID }));
@@ -277,27 +277,27 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       await rejection;
     });
 
-    it('H13-U11 no permite pagar una reserva de otro arrendatario', async () => {
+    it('H13-U14 no permite pagar una reserva de otro arrendatario', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({ tenantId: otherUserId }));
 
       await expect(service.pay(tenantId, { bookingId, last4Digits: '4242' })).rejects.toBeInstanceOf(NotFoundException);
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H13-U12 no muestra el resumen de una reserva ajena', async () => {
+    it('H13-U15 no muestra el resumen de una reserva ajena', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({ tenantId: otherUserId }));
 
       await expect(service.getSummary(tenantId, bookingId)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('H13-U13 no muestra movimientos de una reserva ajena', async () => {
+    it('H13-U16 no muestra movimientos de una reserva ajena', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking());
 
       await expect(service.getTransactionHistory(otherUserId, bookingId)).rejects.toBeInstanceOf(NotFoundException);
       expect(listTransactions).not.toHaveBeenCalled();
     });
 
-    it('H13-U14 exige perfil verificado para pagar un bien que lo requiere', async () => {
+    it('H13-U17 exige perfil verificado para pagar un bien que lo requiere', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({
         property: { ...makeBooking().property, verifiedOnly: true },
         tenant: { profile: { isVerified: false } },
@@ -307,7 +307,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H13-U15 exige perfil verificado para consultar el resumen cuando el bien lo requiere', async () => {
+    it('H13-U18 exige perfil verificado para consultar el resumen cuando el bien lo requiere', async () => {
       findBookingForPayment.mockResolvedValueOnce(makeBooking({
         property: { ...makeBooking().property, verifiedOnly: true },
         tenant: { profile: { isVerified: false } },
@@ -319,7 +319,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       });
     });
 
-    it('H13-U16 rechaza UUID ausente o inválido en el DTO', async () => {
+    it('H13-U19 rechaza UUID ausente o inválido en el DTO', async () => {
       const dtos = [
         plainToInstance(CreatePaymentDto, { last4Digits: '4242' }),
         plainToInstance(CreatePaymentDto, { bookingId: 'no-es-uuid', last4Digits: '4242' }),
@@ -329,16 +329,16 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
     });
 
     it.each([
-      ['H13-U17a', ''],
-      ['H13-U17b', '42'],
-      ['H13-U17c', '42420'],
-      ['H13-U17d', '42a2'],
+      ['H13-U20', ''],
+      ['H13-U21', '42'],
+      ['H13-U22', '42420'],
+      ['H13-U23', '42a2'],
     ])('%s rechaza last4Digits inválido: "%s"', async (_testId, last4Digits) => {
       const dto = plainToInstance(CreatePaymentDto, { bookingId, last4Digits });
       expect(await validate(dto)).not.toHaveLength(0);
     });
 
-    it('H13-U19 responde 403 a OWNER y ADMIN, y 401 si falta la sesión', async () => {
+    it('H13-U24 responde 403 a OWNER y ADMIN, y 401 si falta la sesión', async () => {
       const guard = new RolesGuard({ getAllAndOverride: () => [Role.TENANT] } as never);
       const handler = PaymentsController.prototype.pay;
 
@@ -360,7 +360,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
       await expect(jwtGuard.canActivate(context)).rejects.toMatchObject({ status: 401 });
     });
 
-    it('H13-U20 rechaza un UUID inválido en el parámetro de historial con 400', async () => {
+    it('H13-U25 rechaza un UUID inválido en el parámetro de historial con 400', async () => {
       const pipe = new (await import('@nestjs/common')).ParseUUIDPipe();
 
       await expect(pipe.transform('no-es-uuid', {

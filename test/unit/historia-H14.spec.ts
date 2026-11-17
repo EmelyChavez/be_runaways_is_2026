@@ -14,8 +14,8 @@ import {
   Role,
   TransactionType,
 } from '../../src/generated/prisma/client.js';
+import { BookingsController } from '../../src/bookings/controllers/bookings.controller.js';
 import { BookingsService } from '../../src/bookings/services/bookings.service.js';
-import { DepositDecisionsController } from '../../src/payments/controllers/deposit-decisions.controller.js';
 import { CreateDepositDecisionDto } from '../../src/payments/dto/create-deposit-decision.dto.js';
 import { DepositsRepository } from '../../src/payments/repositories/deposits.repository.js';
 import { DepositDecisionsService } from '../../src/payments/services/deposit-decisions.service.js';
@@ -57,7 +57,7 @@ describe('H14: devolución o retención del depósito de garantía', () => {
 
   const makeContext = (handler: Function, role?: Role) => ({
     getHandler: () => handler,
-    getClass: () => DepositDecisionsController,
+    getClass: () => BookingsController,
     switchToHttp: () => ({ getRequest: () => ({ user: role ? { id: ownerId, role } : undefined }) }),
   }) as never;
 
@@ -250,7 +250,7 @@ describe('H14: devolución o retención del depósito de garantía', () => {
     });
 
     it('H14-U07 restringe el endpoint de decisión al rol OWNER', () => {
-      const handler = DepositDecisionsController.prototype.decide;
+      const handler = BookingsController.prototype.decideDeposit;
       const guard = new RolesGuard({ getAllAndOverride: () => [Role.OWNER] } as never);
 
       expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual([Role.OWNER]);
@@ -288,9 +288,9 @@ describe('H14: devolución o retención del depósito de garantía', () => {
     });
 
     it.each([
-      ['H14-U11a', DepositStatus.RETURNED],
-      ['H14-U11b', DepositStatus.RETAINED],
-      ['H14-U11c', DepositStatus.PARTIALLY_RETAINED],
+      ['H14-U11', DepositStatus.RETURNED],
+      ['H14-U12', DepositStatus.RETAINED],
+      ['H14-U13', DepositStatus.PARTIALLY_RETAINED],
     ])('%s impide volver a decidir un depósito %s', async (_testId, state) => {
       findForBooking.mockResolvedValueOnce(makeDeposit({ state }));
 
@@ -301,14 +301,14 @@ describe('H14: devolución o retención del depósito de garantía', () => {
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H14-U12 rechaza una retención de cero con VALIDATION_ERROR', async () => {
+    it('H14-U14 rechaza una retención de cero con VALIDATION_ERROR', async () => {
       await expect(service.decide(ownerId, bookingId, {
         decisionType: 'RETENER', retentionAmount: '0.00', retentionReason: 'Daño comprobado',
       })).rejects.toMatchObject({ status: 400, response: { code: 'VALIDATION_ERROR' } });
       expect(serializableTransaction).not.toHaveBeenCalled();
     });
 
-    it('H14-U13 rechaza una retención mayor que el depósito con VALIDATION_ERROR', async () => {
+    it('H14-U15 rechaza una retención mayor que el depósito con VALIDATION_ERROR', async () => {
       await expect(service.decide(ownerId, bookingId, {
         decisionType: 'RETENER', retentionAmount: '100.01', retentionReason: 'Daño comprobado',
       })).rejects.toMatchObject({ status: 400, response: { code: 'VALIDATION_ERROR' } });
@@ -316,9 +316,9 @@ describe('H14: devolución o retención del depósito de garantía', () => {
     });
 
     it.each([
-      ['H14-U14a', '-1.00'],
-      ['H14-U14b', 'no-numérico'],
-      ['H14-U14c', '1.001'],
+      ['H14-U16', '-1.00'],
+      ['H14-U17', 'no-numérico'],
+      ['H14-U18', '1.001'],
     ])('%s rechaza el monto decimal inválido "%s"', async (_testId, retentionAmount) => {
       const dto = plainToInstance(CreateDepositDecisionDto, {
         decisionType: 'RETENER', retentionAmount, retentionReason: 'Daño comprobado',
@@ -327,29 +327,29 @@ describe('H14: devolución o retención del depósito de garantía', () => {
     });
 
     it.each([
-      ['H14-U15a', { decisionType: 'RETENER', retentionReason: 'Daño comprobado' }],
-      ['H14-U15b', { decisionType: 'RETENER', retentionAmount: '25.00' }],
-      ['H14-U15c', { decisionType: 'RETENER', retentionAmount: '25.00', retentionReason: '' }],
-      ['H14-U15d', { decisionType: 'RETENER', retentionAmount: '25.00', retentionReason: '   ' }],
+      ['H14-U19', { decisionType: 'RETENER', retentionReason: 'Daño comprobado' }],
+      ['H14-U20', { decisionType: 'RETENER', retentionAmount: '25.00' }],
+      ['H14-U21', { decisionType: 'RETENER', retentionAmount: '25.00', retentionReason: '' }],
+      ['H14-U22', { decisionType: 'RETENER', retentionAmount: '25.00', retentionReason: '   ' }],
     ])('%s requiere un monto y motivo válido para retener', async (_testId, data) => {
       const dto = plainToInstance(CreateDepositDecisionDto, data);
       expect(await validate(dto)).not.toHaveLength(0);
     });
 
-    it('H14-U16 rechaza un motivo de más de 250 caracteres', async () => {
+    it('H14-U23 rechaza un motivo de más de 250 caracteres', async () => {
       const dto = plainToInstance(CreateDepositDecisionDto, {
         decisionType: 'RETENER', retentionAmount: '25.00', retentionReason: 'x'.repeat(251),
       });
       expect(await validate(dto)).not.toHaveLength(0);
     });
 
-    it('H14-U17 solo acepta DEVOLVER o RETENER como decisión', async () => {
+    it('H14-U24 solo acepta DEVOLVER o RETENER como decisión', async () => {
       const dto = plainToInstance(CreateDepositDecisionDto, { decisionType: 'APROBAR' });
       expect(await validate(dto)).not.toHaveLength(0);
     });
 
-    it('H14-U18 responde 403 a TENANT y ADMIN, y 401 cuando falta la sesión', async () => {
-      const handler = DepositDecisionsController.prototype.decide;
+    it('H14-U25 responde 403 a TENANT y ADMIN, y 401 cuando falta la sesión', async () => {
+      const handler = BookingsController.prototype.decideDeposit;
       const guard = new RolesGuard({ getAllAndOverride: () => [Role.OWNER] } as never);
 
       for (const role of [Role.TENANT, Role.ADMIN]) {
@@ -364,20 +364,20 @@ describe('H14: devolución o retención del depósito de garantía', () => {
       );
       const context = {
         getHandler: () => handler,
-        getClass: () => DepositDecisionsController,
+        getClass: () => BookingsController,
         switchToHttp: () => ({ getRequest: () => ({ headers: {} }) }),
       } as never;
       await expect(jwtGuard.canActivate(context)).rejects.toMatchObject({ status: 401 });
     });
 
-    it('H14-U19 rechaza un UUID inválido en el parámetro de reserva con 400', async () => {
+    it('H14-U26 rechaza un UUID inválido en el parámetro de reserva con 400', async () => {
       const pipe = new (await import('@nestjs/common')).ParseUUIDPipe();
       await expect(pipe.transform('no-es-uuid', {
         type: 'param', metatype: String, data: 'id',
       })).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('H14-U20 conserva pendiente el depósito antes de cumplir siete días', async () => {
+    it('H14-U27 conserva pendiente el depósito antes de cumplir siete días', async () => {
       findAutoReturnCandidates.mockResolvedValueOnce([]);
 
       await service.autoReturnExpiredDeposits(new Date('2026-11-16T11:59:59.999Z'));
@@ -388,7 +388,7 @@ describe('H14: devolución o retención del depósito de garantía', () => {
       expect(emit).not.toHaveBeenCalled();
     });
 
-    it('H14-U21 consulta solo depósitos pendientes positivos de reservas completadas vencidas', async () => {
+    it('H14-U28 consulta solo depósitos pendientes positivos de reservas completadas vencidas', async () => {
       const findMany = vi.fn().mockResolvedValue([]);
       const repository = new DepositsRepository({ deposit: { findMany } } as never);
       const deadline = new Date('2026-11-09T12:00:00.000Z');
@@ -405,7 +405,7 @@ describe('H14: devolución o retención del depósito de garantía', () => {
       }));
     });
 
-    it('H14-U22 evita un segundo movimiento si otra decisión gana la carrera', async () => {
+    it('H14-U29 evita un segundo movimiento si otra decisión gana la carrera', async () => {
       findForBooking
         .mockResolvedValueOnce(makeDeposit())
         .mockResolvedValueOnce(makeDeposit());
