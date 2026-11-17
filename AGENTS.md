@@ -172,7 +172,7 @@ Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/
 | `GET /api/v1/payments/:bookingId/summary` | TENANT dueño de la reserva | Detalle de alquiler, depósito, total y hora límite |
 | `POST /api/v1/payments` | TENANT dueño de la reserva | Recibe `bookingId` y `last4Digits`; pago simulado, crea recibo, depósito y movimiento |
 | `GET /api/v1/bookings/:bookingId/transactions` | TENANT de la reserva o OWNER del bien | Movimientos privados ordenados del más reciente al más antiguo |
-| `POST /api/v1/bookings/:id/deposit/decision` | OWNER dueño | Devolver o retener depósito |
+| `POST /api/v1/bookings/:id/deposit/decision` | OWNER dueño | `{ decisionType: "DEVOLVER" }` o `{ decisionType: "RETENER", retentionAmount, retentionReason }`; reserva COMPLETED y depósito mayor que cero. La decisión es única; después de siete días calendario sin decisión, el sistema devuelve el depósito. |
 
 ### Reseñas
 | Método y ruta | Rol |

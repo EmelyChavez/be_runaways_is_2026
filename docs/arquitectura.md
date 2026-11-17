@@ -36,7 +36,7 @@ flowchart LR
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables.Creación, listado y eliminación de bloqueos mediante `AvailabilityBlocksController`, DTOs, `PropertiesService` y `PropertiesRepository`. |
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación solo cuando el bien tiene `verifiedOnly`, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
-| `payments` | presenta el detalle de cobros de una reserva, simula el pago, marca la reserva como pagada, crea el depósito e historial de movimientos, y permite consultar ese historial a los participantes. `PaymentsService` concentra las reglas; `PaymentsRepository` coordina persistencia en transacciones serializables y reutiliza `Payment` del esquema H24. |
+| `payments` | presenta el detalle de cobros, simula el pago, administra decisiones de devolución o retención del depósito y permite consultar el estado y movimientos a los participantes. `PaymentsService` y `DepositDecisionsService` concentran sus casos de uso; sus repositorios encapsulan consultas y transacciones serializables, y se reutiliza `Payment` del esquema H24. |
 | `income` | Consulta agregada del ingreso del `OWNER` autenticado mediante `GET /income/reports`, calculando alquileres desde pagos y depósitos retenidos desde las decisiones registradas. |
 | `notifications` | Servicio interno unificado para emitir avisos y API autenticada para consultar la bandeja, el contador de no leídas y marcar notificaciones propias como leídas. El destinatario de cada consulta se obtiene de la sesión. |
 | `health` | Health check público. |
@@ -72,6 +72,11 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   valida la reserva y `verifiedOnly`, calcula alquiler más depósito con montos guardados, y coordina
   `PaymentsRepository` para registrar `Payment`, depósito, movimiento y estado `PAID` en una
   transacción serializable. Después solicita la notificación al OWNER; no realiza transferencias reales.
+- Decisión del depósito: `DepositDecisionsController` obtiene el OWNER de la sesión y delega a
+  `DepositDecisionsService`; el servicio valida propiedad, estado finalizado y montos, y registra la
+  decisión y movimientos mediante `DepositsRepository` en una transacción serializable. El proceso
+  periódico devuelve automáticamente depósitos pendientes siete días después de que la reserva pasa
+  a `COMPLETED`, y notifica al arrendatario.
 
 ## Validación y documentación HTTP
 

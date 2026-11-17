@@ -26,9 +26,11 @@ Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la
 
 ## Módulo 4: Pagos y depósitos de garantía
 
-Este módulo permite al arrendatario completar el pago de una reserva y consultar los cobros asociados, mientras conserva el depósito para su gestión posterior. El arrendador puede consultar los movimientos de las reservas de sus bienes. Solo API por ahora.
+Este módulo permite al arrendatario completar el pago de una reserva y consultar los cobros asociados, mientras el arrendador administra la devolución o retención del depósito de garantía. Ambas partes pueden consultar los movimientos y el estado del depósito de sus reservas relacionadas. Solo API por ahora.
 
 - **H13 — Pago de alquiler con detalle del depósito:** antes de pagar, el arrendatario consulta el detalle del bien, el periodo, el alquiler, el depósito y el total. El pago simulado aprobado cambia la reserva a pagada, registra el desglose del cobro y el depósito, y devuelve un comprobante; la tarjeta terminada en 0002 se rechaza sin cambiar la reserva. El sistema impide cobrar reservas ajenas, vencidas, canceladas o ya pagadas y limita el historial de movimientos al arrendatario y al arrendador involucrados.
+
+- **H14 — Devolución o retención del depósito de garantía:** cuando la reserva está finalizada, el arrendador propietario decide devolver el depósito o retener una parte o el total, indicando el motivo. El sistema registra la decisión y sus movimientos, notifica al arrendatario y mantiene visible cuánto se retuvo y cuánto se devolvió. Si no se decide dentro del plazo de siete días, el depósito se devuelve automáticamente.
 
 ## Módulo 7: Verificación de identidad/documentos
 

@@ -5,7 +5,7 @@ import { validate } from 'class-validator';
 import { ROLES_KEY } from '../../src/auth/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../../src/auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../src/auth/guards/roles.guard.js';
-import { BookingStatus, Prisma, Role } from '../../src/generated/prisma/client.js';
+import { BookingStatus, Prisma, Role, TransactionType } from '../../src/generated/prisma/client.js';
 import { BookingTransactionsController, PaymentsController } from '../../src/payments/controllers/payments.controller.js';
 import { CreatePaymentDto } from '../../src/payments/dto/create-payment.dto.js';
 import { PaymentsRepository } from '../../src/payments/repositories/payments.repository.js';
@@ -151,7 +151,7 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
 
     it('H13-U03 permite al arrendatario consultar los movimientos de su reserva', async () => {
       listTransactions.mockResolvedValueOnce([
-        { id: 'movement-new', amount: new Prisma.Decimal('250.00'), reason: 'Cobro del alquiler.', createdAt: new Date('2026-11-16T18:00:02.000Z') },
+        { id: 'movement-new', type: TransactionType.CHARGE, amount: new Prisma.Decimal('250.00'), reason: 'Cobro del alquiler.', createdAt: new Date('2026-11-16T18:00:02.000Z') },
       ]);
 
       const result = await service.getTransactionHistory(tenantId, bookingId);
@@ -171,8 +171,8 @@ describe('H13: pago de alquiler con detalle del depósito', () => {
 
     it('H13-U04 permite al arrendador del bien consultar movimientos recientes primero', async () => {
       listTransactions.mockResolvedValueOnce([
-        { id: 'movement-new', amount: new Prisma.Decimal('250.00'), reason: 'Cobro nuevo.', createdAt: new Date('2026-11-16T18:00:02.000Z') },
-        { id: 'movement-old', amount: new Prisma.Decimal('100.00'), reason: 'Movimiento anterior.', createdAt: new Date('2026-11-15T18:00:02.000Z') },
+        { id: 'movement-new', type: TransactionType.CHARGE, amount: new Prisma.Decimal('250.00'), reason: 'Cobro nuevo.', createdAt: new Date('2026-11-16T18:00:02.000Z') },
+        { id: 'movement-old', type: TransactionType.REFUND, amount: new Prisma.Decimal('100.00'), reason: 'Movimiento anterior.', createdAt: new Date('2026-11-15T18:00:02.000Z') },
       ]);
 
       const result = await service.getTransactionHistory(ownerId, bookingId);

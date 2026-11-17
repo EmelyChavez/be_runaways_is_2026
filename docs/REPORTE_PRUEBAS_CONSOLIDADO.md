@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 229 | 229 | 0 |
+| Unitarias | 258 | 258 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **229** | **229** | **0** |
+| **Total** | **258** | **258** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -641,3 +641,76 @@ Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó
 | H13-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID inválido en historial | Pasar texto que no es UUID por ParseUUIDPipe del parámetro. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H13.spec.ts` — Vitest reportó 1 archivo aprobado y 25 pruebas aprobadas.
+
+## Módulo 4: Pagos y depósitos de garantía — H14: Devolución o retención del depósito de garantía (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H14-U01:** El arrendador devuelve el depósito completo de una reserva finalizada, registra la devolución y notifica al arrendatario.
+- **H14-U02:** El arrendador retiene el depósito completo e informa el motivo en el movimiento y la notificación.
+- **H14-U03:** El arrendador retiene parte del depósito y registra tanto la retención como la devolución del saldo.
+- **H14-U04:** El historial muestra movimientos de devolución y retención con sus montos, motivos y fechas.
+- **H14-U05:** El arrendatario ve el estado y el desglose actualizado del depósito en sus reservas.
+- **H14-U06:** El sistema devuelve automáticamente los depósitos pendientes al cumplirse siete días desde que la reserva pasa a COMPLETED.
+- **H14-U07:** Solo el rol OWNER puede usar el endpoint de decisión.
+
+### Casos negativos ejecutados
+
+- **H14-U08:** El sistema no permite decidir el depósito antes de que la reserva esté COMPLETED.
+- **H14-U09:** El sistema no permite a un arrendador decidir sobre el depósito de un bien ajeno.
+- **H14-U10:** El sistema responde 404 cuando la reserva no tiene depósito.
+- **H14-U11a:** El sistema no permite volver a decidir un depósito RETURNED.
+- **H14-U11b:** El sistema no permite volver a decidir un depósito RETAINED.
+- **H14-U11c:** El sistema no permite volver a decidir un depósito PARTIALLY_RETAINED.
+- **H14-U12:** El sistema rechaza una retención de cero.
+- **H14-U13:** El sistema rechaza una retención mayor que el depósito.
+- **H14-U14a:** El DTO rechaza un monto decimal con signo negativo.
+- **H14-U14b:** El DTO rechaza un monto que no es numérico.
+- **H14-U14c:** El DTO rechaza un monto con más de dos decimales.
+- **H14-U15a:** El DTO requiere el monto al elegir RETENER.
+- **H14-U15b:** El DTO requiere el motivo al elegir RETENER.
+- **H14-U15c:** El DTO rechaza un motivo vacío.
+- **H14-U15d:** El DTO rechaza un motivo compuesto solo por espacios.
+- **H14-U16:** El DTO rechaza un motivo de más de 250 caracteres.
+- **H14-U17:** El DTO solo acepta DEVOLVER o RETENER.
+- **H14-U18:** El sistema deniega OWNER y ADMIN con 403 y solicitudes sin sesión con 401.
+- **H14-U19:** El sistema rechaza un UUID inválido en la ruta con 400.
+- **H14-U20:** El sistema conserva el depósito pendiente antes de cumplir los siete días.
+- **H14-U21:** La consulta automática solo selecciona depósitos pendientes positivos de reservas COMPLETED cuyo plazo ya venció.
+- **H14-U22:** Una decisión concurrente no genera un segundo movimiento ni una segunda notificación.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H14-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución total | Enviar `DEVOLVER` para un depósito de 100.00 de una reserva `COMPLETED`; revisar transacción, movimiento y notificación. | Estado `RETURNED`, retenido 0.00, devuelto 100.00 y movimiento REFUND por el total. | Se actualizó el depósito y se registró REFUND por 100.00; el tenant recibió notificación `DEPOSIT_RETURNED`. | Aprobado |
+| H14-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención total | Enviar `RETENER`, monto 100.00 y motivo válido; revisar respuesta, movimiento y notificación. | Estado `RETAINED`, retenido 100.00, devuelto 0.00 y motivo registrado. | Se registró RETENTION por 100.00 con el motivo y se notificó al tenant. | Aprobado |
+| H14-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención parcial | Enviar `RETENER` por 25.00 de un depósito de 100.00. | Estado `PARTIALLY_RETAINED`; crea retención 25.00 y devolución 75.00; ambos suman 100.00. | Se crearon ambos movimientos y el cálculo confirmó retenido más devuelto igual al depósito. | Aprobado |
+| H14-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Movimientos visibles al arrendatario | Consultar historial para una reserva relacionada con movimientos REFUND y RETENTION. | Devuelve DEVOLUCION y RETENCION con monto, motivo y fecha. | El historial tradujo los tipos y presentó todos los campos esperados. | Aprobado |
+| H14-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Estado del depósito en reservas propias | Consultar reservas del tenant con depósito parcialmente retenido. | La reserva incluye estado, monto, retenido, devuelto y fecha de decisión. | La respuesta serializó el desglose actualizado del depósito con montos a dos decimales. | Aprobado |
+| H14-U06 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución automática al cumplir siete días | Fijar la decisión exactamente siete días después de `Booking.updatedAt` y procesar candidatos. | Pasa a RETURNED, registra REFUND con «Plazo de decisión vencido» y notifica al tenant. | Se actualizaron los montos, se registró el movimiento con el motivo exacto y se envió evento `DEPOSIT_RETURNED_AUTO`. | Aprobado |
+| H14-U07 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Acceso del rol OWNER | Revisar metadata del handler y ejecutar RolesGuard con OWNER. | La ruta declara OWNER y el guard lo autoriza. | La metadata y RolesGuard confirmaron acceso OWNER. | Aprobado |
+| H14-U08 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Reserva no finalizada | Intentar devolver un depósito con reserva `PAID`. | Responde 409 `BOOKING_NOT_FINALIZED` sin iniciar transacción. | El servicio respondió el conflicto antes de persistir. | Aprobado |
+| H14-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Bien de otro arrendador | Intentar decidir el depósito con owner distinto al propietario del bien. | Responde 404 y no inicia transacción. | Se lanzó NotFoundException sin persistencia. | Aprobado |
+| H14-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Depósito inexistente | Solicitar devolver el depósito cuando la reserva no tiene depósito asociado. | Responde 404. | Se lanzó NotFoundException. | Aprobado |
+| H14-U11a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETURNED | Intentar decidir un depósito RETURNED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U11b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETAINED | Intentar decidir un depósito RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U11c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para PARTIALLY_RETAINED | Intentar decidir un depósito PARTIALLY_RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención de cero | Enviar `RETENER` con monto 0.00 y motivo válido. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto antes de iniciar la transacción. | Aprobado |
+| H14-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención superior al depósito | Enviar monto 100.01 para un depósito de 100.00. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto y no persistió datos. | Aprobado |
+| H14-U14a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decimal negativo | Validar el monto `-1.00` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
+| H14-U14b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Monto no numérico | Validar el monto `no-numérico` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
+| H14-U14c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Exceso de decimales | Validar el monto `1.001` en el DTO. | El DTO produce error de validación 400. | class-validator rechazó el tercer decimal. | Aprobado |
+| H14-U15a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el monto de retención | Validar `RETENER` sin `retentionAmount`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
+| H14-U15b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el motivo | Validar `RETENER` sin `retentionReason`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
+| H14-U15c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo vacío | Validar `retentionReason` como cadena vacía. | El DTO rechaza la solicitud con 400. | class-validator reportó el motivo inválido. | Aprobado |
+| H14-U15d | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo solo con espacios | Validar un motivo compuesto por espacios. | El DTO rechaza la solicitud con 400. | La expresión de validación rechazó el motivo sin caracteres visibles. | Aprobado |
+| H14-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Longitud máxima del motivo | Validar un motivo de 251 caracteres. | El DTO rechaza la solicitud con 400. | class-validator encontró error de longitud máxima. | Aprobado |
+| H14-U17 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Tipo de decisión inválido | Validar `decisionType: APROBAR`. | El DTO rechaza la solicitud con 400. | class-validator rechazó el valor fuera de `DEVOLVER`/`RETENER`. | Aprobado |
+| H14-U18 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Rol o sesión no permitidos | Ejecutar RolesGuard como TENANT y ADMIN, sin usuario, y JwtAuthGuard sin token. | Roles distintos de OWNER reciben 403 y ausencia de sesión recibe 401. | Ambos guards devolvieron los estados esperados. | Aprobado |
+| H14-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | UUID inválido en la ruta | Pasar un identificador inválido por ParseUUIDPipe. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
+| H14-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Plazo automático aún no vencido | Consultar candidatos antes de cumplir los siete días. | Conserva el depósito pendiente; no registra movimiento ni notifica. | No se abrió transacción ni se creó movimiento o aviso. | Aprobado |
+| H14-U21 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Filtro de candidatos automáticos | Inspeccionar el filtro Prisma del repositorio para el proceso automático. | Selecciona únicamente depósitos PENDING positivos con reserva COMPLETED y plazo vencido. | Prisma recibió todos los filtros y el orden ascendente esperado. | Aprobado |
+| H14-U22 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisiones concurrentes | Simular que la actualización condicional afecta cero filas porque otra decisión ganó. | Responde 409 `DEPOSIT_ALREADY_DECIDED`; no crea otro movimiento ni notificación. | El servicio devolvió el conflicto y no duplicó movimiento o aviso. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H14.spec.ts` — Vitest reportó 1 archivo aprobado y 29 pruebas aprobadas.
