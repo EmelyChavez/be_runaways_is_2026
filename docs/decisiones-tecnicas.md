@@ -127,3 +127,19 @@ La consulta de movimientos exige que la sesión corresponda al arrendatario de l
 arrendador de su bien. `Property.verifiedOnly` determina si se requiere `Profile.isVerified` al
 reservar y pagar. El historial guarda el tipo enum `CHARGE` y la API lo presenta como `COBRO`, según
 el vocabulario de la historia.
+
+## Decisión de devolución o retención del depósito
+
+`DepositDecisionsService` aplica las decisiones y `DepositsRepository` encapsula las
+consultas y escrituras. La decisión se limita al OWNER propietario, a reservas `COMPLETED` y a
+depósitos positivos en estado `PENDING`. Una transacción serializable actualiza condicionalmente el
+depósito y registra los movimientos `REFUND` y/o `RETENTION`; en retenciones parciales, el valor
+retenido más el devuelto siempre coincide con el depósito original. El servicio notifica al tenant
+después de confirmar la transacción.
+
+La entidad `Booking` no tiene `returnedAt` o `completedAt`; para contar los siete días calendario,
+H14 usa `Booking.updatedAt` como instante en que la reserva pasó a `COMPLETED`. Un proceso periódico
+busca depósitos todavía `PENDING` cuyas reservas completadas superaron ese plazo y registra la
+devolución con motivo «Plazo de decisión vencido». La actualización condicional y serializable evita
+que una decisión manual concurrente provoque una devolución doble. Esta equivalencia debe mantenerse
+si una historia futura incorpora un evento o campo específico para registrar la devolución física.

@@ -229,6 +229,14 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     expiresAt: Date;
     createdAt?: Date;
     property?: { title: string; securityDeposit: Prisma.Decimal };
+    deposit?: {
+      id: string;
+      amount: Prisma.Decimal;
+      state: string;
+      retainedAmount: Prisma.Decimal;
+      returnedAmount: Prisma.Decimal;
+      decidedAt: Date | null;
+    } | null;
   }>(booking: T) {
     return {
       id: booking.id,
@@ -244,6 +252,16 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
         property: {
           title: booking.property.title,
           securityDeposit: booking.property.securityDeposit.toFixed(2),
+        },
+      }),
+      ...(booking.deposit && {
+        deposit: {
+          id: booking.deposit.id,
+          amount: booking.deposit.amount.toFixed(2),
+          state: booking.deposit.state,
+          retainedAmount: booking.deposit.retainedAmount.toFixed(2),
+          returnedAmount: booking.deposit.returnedAmount.toFixed(2),
+          decidedAt: booking.deposit.decidedAt?.toISOString() ?? null,
         },
       }),
     };

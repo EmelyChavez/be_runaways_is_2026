@@ -63,6 +63,8 @@ enum DepositStatus {
 
 enum TransactionType {
   CHARGE
+  REFUND
+  RETENTION
 }
 
 enum ReviewType {
