@@ -4,9 +4,66 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 241 | 241 | 0 |
+| Unitarias | 262 | 262 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **241** | **241** | **0** |
+| **Total** | **262** | **262** | **0** |
+
+## Módulo 0: Autenticación y perfil — H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador
+
+### Casos positivos ejecutados
+
+- **H29-U01:** El usuario autenticado consulta su perfil y el sistema enmascara el número del documento.
+- **H29-U02:** El perfil devuelve `document: null` si el usuario no ha enviado documento.
+- **H29-U03:** El sistema calcula la calificación recibida como arrendador con reseñas `RENTER_TO_PROPERTY`.
+- **H29-U04:** El sistema calcula la calificación recibida como arrendatario con reseñas `OWNER_TO_RENTER`.
+- **H29-U05:** El promedio se redondea a un decimal y devuelve el conteo de reseñas.
+- **H29-U06:** Sin reseñas, el perfil devuelve promedio nulo y conteo cero para mostrar “Sin calificaciones”.
+- **H29-U07:** Un TENANT verificado cambia a OWNER y recibe el par nuevo de tokens.
+- **H29-U08:** Al volver de OWNER a TENANT, los bienes AVAILABLE se pausan en la misma transacción.
+- **H29-U09:** La operación de pausa se limita a bienes AVAILABLE, conservando los demás estados.
+- **H29-U20:** OWNER tiene permiso para publicar y gestionar bienes, pero no para reservar ni pagar.
+- **H29-U21:** TENANT tiene permiso para reservar y pagar, pero no para publicar ni gestionar bienes.
+
+### Casos negativos ejecutados
+
+- **H29-U10:** Una reserva PENDING del usuario como arrendatario bloquea el cambio de rol.
+- **H29-U11:** Una reserva PAID del usuario como arrendatario bloquea el cambio de rol.
+- **H29-U12:** Una reserva PENDING sobre un bien propio bloquea el cambio de rol.
+- **H29-U13:** Una reserva PAID sobre un bien propio bloquea el cambio de rol.
+- **H29-U14:** Un depósito PENDING bloquea el cambio de rol.
+- **H29-U15:** El sistema rechaza solicitar el rol que ya está activo con `409 ROLE_UNCHANGED`.
+- **H29-U16:** ADMIN no puede cambiar su rol y recibe `403 FORBIDDEN`.
+- **H29-U17:** Una solicitud sin sesión recibe `401`.
+- **H29-U18:** El DTO rechaza un rol distinto de TENANT u OWNER.
+- **H29-U19:** Un perfil no verificado no puede pasar de TENANT a OWNER.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H29-U01 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Perfil y documento enmascarado | Consultar el perfil del usuario de sesión mediante el servicio mockeado. | Datos del usuario, verificación y documento con tipo, estado y número enmascarado. | Coinciden los datos propios; documento DUI enmascarado como `••••••67-8`. | Aprobado |
+| H29-U02 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Perfil sin documento | Consultar perfil con documento asociado nulo. | `document: null`. | El servicio devolvió `document: null`. | Aprobado |
+| H29-U03 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Rating de arrendador | Consultar como OWNER y revisar tipo de reseñas agregado. | Consulta `RENTER_TO_PROPERTY`; promedio con un decimal y conteo. | Se consultó `RENTER_TO_PROPERTY` y se obtuvo promedio 4.3, conteo 5. | Aprobado |
+| H29-U04 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Rating de arrendatario | Consultar como TENANT y revisar tipo de reseñas agregado. | Consulta `OWNER_TO_RENTER`; promedio con un decimal y conteo. | Se consultó `OWNER_TO_RENTER` y se obtuvo promedio 4.3, conteo 5. | Aprobado |
+| H29-U05 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Redondeo del promedio | Simular promedio 3.84 y 7 reseñas; consultar perfil. | Devuelve promedio 3.8 y conteo 7. | Devolvió promedio 3.8 y conteo 7. | Aprobado |
+| H29-U06 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Sin calificaciones | Simular promedio nulo y cero reseñas; consultar perfil. | `average: null`, `count: 0`. | Devolvió promedio nulo y conteo cero. | Aprobado |
+| H29-U07 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | TENANT a OWNER | Solicitar cambio con usuario verificado y sin bloqueos. | Actualiza el rol y entrega access y refresh tokens nuevos. | Rol actualizado a OWNER; se emitió y devolvió el nuevo par. | Aprobado |
+| H29-U08 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | OWNER a TENANT | Solicitar cambio sin bloqueos; inspeccionar pausa y transacción. | Pausa AVAILABLE y actualiza rol en la misma transacción. | Se invocó pausa AVAILABLE a PAUSED antes de actualizar el rol dentro de la transacción. | Aprobado |
+| H29-U09 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Alcance de la pausa | Inspeccionar argumentos de la operación de pausa al volver a TENANT. | Solo filtra estado AVAILABLE y lo cambia a PAUSED. | El repositorio recibió filtro AVAILABLE y destino PAUSED. | Aprobado |
+| H29-U10 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Reserva PENDING del arrendatario | Simular reserva activa; intentar cambiar de TENANT a OWNER. | `409 ROLE_CHANGE_BLOCKED`; no actualiza el rol. | El servicio rechazó con el código esperado y no actualizó. | Aprobado |
+| H29-U11 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Reserva PAID del arrendatario | Simular reserva activa; intentar cambiar de TENANT a OWNER. | `409 ROLE_CHANGE_BLOCKED`; no actualiza el rol. | El servicio rechazó con el código esperado y no actualizó. | Aprobado |
+| H29-U12 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Reserva PENDING sobre bien propio | Simular reserva activa de un bien propio; intentar volver a TENANT. | `409 ROLE_CHANGE_BLOCKED`; no pausa ni actualiza bienes/rol. | El servicio rechazó y no ejecutó la pausa. | Aprobado |
+| H29-U13 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Reserva PAID sobre bien propio | Simular reserva activa de un bien propio; intentar volver a TENANT. | `409 ROLE_CHANGE_BLOCKED`; no pausa ni actualiza bienes/rol. | El servicio rechazó y no ejecutó la pausa. | Aprobado |
+| H29-U14 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Depósito PENDING | Simular depósito pendiente; solicitar cambio de rol. | `409 ROLE_CHANGE_BLOCKED`. | El servicio rechazó con el código esperado. | Aprobado |
+| H29-U15 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Rol sin cambios | Solicitar TENANT cuando el usuario ya es TENANT. | `409 ROLE_UNCHANGED`; no actualiza el rol. | Se produjo ConflictException y no se llamó la actualización. | Aprobado |
+| H29-U16 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | ADMIN intenta cambiar rol | Simular ADMIN y solicitar TENANT. | `403 FORBIDDEN`; rol intacto. | Se produjo ForbiddenException y no se actualizó el rol. | Aprobado |
+| H29-U17 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Solicitud sin sesión | Ejecutar JwtAuthGuard sin encabezado Authorization. | `401 Unauthorized`. | El guard rechazó con UnauthorizedException. | Aprobado |
+| H29-U18 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Rol inválido | Validar ChangeRoleDto con ADMIN. | La validación rechaza el rol con error 400. | class-validator devolvió errores de validación. | Aprobado |
+| H29-U19 | Negativa | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Perfil sin verificar | Solicitar OWNER como TENANT no verificado. | `403 ACCOUNT_NOT_VERIFIED`; no actualiza el rol. | El servicio rechazó con el código esperado y no actualizó. | Aprobado |
+| H29-U20 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de OWNER | Revisar roles declarados en publicaciones/gestión, reservas y pagos. | OWNER puede publicar y gestionar; no puede reservar ni pagar. | La metadata autoriza OWNER en publicaciones y lo excluye de crear reservas y pagar. | Aprobado |
+| H29-U21 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de TENANT | Revisar roles declarados en reservas, pagos y publicaciones/gestión. | TENANT puede reservar y pagar; no puede publicar ni gestionar. | La metadata autoriza TENANT en reservas/pagos y lo excluye de publicar/gestionar. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
