@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NotificationEventType, OriginModule, Prisma } from '@PrismaClient';
+import { NotificationEventType, OriginModule, Prisma, TransactionType } from '@PrismaClient';
 import { NotificationsService } from '@Notifications/services';
 import type { CreatePaymentDto } from '@Payments/dto';
 import { PaymentsRepository } from '@Payments/repositories';
@@ -142,7 +142,11 @@ export class PaymentsService {
       bookingId,
       data: transactions.map((transaction) => ({
         id: transaction.id,
-        type: 'COBRO' as const,
+        type: transaction.type === TransactionType.CHARGE
+          ? 'COBRO' as const
+          : transaction.type === TransactionType.REFUND
+            ? 'DEVOLUCION' as const
+            : 'RETENCION' as const,
         amount: transaction.amount.toFixed(2),
         reason: transaction.reason,
         createdAt: transaction.createdAt.toISOString(),
