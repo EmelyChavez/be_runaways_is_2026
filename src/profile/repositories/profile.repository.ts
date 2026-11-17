@@ -99,3 +99,29 @@ export class ProfileRoleRepository {
     }
   }
 }
+
+/** Lecturas propias del perfil que no forman parte de la transacción de cambio de rol. */
+@Injectable()
+export class ProfileRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findByUserId(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, name: true, email: true, role: true,
+        profile: { select: { isVerified: true, identityDocument: {
+          select: { documentType: true, documentNumber: true, documentStatus: true },
+        } } },
+      },
+    });
+  }
+
+  getReviews(userId: string, reviewType: 'RENTER_TO_PROPERTY' | 'OWNER_TO_RENTER') {
+    return this.prisma.review.aggregate({
+      where: { targetUserId: userId, reviewType },
+      _avg: { userRating: true },
+      _count: { _all: true },
+    });
+  }
+}

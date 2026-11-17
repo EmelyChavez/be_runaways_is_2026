@@ -32,7 +32,7 @@ flowchart LR
 |---|---|
 | `auth` | Registro, login, emisión y rotación de tokens, intentos de login y guards de autenticación/autorización. |
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
-| `profile` | Cambio del rol entre `TENANT` y `OWNER`. |
+| `profile` | Consulta del perfil propio, documento de identidad y calificación según rol vigente; cambio del rol entre `TENANT` y `OWNER`. |
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables.Creación, listado y eliminación de bloqueos mediante `AvailabilityBlocksController`, DTOs, `PropertiesService` y `PropertiesRepository`. |
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación solo cuando el bien tiene `verifiedOnly`, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |

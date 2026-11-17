@@ -1,5 +1,11 @@
 # Resumen del sistema
 
+## Módulo 0: Autenticación y perfil
+
+Este módulo permite que cada persona cree y acceda a su cuenta y use el sistema según el rol que tiene activo. Desde su perfil puede consultar sus datos y cambiar entre arrendatario y arrendador cuando cumple las reglas; el sistema conserva la verificación, protege las operaciones y pausa sus bienes disponibles al volver a arrendatario. Solo API por ahora.
+
+- **H29 — Consulta de perfil y cambio de rol entre arrendatario y arrendador:** el usuario consulta su nombre, correo, rol, verificación, documento con el número enmascarado y calificación correspondiente a su rol actual. Puede cambiar entre arrendatario y arrendador para ofrecer bienes o volver a reservar y pagar. El sistema bloquea el cambio si hay reservas pendientes o pagadas, depósitos pendientes de decisión o si ya tiene el rol solicitado; ADMIN no puede cambiarlo. Al volver a arrendatario, sus bienes disponibles quedan pausados.
+
 ## Módulo 1: Catálogo de propiedades/equipo
 
 Este módulo reúne las publicaciones de bienes disponibles para alquilar. El arrendador administra sus propios bienes y el arrendatario consulta la información para decidir cuál reservar. Por ahora, estas funciones están disponibles mediante la API del backend.

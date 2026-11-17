@@ -19,6 +19,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `POST /api/v1/auth/refresh` | Refresh token en el cuerpo | `{ refreshToken }` | `200`: nuevo par de tokens y usuario |
 | `POST /api/v1/auth/logout` | Refresh token en el cuerpo | `{ refreshToken }` | `204`, sin cuerpo |
 | `GET /api/v1/auth/me` | Bearer access token | Sin cuerpo | `200`: `{ id, email, role, isActive, createdAt }` |
+| `GET /api/v1/profile` | Sesión (`TENANT`, `OWNER` o `ADMIN`) | Sin cuerpo ni `userId` | `200`: `{ userId, name, email, role, isVerified, document: { type, number (enmascarado), status } \| null, rating: { average (un decimal o null), count } }`; calificación según rol vigente |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ role }` | `200`: datos del cambio y nuevo par de tokens |
 | `GET /api/v1/properties/:id` | `TENANT` autenticado | `id` UUID | `200`: detalle del bien disponible, arrendador, reseñas y calificaciones |
 | `GET /api/v1/properties/:id/availability` | `TENANT` autenticado o `OWNER` dueño | `id` UUID | `200`: `{ propertyId, from, to, occupiedDates }`; fechas ISO `YYYY-MM-DD`, desde hoy hasta el día 90 inclusive |
