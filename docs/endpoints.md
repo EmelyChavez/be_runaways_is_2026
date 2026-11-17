@@ -25,7 +25,10 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `POST /api/v1/properties/:id/blocks` | `OWNER` autenticado, dueño | `id` UUID; `{ startDate, endDate }` (`YYYY-MM-DD`) | `201`: `{ id, propertyId, startDate, endDate, createdAt }`; `400` fechas inválidas/fuera del horizonte, `404` bien ajeno o inexistente, `409` traslape con bloqueo o reserva `PENDING`/`PAID` |
 | `GET /api/v1/properties/:id/blocks` | `OWNER` autenticado, dueño | `id` UUID | `200`: lista de bloqueos con fin hoy o posterior, ordenada por inicio; vacía si no hay bloqueos vigentes |
 | `DELETE /api/v1/blocks/:id` | `OWNER` autenticado, propietario del bien bloqueado | `id` UUID del bloqueo | `204`, sin cuerpo; `404` bloqueo inexistente o ajeno |
-| `POST /api/v1/bookings` | `TENANT` autenticado y verificado | `{ propertyId, startDate, endDate }` (`YYYY-MM-DD`) | `201`: reserva `PENDING`, subtotal calculado, `expiresAt` y mensaje de confirmación |
+| `POST /api/v1/bookings` | `TENANT` autenticado; perfil verificado si `verifiedOnly` | `{ propertyId, startDate, endDate }` (`YYYY-MM-DD`) | `201`: reserva `PENDING`, subtotal calculado, `expiresAt` y mensaje de confirmación |
+| `GET /api/v1/payments/:bookingId/summary` | `TENANT` dueño de la reserva | `bookingId` UUID | `200`: detalle del bien, periodo, días, precio diario, alquiler, depósito, total y hora límite; `403` si el bien exige cuenta verificada y el perfil no lo está; `404` reserva ajena/inexistente; `409` reserva no pagable |
+| `POST /api/v1/payments` | `TENANT` dueño de la reserva | `{ bookingId, last4Digits }`; `last4Digits` son exactamente cuatro dígitos | `201`: recibo con número, fecha, bien, fechas, días, desglose, total y últimos cuatro dígitos; `400` fondos insuficientes para `0002`; `403` si el bien requiere perfil verificado; `404` reserva ajena/inexistente; `409` cancelada/vencida o ya pagada |
+| `GET /api/v1/bookings/:bookingId/transactions` | `TENANT` de la reserva o `OWNER` del bien | `bookingId` UUID | `200`: movimientos `{ id, type, amount, reason, createdAt }` del más reciente al más antiguo; `404` para reserva ajena/inexistente |
 | `GET /api/v1/bookings/mine` | `TENANT` autenticado | `status` opcional, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas del arrendatario autenticado |
 | `GET /api/v1/owner/bookings` | `OWNER` autenticado | `propertyId` y `status` opcionales, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas de bienes del arrendador, incluyendo `tenant.name` |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
@@ -35,7 +38,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `GET /api/v1/profile/document/admin/:userId` | `ADMIN` | `userId` UUID | `200`: detalle del documento `PENDING` y `documentUrl` temporal para abrir el archivo privado; `404` si no existe o ya fue revisado |
 | `PATCH /api/v1/profile/document/admin/:userId/approve` | `ADMIN` | `userId` UUID | `200`: `{ userId, documentStatus: "APPROVED", isVerified: true, reviewedAt }` |
 | `PATCH /api/v1/profile/document/admin/:userId/reject` | `ADMIN` | `userId` UUID; `{ rejectionReason }` de 10 a 300 caracteres | `200`: `{ userId, documentStatus: "REJECTED", rejectionReason, reviewedAt }` |
-| `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` |
+| `POST /api/v1/properties` | `OWNER` autenticado | `multipart/form-data`: campos del bien, `verifiedOnly` opcional e `images` (1–5 archivos JPG/PNG, máximo 5 MB cada uno) | `201`: bien creado con URLs HTTPS de Cloudinary en `images` y su regla de verificación |
 | `GET /api/v1/properties` | `TENANT` autenticado | `page` opcional (por defecto 1); `q` busca sin distinguir mayúsculas ni tildes en título, descripción, departamento, municipio y dirección; `department` puede enviarse solo y `municipality` requiere `department`; permite `category`, `noDeposit=true` (depósito igual a cero), límites de precio y `startDate`/`endDate` juntos | `200`: `{ data: [{ id, title, municipality, department, category, pricePerDay, images }], total, page, pageSize: 12 }`; solo bienes `AVAILABLE`, criterios combinados con AND, más recientes primero |
 | `PATCH /api/v1/properties/:id/status` | `OWNER` autenticado, dueño | `id` UUID; `{ "status": "AVAILABLE" | "PAUSED" }` | `200`: `{ id, status, statusChangedAt }`; bloqueado si hay reservas `PENDING` o `PAID` |
 | `DELETE /api/v1/properties/:id` | `OWNER` autenticado, dueño | `id` UUID | `204`, sin cuerpo; cambia el estado a `DELETED` y conserva las reseñas |
@@ -69,11 +72,20 @@ existentes en `src/`; las planificadas aún no tienen controlador.
   arrendador dentro de los 90 días desde hoy en El Salvador; no incluye datos de quién reservó.
 - Reservas: `POST /api/v1/bookings` responde `400 VALIDATION_ERROR` para fechas inválidas,
   fecha final anterior, fechas fuera de los próximos 90 días o periodos mayores de 30 días; `401`
-  sin sesión; `403` para roles distintos de `TENANT` o perfil sin verificar; `404 PROPERTY_NOT_AVAILABLE`
+  sin sesión; `403` para roles distintos de `TENANT` o perfil sin verificar cuando el bien exige verificación; `404 PROPERTY_NOT_AVAILABLE`
   si el bien no existe o no está `AVAILABLE`; y `409 DATES_UNAVAILABLE` si una reserva activa o un
   bloqueo se traslapa. La comprobación y creación se ejecutan en una transacción serializable. La
   reserva se guarda como `PENDING`, vence 24 horas después y responde el subtotal calculado por el
   servidor junto con «Reserva creada. Tienes 24 horas para pagarla.».
+- Pagos H13: el total se calcula con el subtotal guardado en la reserva más el depósito vigente del
+  bien; el cliente no envía montos. El proceso simulado espera dos segundos. La tarjeta terminada en
+  `0002` responde `400 INSUFFICIENT_FUNDS` con «Fondos insuficientes. Intenta con otra tarjeta» y no
+  modifica la reserva. Las solicitudes aprobadas registran pago, depósito e historial y cambian la
+  reserva a `PAID` atómicamente. Una segunda solicitud sobre una reserva `PAID` responde `409
+  ALREADY_PAID`; reservas canceladas o vencidas responden `409 BOOKING_NOT_PAYABLE`. Solo se aceptan
+  pagos del TENANT propietario de la reserva. La verificación se exige cuando `Property.verifiedOnly`
+  es true. El historial solo es visible para tenant y owner relacionados con la reserva. El pago es
+  una simulación contable; no transfiere fondos a una cuenta.
 - `GET /api/v1/bookings/mine` y `GET /api/v1/owner/bookings` requieren respectivamente `TENANT` y
   `OWNER`; los resultados siempre se limitan al usuario de sesión. Ambos aceptan estado y paginación;
   la ruta del arrendador admite además `propertyId` y muestra el nombre del arrendatario.

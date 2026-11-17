@@ -20,6 +20,7 @@ export class PropertiesRepository {
         address: data.address,
         pricePerDay: data.pricePerDay,
         securityDeposit: data.securityDeposit,
+        verifiedOnly: data.verifiedOnly ?? false,
         images,
       },
     });
@@ -217,6 +218,7 @@ export class PropertiesRepository {
         address: data.address,
         pricePerDay: data.pricePerDay,
         securityDeposit: data.securityDeposit,
+        ...(data.verifiedOnly !== undefined && { verifiedOnly: data.verifiedOnly }),
         images,
       },
     });
@@ -234,6 +236,7 @@ export class PropertiesRepository {
         municipality: true,
         pricePerDay: true,
         securityDeposit: true,
+        verifiedOnly: true,
         images: true,
         owner: { select: { id: true, name: true } },
       },

@@ -13,7 +13,6 @@ import {
   NotificationEventType,
   OriginModule,
   Prisma,
-  Role,
 } from '@PrismaClient';
 import { NotificationsService } from '@Notifications/services';
 import type { BookingQueryDto, CreateBookingDto, OwnerBookingQueryDto } from '@Bookings/dto';
@@ -59,20 +58,22 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const result = await this.bookingsRepository.serializableTransaction(async (transaction) => {
-        const profile = await this.bookingsRepository.findVerifiedProfile(tenantId, transaction);
-        if (!profile?.isVerified) {
-          throw new ForbiddenException({
-            code: 'ACCOUNT_NOT_VERIFIED',
-            message: 'Debes verificar tu cuenta antes de crear una reserva.',
-          });
-        }
-
         const property = await this.bookingsRepository.findAvailableProperty(dto.propertyId, transaction);
         if (!property) {
           throw new NotFoundException({
             code: 'PROPERTY_NOT_AVAILABLE',
             message: 'Este bien no existe o no está disponible',
           });
+        }
+
+        if (property.verifiedOnly !== false) {
+          const profile = await this.bookingsRepository.findVerifiedProfile(tenantId, transaction);
+          if (!profile?.isVerified) {
+            throw new ForbiddenException({
+              code: 'VERIFICATION_REQUIRED',
+              message: 'Debes verificar tu cuenta para reservar este bien.',
+            });
+          }
         }
 
         const [overlappingBooking, overlappingBlock] = await Promise.all([

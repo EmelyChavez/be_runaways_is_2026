@@ -24,6 +24,12 @@ Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la
 
 - **H12 — Bloqueo de fechas no disponibles:** el arrendador bloquea un periodo de su bien para que no pueda ser reservado y, después de confirmar, puede eliminar ese bloqueo. El sistema muestra los bloqueos vigentes ordenados por fecha y refleja esos días como ocupados en el calendario; no acepta fechas fuera del rango permitido ni periodos que se traslapen con otro bloqueo o con una reserva pendiente o pagada.
 
+## Módulo 4: Pagos y depósitos de garantía
+
+Este módulo permite al arrendatario completar el pago de una reserva y consultar los cobros asociados, mientras conserva el depósito para su gestión posterior. El arrendador puede consultar los movimientos de las reservas de sus bienes. Solo API por ahora.
+
+- **H13 — Pago de alquiler con detalle del depósito:** antes de pagar, el arrendatario consulta el detalle del bien, el periodo, el alquiler, el depósito y el total. El pago simulado aprobado cambia la reserva a pagada, registra el desglose del cobro y el depósito, y devuelve un comprobante; la tarjeta terminada en 0002 se rechaza sin cambiar la reserva. El sistema impide cobrar reservas ajenas, vencidas, canceladas o ya pagadas y limita el historial de movimientos al arrendatario y al arrendador involucrados.
+
 ## Módulo 7: Verificación de identidad/documentos
 
 Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado. Por ahora, estas funciones están disponibles mediante la API del backend.

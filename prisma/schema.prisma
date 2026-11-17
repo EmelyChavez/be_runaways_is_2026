@@ -61,6 +61,10 @@ enum DepositStatus {
   PARTIALLY_RETAINED
 }
 
+enum TransactionType {
+  CHARGE
+}
+
 enum ReviewType {
   RENTER_TO_PROPERTY
   OWNER_TO_RENTER
@@ -123,6 +127,7 @@ model User {
   profile         Profile? //permite que sea opcional
   ownedProperties Property[]     @relation("PropertyOwner")
   tenantBookings  Booking[]      @relation("BookingTenant")
+  transactionDecisions TransactionHistory[] @relation("TransactionActor")
   depositsDecided Deposit[]      @relation("DepositDecidedBy")
   reviewsAuthored Review[]       @relation("ReviewAuthor")
   reviewsReceived Review[]       @relation("ReviewTargetUser")
@@ -197,6 +202,7 @@ model Property {
   address         String
   pricePerDay     Decimal          @map("price_per_day") @db.Decimal(10, 2)
   securityDeposit Decimal          @map("security_deposit") @db.Decimal(10, 2)
+  verifiedOnly    Boolean          @default(false) @map("verified_only")
   images          String[]         @default([])
   status          PropertyStatus   @default(AVAILABLE)
   updatedAt       DateTime         @updatedAt @map("updated_at")
@@ -226,6 +232,7 @@ model Booking {
 
   deposit Deposit?
   payment Payment?
+  transactionHistory TransactionHistory[]
   reviews Review[]
 
   @@index([tenantId, status])
@@ -298,6 +305,21 @@ model Payment {
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("payments")
+}
+
+model TransactionHistory {
+  id        String          @id @default(uuid()) @db.Uuid
+  bookingId String          @map("booking_id") @db.Uuid
+  booking   Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  actorId   String?         @map("actor_id") @db.Uuid
+  actor     User?           @relation("TransactionActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type      TransactionType
+  amount    Decimal         @db.Decimal(10, 2)
+  reason    String
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([bookingId, createdAt])
+  @@map("transaction_history")
 }
 
 model RefreshToken {
