@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 334 | 334 | 0 |
+| Unitarias | 344 | 344 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **334** | **334** | **0** |
+| **Total** | **344** | **344** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -181,6 +181,41 @@ Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó
 | H2-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Rol ADMIN no permitido | Ejecutar `RolesGuard` con una sesión ADMIN. | Rechaza el acceso con 403. | El guard rechazó el acceso con estado 403. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H2.spec.ts` — Vitest reportó 1 archivo aprobado y 11 pruebas aprobadas.
+
+## Módulo 1: Catálogo de propiedades/equipo — H3: Detalle de un bien (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H3-U01:** El detalle devuelve las fotos, información completa del bien, precio y depósito con dos decimales y nombre del arrendador.
+- **H3-U02:** La respuesta incluye el promedio de calificación con un decimal y la cantidad de reseñas.
+- **H3-U03:** Si no hay reseñas, la respuesta incluye calificación nula y cantidad cero.
+- **H3-U04:** Si el depósito es cero, la API lo devuelve como `0.00` para que el cliente pueda mostrar «Sin depósito».
+- **H3-U05:** El endpoint autoriza al rol `TENANT`.
+
+### Casos negativos ejecutados
+
+- **H3-U06:** El detalle de un bien `PAUSED` no está disponible y responde 404.
+- **H3-U07:** El detalle de un bien `DELETED` no está disponible y responde 404.
+- **H3-U08:** El detalle de un bien inexistente responde 404.
+- **H3-U09:** El sistema rechaza la consulta del detalle sin sesión con 401.
+- **H3-U10:** El sistema bloquea con 403 la reserva de un bien que requiere verificación cuando el perfil del arrendatario no está verificado.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H3-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Información e imágenes del bien | Consultar el detalle de un bien disponible con dos imágenes, descripción y datos del arrendador. | Devuelve todas las fotos, datos descriptivos, precio y depósito con dos decimales, y nombre del arrendador. | La respuesta incluyó ambas imágenes, los campos del bien, `45.00`, `100.00` y el nombre del arrendador. | Aprobado |
+| H3-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Promedio y cantidad de reseñas | Consultar detalle con promedio agregado 4.54 y doce reseñas. | Devuelve el promedio como `4.5` y cantidad `12`. | La respuesta devolvió `propertyRatingAverage: "4.5"` y `propertyReviewCount: 12`. | Aprobado |
+| H3-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Bien sin calificaciones | Consultar detalle cuando el promedio agregado es nulo y el conteo es cero. | Devuelve calificación nula y cantidad cero para que el cliente muestre «Sin calificaciones». | La API devolvió `propertyRatingAverage: null` y `propertyReviewCount: 0`. | Aprobado |
+| H3-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Bien sin depósito | Consultar detalle de un bien cuyo depósito guardado es cero. | La API devuelve `0.00` para que el cliente muestre «Sin depósito». | La respuesta devolvió `securityDeposit: "0.00"`. | Aprobado |
+| H3-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Acceso del rol TENANT | Revisar el rol declarado por el endpoint y ejecutar `RolesGuard` como TENANT. | La ruta autoriza a TENANT. | La ruta declara `TENANT` y el guard permitió el acceso. | Aprobado |
+| H3-U06 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien PAUSED | Consultar un bien pausado usando la búsqueda restringida a `AVAILABLE`. | No devuelve el detalle y responde 404. | Prisma recibió el estado `AVAILABLE`; al no encontrar el bien, el servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien DELETED | Consultar un bien eliminado usando la búsqueda restringida a `AVAILABLE`. | No devuelve el detalle y responde 404. | Prisma recibió el estado `AVAILABLE`; al no encontrar el bien, el servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien inexistente | Consultar un ID que no corresponde a un bien disponible. | No devuelve el detalle y responde 404. | El servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Consulta sin sesión | Ejecutar `JwtAuthGuard` para el endpoint sin encabezado Bearer. | Rechaza la solicitud con 401. | El guard rechazó la solicitud con estado 401. | Aprobado |
+| H3-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Reserva requiere verificación | Intentar crear una reserva para un bien `verifiedOnly` con perfil no verificado. | Responde 403 `VERIFICATION_REQUIRED` y no crea la reserva. | El servicio respondió 403 con `VERIFICATION_REQUIRED`; `createPendingBooking` no fue invocado. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H3.spec.ts` — Vitest reportó 1 archivo aprobado y 10 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
