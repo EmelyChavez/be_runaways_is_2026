@@ -4,8 +4,8 @@ export class TransactionHistoryItemDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiProperty({ enum: ['COBRO'] })
-  type!: 'COBRO';
+  @ApiProperty({ enum: ['COBRO', 'DEVOLUCION', 'RETENCION'] })
+  type!: 'COBRO' | 'DEVOLUCION' | 'RETENCION';
 
   @ApiProperty({ example: '250.00' })
   amount!: string;

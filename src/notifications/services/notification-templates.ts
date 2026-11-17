@@ -41,7 +41,7 @@ export const notificationTemplates: Record<
   }),
   DEPOSIT_RETAINED: (d) => ({
     title: 'Depósito de garantía retenido',
-    message: `Tu depósito de garantía por $${d.amount} ha sido retenido por reporte de daños.`,
+    message: `Se retuvieron $${d.amount} de tu depósito de garantía.${d.reason ? ` Motivo: ${d.reason}` : ''}`.slice(0, 250),
   }),
   DOCUMENT_APPROVED: () => ({
     title: 'Documento aprobado',

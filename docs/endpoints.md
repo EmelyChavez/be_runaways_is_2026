@@ -28,9 +28,10 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `POST /api/v1/bookings` | `TENANT` autenticado; perfil verificado si `verifiedOnly` | `{ propertyId, startDate, endDate }` (`YYYY-MM-DD`) | `201`: reserva `PENDING`, subtotal calculado, `expiresAt` y mensaje de confirmación |
 | `GET /api/v1/payments/:bookingId/summary` | `TENANT` dueño de la reserva | `bookingId` UUID | `200`: detalle del bien, periodo, días, precio diario, alquiler, depósito, total y hora límite; `403` si el bien exige cuenta verificada y el perfil no lo está; `404` reserva ajena/inexistente; `409` reserva no pagable |
 | `POST /api/v1/payments` | `TENANT` dueño de la reserva | `{ bookingId, last4Digits }`; `last4Digits` son exactamente cuatro dígitos | `201`: recibo con número, fecha, bien, fechas, días, desglose, total y últimos cuatro dígitos; `400` fondos insuficientes para `0002`; `403` si el bien requiere perfil verificado; `404` reserva ajena/inexistente; `409` cancelada/vencida o ya pagada |
-| `GET /api/v1/bookings/:bookingId/transactions` | `TENANT` de la reserva o `OWNER` del bien | `bookingId` UUID | `200`: movimientos `{ id, type, amount, reason, createdAt }` del más reciente al más antiguo; `404` para reserva ajena/inexistente |
-| `GET /api/v1/bookings/mine` | `TENANT` autenticado | `status` opcional, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas del arrendatario autenticado |
-| `GET /api/v1/owner/bookings` | `OWNER` autenticado | `propertyId` y `status` opcionales, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas de bienes del arrendador, incluyendo `tenant.name` |
+| `GET /api/v1/bookings/:bookingId/transactions` | `TENANT` de la reserva o `OWNER` del bien | `bookingId` UUID | `200`: movimientos `{ id, type, amount, reason, createdAt }` (`COBRO`, `DEVOLUCION` o `RETENCION`) del más reciente al más antiguo; `404` para reserva ajena/inexistente |
+| `POST /api/v1/bookings/:id/deposit/decision` | `OWNER` propietario de la reserva | `id` UUID de reserva; `{ decisionType: "DEVOLVER" }` o `{ decisionType: "RETENER", retentionAmount, retentionReason }` | `200`: `{ id, bookingId, state, amount, retainedAmount, returnedAmount, decidedAt }`; devuelve todo o retiene el monto indicado. La reserva debe estar `COMPLETED`; `RETENER` requiere monto mayor que 0 y no mayor al depósito, y motivo de 1 a 250 caracteres |
+| `GET /api/v1/bookings/mine` | `TENANT` autenticado | `status` opcional, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas del arrendatario autenticado, con estado y desglose del depósito cuando existe |
+| `GET /api/v1/owner/bookings` | `OWNER` autenticado | `propertyId` y `status` opcionales, `page` (1), `pageSize` (10, máximo 100) | `200`: `{ data, total, page }`; solo reservas de bienes del arrendador, incluyendo `tenant.name` y estado/desglose del depósito |
 | `PATCH /api/v1/profile/role` | `TENANT` o `OWNER` autenticado | `{ "role": "TENANT" }` o `{ "role": "OWNER" }` | `200`: `{ userId, previousRole, role, changedAt, accessToken, refreshToken, expiresIn }` |
 | `POST /api/v1/profile/document` | `TENANT` autenticado | `multipart/form-data`: `documentType` (`DUI`/`PASSPORT`), `documentNumber`, `documentUrl` como archivo JPG/PNG/PDF (máximo 5 MB) | `201`: `{ documentType, documentStatus: "PENDING", documentSubmittedAt }` |
 | `GET /api/v1/profile/document` | `TENANT` o `OWNER` autenticado | Sin parámetros | `200`: `{ accountStatus: UNVERIFIED/PENDING/VERIFIED/REJECTED, documentType?, documentSubmittedAt?, rejectionReason? }`; sin URL ni número del documento |
@@ -77,7 +78,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
   bloqueo se traslapa. La comprobación y creación se ejecutan en una transacción serializable. La
   reserva se guarda como `PENDING`, vence 24 horas después y responde el subtotal calculado por el
   servidor junto con «Reserva creada. Tienes 24 horas para pagarla.».
-- Pagos H13: el total se calcula con el subtotal guardado en la reserva más el depósito vigente del
+- Pagos: el total se calcula con el subtotal guardado en la reserva más el depósito vigente del
   bien; el cliente no envía montos. El proceso simulado espera dos segundos. La tarjeta terminada en
   `0002` responde `400 INSUFFICIENT_FUNDS` con «Fondos insuficientes. Intenta con otra tarjeta» y no
   modifica la reserva. Las solicitudes aprobadas registran pago, depósito e historial y cambian la
@@ -86,6 +87,16 @@ existentes en `src/`; las planificadas aún no tienen controlador.
   pagos del TENANT propietario de la reserva. La verificación se exige cuando `Property.verifiedOnly`
   es true. El historial solo es visible para tenant y owner relacionados con la reserva. El pago es
   una simulación contable; no transfiere fondos a una cuenta.
+- Depósitos: solo el OWNER del bien puede decidir sobre un depósito mayor que cero de una reserva
+  `COMPLETED`. La decisión se actualiza condicionalmente dentro de una transacción serializable y solo
+  puede registrarse una vez. `DEVOLVER` registra el reembolso total; `RETENER` exige un monto positivo
+  que no supere el depósito y un motivo de 1 a 250 caracteres. La retención parcial registra tanto el
+  monto retenido como el saldo devuelto, de forma que ambos sumen el depósito. Los movimientos se
+  muestran como `DEVOLUCION` y `RETENCION`; el estado del depósito está incluido en las reservas del
+  arrendatario y del arrendador. Sin decisión durante siete días calendario desde que la reserva pasa
+  a `COMPLETED`, se devuelve el total con el motivo «Plazo de decisión vencido» y se notifica al
+  arrendatario. Los errores de entrada son `400 VALIDATION_ERROR`, la reserva no finalizada y la
+  decisión duplicada responden `409 BOOKING_NOT_FINALIZED` y `409 DEPOSIT_ALREADY_DECIDED`.
 - `GET /api/v1/bookings/mine` y `GET /api/v1/owner/bookings` requieren respectivamente `TENANT` y
   `OWNER`; los resultados siempre se limitan al usuario de sesión. Ambos aceptan estado y paginación;
   la ruta del arrendador admite además `propertyId` y muestra el nombre del arrendatario.
