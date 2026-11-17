@@ -6,8 +6,9 @@ frontend Next.js.
 ## Registro
 
 `POST /api/v1/auth/register` recibe `name`, `email` y `password`. El email se recorta y normaliza a
-minúsculas. La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y
-número. El `ValidationPipe` rechaza campos adicionales, incluido `role`. El backend asigna
+minúsculas. La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula,
+número y al menos un carácter especial (símbolo, sin contar espacios). El `ValidationPipe` rechaza
+campos adicionales, incluido `role`. El backend asigna
 `TENANT`, genera el hash bcrypt y crea también el `Profile` con `isVerified: false`. La respuesta
 contiene `id`, `email`, `role` y `name`, nunca la contraseña ni su hash.
 
