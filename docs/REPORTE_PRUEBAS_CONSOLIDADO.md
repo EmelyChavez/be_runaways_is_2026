@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 204 | 204 | 0 |
+| Unitarias | 216 | 216 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **204** | **204** | **0** |
+| **Total** | **216** | **216** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -576,3 +576,42 @@ Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó
 | H24-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H24. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
+
+## Módulo 9: Panel de reportes para el arrendador — H25: Visualización de ingresos por bien publicado (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H25-U01:** El sistema muestra cada bien del arrendador con los ingresos de alquileres y depósitos retenidos, y muestra `0.00` en los bienes sin ingresos.
+- **H25-U02:** El sistema ordena los bienes de mayor a menor ingreso cuando se solicita `order=desc`.
+- **H25-U03:** El sistema ordena los bienes de menor a mayor ingreso cuando se solicita `order=asc`.
+- **H25-U04:** El sistema limita propiedades, pagos y depósitos al arrendador autenticado.
+- **H25-U05:** El sistema filtra pagos por `createdAt` y depósitos por `decidedAt`.
+- **H25-U06:** El sistema pagina los bienes y conserva los totales generales de todas las publicaciones propias.
+- **H25-U07:** El sistema permite consultar el reporte al rol `OWNER`.
+
+### Casos negativos ejecutados
+
+- **H25-U08:** El sistema excluye reservas canceladas de los pagos que consulta.
+- **H25-U09:** El sistema rechaza `order`, `page` y `pageSize` con valores inválidos con error 400.
+- **H25-U10:** El sistema rechaza la consulta sin sesión con 401.
+- **H25-U11:** El sistema deniega el reporte a `TENANT` con 403.
+- **H25-U12:** El sistema deniega el reporte a `ADMIN` con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H25-U01 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Ingresos de cada bien, incluido el bien sin movimientos | Simular dos propiedades propias, un pago y un depósito retenido para una; consultar el servicio. | Devuelve una fila por bien, con desglose y `0.00` para el bien sin ingresos. | La primera propiedad devolvió `150.00` de alquiler y `75.00` retenidos; la segunda mostró `0.00` en los tres montos. | Aprobado |
+| H25-U02 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Orden descendente por ingreso total | Simular tres propiedades con ingresos de 100.00, 300.00 y 25.00; solicitar `order=desc`. | Ordena las propiedades de 300.00 a 25.00. | El resultado quedó ordenado por IDs: bien de 300.00, bien de 100.00 y bien de 25.00. | Aprobado |
+| H25-U03 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Orden ascendente por ingreso total | Simular tres propiedades con ingresos de 100.00, 300.00 y 25.00; solicitar `order=asc`. | Ordena las propiedades de 25.00 a 300.00. | El resultado quedó ordenado por IDs: bien de 25.00, bien de 100.00 y bien de 300.00. | Aprobado |
+| H25-U04 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Alcance por propietario de sesión | Consultar el repositorio con el ID del arrendador y revisar filtros de las tres consultas Prisma. | Las propiedades, los pagos y los depósitos quedan limitados al arrendador indicado. | Las tres consultas Prisma incluyeron `ownerId` en sus filtros. | Aprobado |
+| H25-U05 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Fechas correspondientes a cada ingreso | Consultar con límites de fecha y revisar los filtros Prisma de pago y depósito. | Los pagos usan `createdAt` y los depósitos `decidedAt`, con límites inclusivos. | Las consultas recibieron los filtros temporales correspondientes y `decidedAt` no nulo. | Aprobado |
+| H25-U06 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Paginación con totales globales | Simular tres bienes con ingresos y solicitar página 2 con tamaño 1. | Devuelve un bien en `data`, pero mantiene el total monetario y el total de tres bienes propios. | `data` incluyó el segundo bien; los totales reflejaron 600.00 y `total: 3`, con `page: 2`. | Aprobado |
+| H25-U07 | Positiva | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Acceso del rol OWNER | Ejecutar `RolesGuard` para una sesión OWNER con metadata requerida OWNER. | El guard permite consultar el reporte. | `RolesGuard` permitió el acceso. | Aprobado |
+| H25-U08 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Reserva cancelada excluida | Inspeccionar el filtro de estados de reserva aplicado a la consulta de pagos. | Solo incluye reservas `PAID` y `COMPLETED`; `CANCELED` no se cuenta. | Prisma recibió únicamente `PAID` y `COMPLETED`; `CANCELED` quedó excluido. | Aprobado |
+| H25-U09 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Parámetros de orden y paginación inválidos | Validar `order=popular`, `page=0` y `pageSize=101`. | El DTO rechaza los tres valores con errores de validación 400. | class-validator produjo errores para cada valor inválido. | Aprobado |
+| H25-U10 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Consulta sin sesión | Ejecutar `JwtAuthGuard` sin encabezado Bearer. | El guard rechaza la solicitud con 401. | Se lanzó `UnauthorizedException`. | Aprobado |
+| H25-U11 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol TENANT no permitido | Ejecutar `RolesGuard` para `TENANT` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
+| H25-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
