@@ -32,6 +32,9 @@ export class CreatePropertyResponseDto {
   @ApiProperty({ example: '100.00', description: 'Monto USD con dos decimales.' })
   securityDeposit!: string;
 
+  @ApiProperty({ description: 'Indica si solo usuarios verificados pueden reservar el bien.' })
+  verifiedOnly!: boolean;
+
   @ApiProperty({ type: [String], description: 'URLs seguras de las imágenes almacenadas en Cloudinary.' })
   images!: string[];
 
@@ -56,6 +59,7 @@ export class CreatePropertyResponseDto {
       address: property.address,
       pricePerDay: property.pricePerDay.toFixed(2),
       securityDeposit: property.securityDeposit.toFixed(2),
+      verifiedOnly: property.verifiedOnly,
       images: property.images,
       status: property.status,
       createdAt: property.createdAt,

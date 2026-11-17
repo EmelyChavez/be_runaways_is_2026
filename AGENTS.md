@@ -169,7 +169,9 @@ Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/
 | `POST /api/v1/bookings` | TENANT | Crea la reserva en PENDING. Valida verificación (`verifiedOnly`) y traslapes en una operación atómica |
 | `GET /api/v1/bookings/mine` | TENANT | Reservas propias |
 | `GET /api/v1/owner/bookings` | OWNER | Reservas de sus bienes |
-| `POST /api/v1/payments` | TENANT | Pago simulado. Valida verificación |
+| `GET /api/v1/payments/:bookingId/summary` | TENANT dueño de la reserva | Detalle de alquiler, depósito, total y hora límite |
+| `POST /api/v1/payments` | TENANT dueño de la reserva | Recibe `bookingId` y `last4Digits`; pago simulado, crea recibo, depósito y movimiento |
+| `GET /api/v1/bookings/:bookingId/transactions` | TENANT de la reserva o OWNER del bien | Movimientos privados ordenados del más reciente al más antiguo |
 | `POST /api/v1/bookings/:id/deposit/decision` | OWNER dueño | Devolver o retener depósito |
 
 ### Reseñas
@@ -232,6 +234,8 @@ Siempre que se ejecuten pruebas (Unitarias o E2E), abre el archivo único `docs/
 - **Montos:** USD con dos decimales, enviados como texto decimal (por ejemplo `"45.00"`).
 - **Pago simulado:** sin pasarela real. Nunca se guardan el número completo de la tarjeta ni el CVC;
   solo los últimos 4 dígitos.
+- **H13:** se registra el total simulado y su desglose de alquiler/depósito asociado a la reserva; el
+  propietario se obtiene desde el bien de esa reserva. No se envían fondos a cuentas externas.
 - **Notificaciones:** los módulos usan el servicio interno de notificaciones. El destinatario sale de
   la base de datos, nunca del cliente.
 - **Mensajes:** solo el arrendador propietario y el arrendatario involucrados pueden ver un hilo.

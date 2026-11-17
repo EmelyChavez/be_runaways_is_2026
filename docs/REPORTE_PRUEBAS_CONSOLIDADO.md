@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 204 | 204 | 0 |
+| Unitarias | 229 | 229 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **204** | **204** | **0** |
+| **Total** | **229** | **229** | **0** |
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -576,3 +576,68 @@ Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó
 | H24-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H24: Ingresos totales | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H24. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
+
+## Módulo 4: Pagos y depósitos de garantía — H13: Pago de alquiler con detalle del depósito (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H13-U01:** El detalle de pago muestra el bien, el periodo, los días inclusivos, el alquiler, el depósito, el total y la hora límite con montos a dos decimales.
+- **H13-U02:** Una tarjeta terminada en 4242 se procesa después de dos segundos, cambia la reserva a pagada, registra pago, depósito y movimiento, notifica al arrendador y devuelve el comprobante.
+- **H13-U03:** El arrendatario de la reserva consulta sus movimientos con tipo, monto, motivo y fecha.
+- **H13-U04:** El arrendador propietario consulta los movimientos de la reserva.
+- **H13-U05:** Las rutas de resumen y pago requieren el rol TENANT.
+- **H13-U18:** El repositorio ordena los movimientos del más reciente al más antiguo.
+
+### Casos negativos ejecutados
+
+- **H13-U06:** La tarjeta terminada en 0002 se rechaza con el mensaje indicado y no modifica la reserva ni crea registros.
+- **H13-U07a:** El resumen no está disponible para una reserva cancelada.
+- **H13-U07b:** El resumen no está disponible para una reserva pendiente vencida.
+- **H13-U08a:** No se puede pagar una reserva cancelada.
+- **H13-U08b:** No se puede pagar una reserva pendiente vencida.
+- **H13-U09:** No se puede volver a pagar una reserva pagada.
+- **H13-U10:** Una carrera de pago que encuentra la reserva ya pagada responde `ALREADY_PAID`.
+- **H13-U11:** El arrendatario no puede pagar una reserva ajena.
+- **H13-U12:** El arrendatario no puede consultar el resumen de una reserva ajena.
+- **H13-U13:** Un tercero no puede consultar movimientos de una reserva ajena.
+- **H13-U14:** No se puede pagar un bien que requiere verificación con un perfil no verificado.
+- **H13-U15:** No se puede consultar el detalle de pago de un bien que requiere verificación con un perfil no verificado.
+- **H13-U16:** El DTO rechaza un UUID requerido ausente o inválido.
+- **H13-U17a:** El DTO rechaza los últimos dígitos vacíos.
+- **H13-U17b:** El DTO rechaza menos de cuatro dígitos.
+- **H13-U17c:** El DTO rechaza más de cuatro dígitos.
+- **H13-U17d:** El DTO rechaza caracteres que no sean dígitos.
+- **H13-U19:** OWNER y ADMIN reciben 403 y la solicitud sin sesión recibe 401.
+- **H13-U20:** Un UUID inválido en el identificador del historial responde 400.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H13-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen y desglose del pago | Consultar resumen para periodo inclusivo de tres días con precio diario 50.00 y depósito 100.00. | Devuelve alquiler 150.00, total 250.00, datos del bien y vencimiento. | El resumen incluyó tres días, los importes calculados con dos decimales y `expiresAt`. | Aprobado |
+| H13-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago aprobado y comprobante | Pagar con 4242, avanzar el reloj simulado dos segundos y revisar las operaciones transaccionales y notificación. | Reserva `PAID`; crea Payment, Deposit y movimiento; devuelve recibo y avisa al propietario. | Se confirmaron las escrituras en transacción, recibo con desglose y últimos cuatro dígitos, y notificación al owner del bien. | Aprobado |
+| H13-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendatario | Consultar movimientos usando el ID del tenant relacionado y verificar los campos presentados. | Devuelve tipo, monto, motivo y fecha del movimiento. | La respuesta transformó el movimiento a `COBRO`, monto decimal de dos dígitos y fecha ISO. | Aprobado |
+| H13-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendador | Consultar movimientos usando el ID del owner de la propiedad. | El arrendador relacionado obtiene el historial. | El servicio autorizó al owner y devolvió los movimientos recibidos. | Aprobado |
+| H13-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Rol permitido para resumen y pago | Revisar metadata de ambos handlers y ejecutar RolesGuard como TENANT. | Las rutas declaran TENANT y el guard permite ese rol. | Los dos handlers declararon `TENANT`; RolesGuard autorizó la sesión. | Aprobado |
+| H13-U06 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Fondos insuficientes | Procesar tarjeta 0002 y revisar error y métodos de persistencia. | Responde 400 `INSUFFICIENT_FUNDS` con el mensaje exacto; no actualiza ni crea registros. | El servicio devolvió el error y no ejecutó transacción, pago, depósito ni movimiento. | Aprobado |
+| H13-U07a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva cancelada | Consultar el resumen de una reserva `CANCELED`. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva con estado 409. | Aprobado |
+| H13-U07b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva vencida | Consultar el resumen de una reserva `PENDING` cuyo vencimiento ya pasó. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva vencida con estado 409. | Aprobado |
+| H13-U08a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva cancelada | Intentar pagar una reserva `CANCELED` y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
+| H13-U08b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva vencida | Intentar pagar una reserva `PENDING` expirada y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
+| H13-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Reserva ya pagada | Pagar una reserva en estado `PAID`. | Responde 409 `ALREADY_PAID`. | El servicio rechazó el pago sin iniciar una nueva transacción. | Aprobado |
+| H13-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Doble pago concurrente | Simular conflicto Prisma P2002 y releer la reserva en estado `PAID`. | Convierte el conflicto en 409 `ALREADY_PAID`. | La respuesta del servicio incluyó el código `ALREADY_PAID`. | Aprobado |
+| H13-U11 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva ajena | Intentar pagar con una sesión distinta al tenant de la reserva. | Responde 404 y no inicia la transacción. | El servicio lanzó NotFoundException antes de escribir. | Aprobado |
+| H13-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva ajena | Consultar resumen con otro tenant autenticado. | Responde 404. | El servicio lanzó NotFoundException. | Aprobado |
+| H13-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial de reserva ajena | Consultar los movimientos como un tercero no relacionado. | Responde 404 y no consulta movimientos. | El servicio lanzó NotFoundException y `listTransactions` no fue llamado. | Aprobado |
+| H13-U14 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al pagar | Intentar pagar con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED` y no escribe. | El servicio lanzó ForbiddenException antes de abrir la transacción. | Aprobado |
+| H13-U15 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al consultar resumen | Consultar resumen con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED`. | El servicio respondió 403 con el código esperado. | Aprobado |
+| H13-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID requerido inválido | Validar DTO sin `bookingId` y con valor que no es UUID. | class-validator rechaza ambos cuerpos para responder 400. | Se encontraron errores de validación en ambos DTOs. | Aprobado |
+| H13-U17a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Últimos dígitos vacíos | Validar `last4Digits` como cadena vacía. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U17b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Menos de cuatro dígitos | Validar `last4Digits` con dos dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U17c | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Más de cuatro dígitos | Validar `last4Digits` con cinco dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U17d | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Caracteres no numéricos | Validar `last4Digits` con una letra. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U18 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Orden del historial | Inspeccionar los argumentos de la consulta Prisma del repositorio. | Ordena por fecha descendente y desempata por ID descendente. | Prisma recibió ambos criterios descendentes. | Aprobado |
+| H13-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Sesión y roles no autorizados | Ejecutar RolesGuard como OWNER, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | OWNER y ADMIN reciben 403; sin sesión recibe 401. | Los guards rechazaron los dos roles y la solicitud sin token con los estados esperados. | Aprobado |
+| H13-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID inválido en historial | Pasar texto que no es UUID por ParseUUIDPipe del parámetro. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H13.spec.ts` — Vitest reportó 1 archivo aprobado y 25 pruebas aprobadas.
