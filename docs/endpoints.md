@@ -50,6 +50,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 - El `ValidationPipe` global responde `400` con código `VALIDATION_ERROR` si el cuerpo incumple
   validaciones o incluye propiedades no permitidas.
 - Registro responde `409` si el email ya está registrado.
+- Registro exige una contraseña de 8 a 72 caracteres con mayúscula, minúscula, número y al menos un carácter especial; si no cumple, responde `400 VALIDATION_ERROR`.
 - Login responde `401` con el mismo mensaje para correo inexistente y contraseña errónea; tras cinco
   fallos en la ventana definida responde `429`. Una cuenta deshabilitada responde `403`.
 - Refresh inválido, vencido o revocado responde `401`. Logout es idempotente y responde `204`.

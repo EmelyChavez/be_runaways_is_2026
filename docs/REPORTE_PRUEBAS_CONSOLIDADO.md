@@ -4,9 +4,88 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 291 | 291 | 0 |
+| Unitarias | 323 | 323 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **291** | **291** | **0** |
+| **Total** | **323** | **323** | **0** |
+
+## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H28-U01:** El registro crea usuario y perfil relacionado 1 a 1, asignando TENANT.
+- **H28-U02:** El registro normaliza el correo antes de persistirlo.
+- **H28-U03:** El sistema acepta una contraseña válida por longitud y complejidad.
+- **H28-U04:** El login correcto devuelve el par de tokens.
+- **H28-U05:** El access token dura 15 minutos y el refresh token 7 días.
+- **H28-U06:** La renovación revoca el refresh anterior y entrega un par nuevo.
+- **H28-U07:** `/auth/me` devuelve datos del usuario sin credenciales.
+- **H28-U08:** Logout acepta el refresh token y responde sin cuerpo con 204.
+- **H28-U09:** Un login correcto limpia los intentos fallidos.
+- **H28-U10:** Las respuestas de registro y login no exponen password ni passwordHash.
+- **H28-U11:** Una vez vencido el bloqueo de 15 minutos, se permite un nuevo intento.
+- **H28-U12:** El repositorio asigna siempre TENANT al crear usuario.
+
+### Casos negativos ejecutados
+
+- **H28-U13:** El registro rechaza el campo `role` no permitido.
+- **H28-U14:** El registro rechaza cualquier otra propiedad no permitida.
+- **H28-U15:** El correo duplicado produce conflicto 409.
+- **H28-U16:** El sistema rechaza contraseñas de menos de 8 caracteres.
+- **H28-U17:** El sistema rechaza contraseñas de más de 72 caracteres.
+- **H28-U18:** El sistema rechaza una contraseña sin minúscula.
+- **H28-U19:** El sistema rechaza una contraseña sin mayúscula.
+- **H28-U20:** El sistema rechaza una contraseña sin número.
+- **H28-U21:** El sistema rechaza una contraseña sin símbolo especial.
+- **H28-U22:** Una contraseña errónea devuelve 401 genérico.
+- **H28-U23:** Un correo inexistente devuelve el mismo 401 genérico.
+- **H28-U24:** Una cuenta inactiva con contraseña errónea no revela su estado y devuelve 401.
+- **H28-U25:** Una cuenta inactiva con contraseña correcta devuelve 403.
+- **H28-U26:** Cinco fallos para el correo normalizado activan el bloqueo y el siguiente intento responde 429.
+- **H28-U27:** `/auth/me` sin sesión válida responde 401.
+- **H28-U28:** Una sesión sin el rol requerido responde 403.
+- **H28-U29:** Un refresh token inexistente responde 401.
+- **H28-U30:** Un refresh token expirado responde 401.
+- **H28-U31:** Reutilizar un refresh token rotado responde 401 y revoca las sesiones del usuario.
+- **H28-U32:** Logout sin refresh token en el cuerpo falla la validación.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H28-U01 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Registro, perfil y rol por defecto | Llamar UserRepository.create y revisar datos enviados a Prisma. | Crea usuario con perfil anidado y rol TENANT. | La llamada incluyó `profile: { create: {} }` y `role: TENANT`. | Aprobado |
+| H28-U02 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Normalización del correo | Crear usuario con email con espacios y mayúsculas. | Persiste email recortado y en minúsculas. | Prisma recibió `ana@example.com`. | Aprobado |
+| H28-U03 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Contraseña válida | Validar DTO con contraseña de longitud permitida y mayúscula, minúscula, número y símbolo. | DTO válido. | class-validator no produjo errores. | Aprobado |
+| H28-U04 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Login correcto | Simular usuario activo y password correcto; ejecutar login. | Devuelve usuario y tokens; response incluye access y refresh token. | Se emitió el par y AuthResponseDto expuso los tokens esperados. | Aprobado |
+| H28-U05 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Vigencia del par de tokens | Emitir par con JWT configurado a 900 segundos y refresh TTL de 7 días. | Access expira en 15 minutos; refresh vence en 7 días. | `expiresIn` fue 900 segundos y `expiresAt` quedó 7 días después. | Aprobado |
+| H28-U06 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Rotación de refresh token | Canjear refresh válido; inspeccionar revocación y creación del nuevo. | Revoca el anterior y emite un par nuevo. | Se revocó el token usado y se creó el nuevo refresh token. | Aprobado |
+| H28-U07 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Consulta autenticada | Crear respuesta del usuario de la sesión para `/auth/me`. | Devuelve identidad y rol sin passwordHash. | La respuesta contenía identidad y rol, sin passwordHash. | Aprobado |
+| H28-U08 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Logout con refresh token | Invocar logout con refresh token y revisar metadata HTTP. | Ruta pública, revoca el refresh y responde 204 sin cuerpo. | Llamó revocación con el token; metadata indica ruta pública y 204. | Aprobado |
+| H28-U09 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Limpieza de intentos | Iniciar sesión correctamente después de intentos previos. | Limpia el contador del correo normalizado. | Se invocó `clear` con `ana@example.com`. | Aprobado |
+| H28-U10 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Privacidad de credenciales | Construir respuestas de registro y login desde una entidad con passwordHash. | Ninguna respuesta incluye password o passwordHash. | Ambos DTOs omitieron password y passwordHash. | Aprobado |
+| H28-U13 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Campo role en registro | Validar cuerpo de registro con `role: ADMIN` y whitelist estricta. | Rechazo 400 VALIDATION_ERROR. | ValidationPipe rechazó la propiedad no permitida. | Aprobado |
+| H28-U14 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Propiedad extra en registro | Validar cuerpo con una propiedad desconocida. | Rechazo 400 VALIDATION_ERROR. | ValidationPipe rechazó la propiedad no permitida. | Aprobado |
+| H28-U15 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Correo duplicado | Simular error de dominio por email existente al crear usuario. | UsersService responde 409 Conflict. | EmailAlreadyTakenError se convirtió en ConflictException. | Aprobado |
+| H28-U16 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Contraseña demasiado corta | Validar DTO con contraseña de 7 caracteres. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U17 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Contraseña demasiado larga | Validar DTO con contraseña mayor a 72 caracteres. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U18 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Sin minúscula | Validar contraseña sin letras minúsculas. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U19 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Sin mayúscula | Validar contraseña sin letras mayúsculas. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U20 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Sin número | Validar contraseña sin dígitos. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U21 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Sin símbolo especial | Validar contraseña alfanumérica sin símbolo. | Rechazo 400 VALIDATION_ERROR. | class-validator produjo errores. | Aprobado |
+| H28-U22 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Password incorrecto | Iniciar sesión con email existente y password incorrecto. | 401 «Correo o contraseña incorrectos». | AuthService respondió 401 con el mensaje genérico. | Aprobado |
+| H28-U23 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Email inexistente | Iniciar sesión con un email sin cuenta. | Mismo 401 genérico que password incorrecto. | AuthService respondió UnauthorizedException con el mismo mensaje. | Aprobado |
+| H28-U24 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Cuenta inactiva y password incorrecto | Intentar login inactivo con clave equivocada. | 401 genérico sin revelar estado. | AuthService devolvió el mismo 401 genérico. | Aprobado |
+| H28-U25 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Cuenta inactiva y password correcto | Intentar login inactivo con clave correcta. | Responde 403. | AuthService lanzó ForbiddenException. | Aprobado |
+| H28-U26 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Bloqueo por cinco intentos | Registrar cinco fallos con variantes del mismo correo; consultar acceso durante bloqueo. | El correo normalizado queda bloqueado 15 minutos y responde 429. | Los intentos compartieron hash; el quinto activó el bloqueo y assertAllowed devolvió 429. | Aprobado |
+| H28-U11 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Fin del bloqueo | Avanzar reloj simulado más de 15 minutos y consultar permiso de login. | Deja de responder 429. | `assertAllowed` resolvió después de vencer el bloqueo. | Aprobado |
+| H28-U27 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | `/auth/me` sin sesión | Ejecutar JwtAuthGuard sin autorización Bearer. | Responde 401. | El guard lanzó UnauthorizedException. | Aprobado |
+| H28-U28 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Rol sin permiso | Ejecutar RolesGuard con TENANT en ruta que requiere OWNER. | Responde 403 FORBIDDEN. | El guard lanzó ForbiddenException. | Aprobado |
+| H28-U29 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Refresh inexistente | Renovar con token no encontrado. | Responde 401. | TokenService lanzó UnauthorizedException. | Aprobado |
+| H28-U30 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Refresh expirado | Renovar con token vencido. | Responde 401. | TokenService lanzó UnauthorizedException. | Aprobado |
+| H28-U31 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Refresh reutilizado | Renovar con token revocado previamente. | Responde 401 y revoca las sesiones del usuario. | TokenService lanzó UnauthorizedException e invocó revocación global. | Aprobado |
+| H28-U12 | Positiva | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Rol fijado en registro | Crear usuario por el repositorio. | El sistema asigna TENANT. | Prisma recibió rol TENANT. | Aprobado |
+| H28-U32 | Negativa | Módulo 0: Autenticación y perfil / H28: Registro, inicio, renovación y cierre de sesión | Logout sin refresh token | Validar RefreshTokenDto vacío. | ValidationPipe rechaza la solicitud. | class-validator detectó el refresh token obligatorio. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H28.spec.ts` — Vitest reportó 1 archivo aprobado y 32 pruebas aprobadas.
 
 ## Módulo 0: Autenticación y perfil — H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador
 
@@ -807,3 +886,4 @@ Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó
 | H25-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
+
