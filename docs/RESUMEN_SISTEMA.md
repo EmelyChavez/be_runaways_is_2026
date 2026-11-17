@@ -10,7 +10,7 @@ Este módulo permite que cada persona cree y acceda a su cuenta y use el sistema
 ## Módulo 1: Catálogo de propiedades/equipo
 
 Este módulo reúne las publicaciones de bienes disponibles para alquilar. El arrendador administra sus propios bienes y el arrendatario consulta la información para decidir cuál reservar. Por ahora, estas funciones están disponibles mediante la API del backend.
-
+- **H2 — Consultar el catálogo de bienes disponibles:** el arrendatario consulta las publicaciones que puede alquilar y obtiene la información necesaria para reconocer cada bien, incluida su imagen, ubicación, categoría y precio diario. El sistema presenta los bienes disponibles del más reciente al más antiguo, en páginas de 12, y excluye los pausados o eliminados. Si no hay publicaciones disponibles, la API devuelve una lista vacía; el acceso requiere una sesión con rol `TENANT`.
 - **H5 — Pausar, reactivar o eliminar una publicación:** el arrendador puede pausar un bien para ocultarlo del catálogo y del detalle público, y reactivarlo para que vuelva a estar disponible. Si decide eliminarlo, el sistema lo marca como eliminado y conserva sus reseñas. Las reservas pendientes de pago o ya pagadas impiden pausar, reactivar o eliminar el bien.
 
 ## Módulo 2: Búsqueda y filtros

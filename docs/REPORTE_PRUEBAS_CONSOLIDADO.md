@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 323 | 323 | 0 |
+| Unitarias | 334 | 334 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **323** | **323** | **0** |
+| **Total** | **334** | **334** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -143,6 +143,44 @@ Ejecución: `npm.cmd test -- test/unit/historia-H28.spec.ts` — Vitest reportó
 | H29-U21 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de TENANT | Revisar roles declarados en reservas, pagos y publicaciones/gestión. | TENANT puede reservar y pagar; no puede publicar ni gestionar. | La metadata autoriza TENANT en reservas/pagos y lo excluye de publicar/gestionar. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+
+
+## Módulo 1: Catálogo de propiedades/equipo — H2: Consultar el catálogo de bienes disponibles (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H2-U01:** La respuesta del catálogo incluye los datos necesarios para cada tarjeta y devuelve el precio diario con dos decimales.
+- **H2-U02:** La consulta de detalle devuelve la información del bien disponible seleccionado.
+- **H2-U03:** El repositorio consulta hasta 12 bienes y los ordena del más reciente al más antiguo.
+- **H2-U04:** El sistema permite solicitar otra página y devuelve los metadatos de paginación.
+- **H2-U05:** Si no hay bienes disponibles, el sistema devuelve una lista vacía y total cero.
+- **H2-U06:** El sistema permite consultar el catálogo al rol `TENANT`.
+
+### Casos negativos ejecutados
+
+- **H2-U07:** El catálogo excluye bienes `PAUSED` al consultar únicamente bienes `AVAILABLE`.
+- **H2-U08:** El catálogo excluye bienes `DELETED` al consultar únicamente bienes `AVAILABLE`.
+- **H2-U09:** El sistema rechaza la consulta sin sesión con 401.
+- **H2-U10:** El sistema deniega la consulta al rol `OWNER` con 403.
+- **H2-U11:** El sistema deniega la consulta al rol `ADMIN` con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H2-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Datos para las tarjetas y formato del precio | Consultar catálogo con un bien que incluye imagen, nombre, ubicación, categoría y precio. | Devuelve esos campos y el precio diario como cadena con dos decimales. | La respuesta incluyó los datos e imágenes y `pricePerDay: "45.00"`. | Aprobado |
+| H2-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Detalle del bien seleccionado | Solicitar el detalle de un bien disponible por su ID. | Devuelve la información del bien consultado. | El servicio consultó el ID indicado y devolvió el detalle con precio formateado. | Aprobado |
+| H2-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Límite y orden de resultados | Inspeccionar la consulta Prisma del catálogo en página 1. | Prisma filtra `AVAILABLE`, ordena `createdAt` descendente y limita a 12 resultados. | La consulta recibió el filtro `AVAILABLE`, `orderBy: createdAt desc`, `skip: 0` y `take: 12`. | Aprobado |
+| H2-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Paginación del catálogo | Solicitar la página 2 para un catálogo con 13 resultados. | La respuesta indica página 2, tamaño 12, total 13 y los datos de esa página. | El repositorio recibió página 2 y la respuesta incluyó `page: 2`, `pageSize: 12` y `total: 13`. | Aprobado |
+| H2-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Catálogo sin bienes disponibles | Consultar cuando el repositorio devuelve cero bienes. | Devuelve lista vacía y total cero. | La respuesta fue `{ data: [], total: 0, page: 1, pageSize: 12 }`. | Aprobado |
+| H2-U06 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Acceso para TENANT | Revisar el rol declarado por la ruta y evaluar `RolesGuard` con TENANT. | `TENANT` está autorizado y pasa el guard. | La ruta declara `TENANT` y el guard permitió el acceso. | Aprobado |
+| H2-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Bienes pausados excluidos | Inspeccionar el filtro enviado a Prisma para listar el catálogo. | La consulta exige estado `AVAILABLE`, por lo que no incluye `PAUSED`. | Prisma recibió `where.status: AVAILABLE`, distinto de `PAUSED`. | Aprobado |
+| H2-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Bienes eliminados excluidos | Inspeccionar el filtro enviado a Prisma para listar el catálogo. | La consulta exige estado `AVAILABLE`, por lo que no incluye `DELETED`. | Prisma recibió `where.status: AVAILABLE`, distinto de `DELETED`. | Aprobado |
+| H2-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Solicitud sin sesión | Ejecutar `JwtAuthGuard` para la ruta sin encabezado Bearer. | Rechaza la solicitud con 401. | El guard rechazó la solicitud con estado 401. | Aprobado |
+| H2-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Rol OWNER no permitido | Ejecutar `RolesGuard` con una sesión OWNER. | Rechaza el acceso con 403. | El guard rechazó el acceso con estado 403. | Aprobado |
+| H2-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Rol ADMIN no permitido | Ejecutar `RolesGuard` con una sesión ADMIN. | Rechaza el acceso con 403. | El guard rechazó el acceso con estado 403. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H2.spec.ts` — Vitest reportó 1 archivo aprobado y 11 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -887,4 +925,3 @@ Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó
 | H25-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
-
