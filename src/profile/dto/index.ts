@@ -1,2 +1,3 @@
 export * from './change-role.dto.js';
 export * from './role-change-response.dto.js';
+export * from './my-profile-response.dto.js';

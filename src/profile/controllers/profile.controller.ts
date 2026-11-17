@@ -17,7 +17,7 @@ import {
 import { CurrentUser, Roles } from '@Auth/decorators';
 import { Role } from '@PrismaClient';
 import type { User } from '@PrismaClient';
-import { ChangeRoleDto, RoleChangeResponseDto } from '@Profile/dto';
+import { ChangeRoleDto, MyProfileResponseDto, RoleChangeResponseDto } from '@Profile/dto';
 import { ProfileRoleService } from '@Profile/services';
 import { AdminIdentityDocumentQueryDto, MyIdentityDocumentResponseDto, RejectIdentityDocumentDto, SubmitIdentityDocumentDto, SubmitIdentityDocumentResponseDto } from '@IdentityDocument/dto';
 import { IdentityDocumentService } from '@IdentityDocument/services';
@@ -31,6 +31,15 @@ export class ProfileController {
     private readonly profileRoleService: ProfileRoleService,
     private readonly identityDocumentService: IdentityDocumentService,
   ) {}
+
+  @Get()
+  @Roles(Role.TENANT, Role.OWNER, Role.ADMIN)
+  @ApiOperation({ summary: 'Consulta el perfil propio y su calificación' })
+  @ApiOkResponse({ type: MyProfileResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  getMyProfile(@CurrentUser() user: User): Promise<MyProfileResponseDto> {
+    return this.profileRoleService.getMyProfile(user.id);
+  }
 
   @Post('document')
   @Roles(Role.TENANT)

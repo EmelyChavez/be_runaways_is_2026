@@ -1,1 +1,1 @@
-export * from './profile-role.repository.js';
+export * from './profile.repository.js';

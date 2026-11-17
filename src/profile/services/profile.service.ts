@@ -11,9 +11,10 @@ import {
   PropertyStatus,
   Role,
 } from '@PrismaClient';
-import { RoleChangeResponseDto } from '@Profile/dto';
+import { MyProfileResponseDto, RoleChangeResponseDto } from '@Profile/dto';
 import {
   ConcurrentRoleChangeError,
+  ProfileRepository,
   ProfileRoleRepository,
 } from '@Profile/repositories';
 
@@ -21,8 +22,36 @@ import {
 export class ProfileRoleService {
   constructor(
     private readonly profileRoleRepository: ProfileRoleRepository,
+    private readonly profileRepository: ProfileRepository,
     private readonly tokenService: TokenService,
   ) {}
+
+  async getMyProfile(userId: string): Promise<MyProfileResponseDto> {
+    const user = await this.profileRepository.findByUserId(userId);
+    if (!user) throw new UnauthorizedException('No se encontró el perfil.');
+
+    const reviewType = user.role === Role.OWNER
+      ? 'RENTER_TO_PROPERTY'
+      : 'OWNER_TO_RENTER';
+    const rating = await this.profileRepository.getReviews(userId, reviewType);
+    const document = user.profile?.identityDocument;
+    return {
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isVerified: user.profile?.isVerified ?? false,
+      document: document ? {
+        type: document.documentType,
+        number: `${'•'.repeat(Math.max(4, document.documentNumber.length - 4))}${document.documentNumber.slice(-4)}`,
+        status: document.documentStatus,
+      } : null,
+      rating: {
+        average: rating._avg.userRating === null ? null : Math.round(rating._avg.userRating * 10) / 10,
+        count: rating._count._all,
+      },
+    };
+  }
 
   async changeRole(
     userId: string,

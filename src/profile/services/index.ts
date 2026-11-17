@@ -1,1 +1,1 @@
-export * from './profile-role.service.js';
+export * from './profile.service.js';
