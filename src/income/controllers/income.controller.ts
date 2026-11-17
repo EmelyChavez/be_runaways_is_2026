@@ -10,7 +10,12 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, Roles } from '@Auth/decorators';
 import { Role, type User } from '@PrismaClient';
-import { IncomeQueryDto, IncomeReportResponseDto } from '@Income/dto';
+import {
+  IncomeByPropertyQueryDto,
+  IncomeByPropertyReportResponseDto,
+  IncomeQueryDto,
+  IncomeReportResponseDto,
+} from '@Income/dto';
 import { IncomeService } from '@Income/services';
 
 @ApiTags('income')
@@ -28,5 +33,19 @@ export class IncomeController {
   @ApiForbiddenResponse({ description: 'Solo OWNER puede consultar este reporte.' })
   getReport(@Query() query: IncomeQueryDto, @CurrentUser() user: User) {
     return this.incomeService.getReport(user.id, query);
+  }
+
+  @Get('reports/by-property')
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Consulta los ingresos agrupados por bien del arrendador autenticado' })
+  @ApiOkResponse({ type: IncomeByPropertyReportResponseDto })
+  @ApiBadRequestResponse({ description: 'Fechas, orden o paginación inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo OWNER puede consultar este reporte.' })
+  getReportByProperty(
+    @Query() query: IncomeByPropertyQueryDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.incomeService.getReportByProperty(user.id, query);
   }
 }

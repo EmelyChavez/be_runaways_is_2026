@@ -50,6 +50,8 @@ Este módulo centraliza la generación de avisos y permite que cada usuario cons
 
 ## Módulo 9: Panel de reportes para el arrendador
 
-Permite que los arrendadores consulten el desempeño de sus publicaciones (ingresos, ocupación y calificación) para tomar decisiones informadas sobre precios y disponibilidad.
+Este módulo ayuda al arrendador a entender cómo se desempeñan sus publicaciones. Permite que los arrendadores consulten el desempeño de sus publicaciones (ingresos, ocupación y calificación) para tomar decisiones informadas sobre precios y disponibilidad.
 
 - **H24 — Ingresos totales:** el arrendador consulta cuánto ha generado con sus publicaciones, separando alquileres pagados de depósitos retenidos. Puede limitar el reporte a un rango de fechas: el alquiler se cuenta según la fecha de pago y el depósito según la fecha de decisión. El sistema excluye reservas pendientes o canceladas y depósitos pendientes o devueltos, y muestra cero cuando no hay ingresos en el período.
+
+- **H25 — Visualización de ingresos por bien publicado:** el arrendador consulta cada una de sus publicaciones junto con los ingresos que generó para identificar cuáles producen más ganancias. Puede ordenar los bienes de mayor a menor ingreso o al revés. El reporte solo incluye bienes propios y no cuenta reservas canceladas.
