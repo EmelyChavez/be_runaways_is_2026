@@ -111,3 +111,19 @@ Un proceso periódico del módulo cambia reservas pendientes vencidas a `CANCELE
 condicional sobre el estado y vencimiento; solo el proceso que cambia la fila emite notificaciones de
 cancelación para arrendatario y arrendador. Los eventos usan `RESERVATION_CREATED` y
 `RESERVATION_CANCELED_EXPIRED` con el origen enum `RESERVATIONS`.
+
+## Pagos simulados y movimientos
+
+`PaymentsService` calcula los importes con el subtotal almacenado en `Booking` y el depósito guardado
+en `Property`; el cliente solo envía el UUID de la reserva y los últimos cuatro dígitos. La tarjeta
+`0002` representa fondos insuficientes; la simulación aprobada devuelve el recibo único de `Payment`.
+El servicio registra `Payment`, cambia `Booking` a `PAID`, crea `Deposit` y `TransactionHistory` en
+una transacción serializable para evitar doble cobro. Solo persiste los últimos cuatro dígitos, nunca
+el número completo, vencimiento ni CVC. El modelo `Payment` creado por H24 conserva importes de
+alquiler y depósito para reportes futuros por arrendador, pero H13 no transfiere dinero a cuentas
+externas.
+
+La consulta de movimientos exige que la sesión corresponda al arrendatario de la reserva o al
+arrendador de su bien. `Property.verifiedOnly` determina si se requiere `Profile.isVerified` al
+reservar y pagar. El historial guarda el tipo enum `CHARGE` y la API lo presenta como `COBRO`, según
+el vocabulario de la historia.
