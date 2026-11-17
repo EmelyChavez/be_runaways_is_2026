@@ -5,15 +5,10 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 
 ## Implementados
 
-El servicio interno de notificaciones de H22 se invoca mediante `NotificationsService.emit` desde
-otros módulos del backend. Los eventos con plantilla generan el título y mensaje unificados; los
-avisos sin plantilla usan los textos proporcionados. La notificación se crea como `UNREAD` y el
-destinatario inexistente produce `404 RECIPIENT_NOT_FOUND`. H23 expone la bandeja para la sesión
-actual; los endpoints nunca reciben el destinatario desde el cliente.
-
 | Método y ruta | Acceso | Request | Respuesta exitosa |
 |---|---|---|---|
 | `GET /api/v1/income/reports` | `OWNER` autenticado | `from`, `to` opcionales (fecha ISO; límites inclusivos para fechas `YYYY-MM-DD`) | `200`: `{ from, to, rentalIncome, retainedDepositIncome, totalIncome }`; solo propiedades del arrendador en sesión |
+| `GET /api/v1/income/reports/by-property` | `OWNER` autenticado | `from`, `to` opcionales; `order` (`asc`/`desc`, por defecto `desc`); `page` (1), `pageSize` (10, máximo 100) | `200`: `{ from, to, data: [{ propertyId, title, category, rentalIncome, retainedDepositIncome, totalIncome }], rentalIncome, retainedDepositIncome, totalIncome, total, page, pageSize }` |
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
 | `GET /api/v1/notifications` | Sesión (`TENANT` o `OWNER`) | `page` opcional (1); `limit` opcional (10, máximo 100) | `200`: `{ data, total, page, limit, totalPages }`, en orden descendente de emisión |
 | `GET /api/v1/notifications/unread-count` | Sesión (`TENANT` o `OWNER`) | Sin parámetros | `200`: `{ unreadCount }` |
@@ -125,7 +120,7 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
 | Mensajería | `GET /api/v1/conversations`; `GET /api/v1/conversations/:id/messages`; `POST /api/v1/conversations/:id/messages` | Sesión; mensajes limitados a participantes |
 | Notificaciones | `NotificationsService.emit` (función interna); `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
-| Otros reportes del arrendador | `GET /api/v1/income/reports/by-property`; `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
+| Otros reportes del arrendador | `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
 
 Los parámetros y respuestas de las rutas planificadas se documentarán al implementar cada historia.
 
