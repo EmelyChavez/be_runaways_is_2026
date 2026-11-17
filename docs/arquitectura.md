@@ -72,7 +72,7 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   valida la reserva y `verifiedOnly`, calcula alquiler más depósito con montos guardados, y coordina
   `PaymentsRepository` para registrar `Payment`, depósito, movimiento y estado `PAID` en una
   transacción serializable. Después solicita la notificación al OWNER; no realiza transferencias reales.
-- Decisión del depósito: `DepositDecisionsController` obtiene el OWNER de la sesión y delega a
+- Decisión del depósito: `BookingsController` obtiene el OWNER de la sesión y delega a
   `DepositDecisionsService`; el servicio valida propiedad, estado finalizado y montos, y registra la
   decisión y movimientos mediante `DepositsRepository` en una transacción serializable. El proceso
   periódico devuelve automáticamente depósitos pendientes siete días después de que la reserva pasa

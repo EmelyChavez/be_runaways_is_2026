@@ -344,6 +344,279 @@ Ejecución: `npm.cmd test -- test/unit/historia-H8.spec.ts` — Vitest reportó 
 
 Ejecución: `npm.cmd test -- test/unit/historia-H9.spec.ts` — Vitest reportó 1 archivo aprobado y 18 pruebas aprobadas.
 
+## Módulo 3: Reservas y calendario de disponibilidad — H10: Reserva de un bien por un periodo (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H10-U01:** El arrendatario TENANT verificado crea una reserva dentro de una transacción serializable.
+- **H10-U02:** El sistema cuenta inicio y fin y calcula el subtotal con el precio guardado del bien.
+- **H10-U03:** Si inicio y fin coinciden, el periodo cuenta como un día.
+- **H10-U04:** La reserva queda PENDING y vence 24 horas después.
+- **H10-U05:** La respuesta incluye el mensaje de confirmación y el plazo de pago.
+- **H10-U06:** Al crear la reserva, se notifica al arrendador con RESERVATION_CREATED y origen RESERVATIONS.
+- **H10-U07:** Se permite crear una reserva cuando el periodo no tiene traslapes ni bloqueos.
+- **H10-U08:** Mis reservas filtra por el tenant autenticado y aplica estado y paginación.
+- **H10-U09:** Reservas de mis bienes filtra por el owner autenticado e incluye el nombre del arrendatario.
+- **H10-U10:** Al vencer una reserva PENDING, el servicio solicita notificaciones para ambas partes.
+- **H10-U11:** El DTO acepta UUID y fechas válidas con formato YYYY-MM-DD.
+- **H10-U12:** Las rutas declaran TENANT para reserva y consulta propia, y OWNER para consultar reservas de sus bienes.
+
+### Casos negativos ejecutados
+
+- **H10-U13:** Se rechazan fechas inexistentes.
+- **H10-U14:** Se rechazan fechas con formato inválido.
+- **H10-U15:** Se rechaza una fecha de fin anterior al inicio.
+- **H10-U16:** Se rechaza un periodo mayor a 30 días inclusivos.
+- **H10-U17:** Se rechazan fechas anteriores a hoy.
+- **H10-U18:** Se rechazan fechas posteriores al horizonte de 90 días.
+- **H10-U19:** Se rechaza un propertyId que no sea UUID.
+- **H10-U20:** Se rechazan campos no permitidos en el cuerpo de la solicitud.
+- **H10-U21:** Un perfil no verificado recibe 403 y no se crea la reserva.
+- **H10-U22:** Un bien inexistente o no disponible responde 404.
+- **H10-U23:** Un traslape con reserva activa responde 409 y no crea otra reserva.
+- **H10-U24:** Un traslape con bloqueo responde 409 y no crea una reserva.
+- **H10-U25:** Un conflicto de serialización concurrente responde 409 con el mensaje de fechas ocupadas.
+- **H10-U26:** OWNER y ADMIN reciben 403 al intentar crear una reserva.
+- **H10-U27:** Una solicitud sin sesión recibe 401.
+- **H10-U28:** La consulta del arrendatario no incluye reservas de otros usuarios.
+- **H10-U29:** La consulta del arrendador no incluye reservas de bienes ajenos.
+- **H10-U30-U33:** Se rechazan estado, página, tamaño de página o propertyId inválidos en las consultas.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H10-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Crear como arrendatario verificado | Simular perfil verificado, bien disponible y periodo libre; llamar al servicio. | Crea dentro de una transacción serializable. | Se verificó el perfil, se consultó el bien y se creó la reserva dentro de la transacción. | Aprobado |
+| H10-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Subtotal inclusivo de tres días | Reservar del 2026-11-20 al 2026-11-22 con precio diario 50.00. | Cuenta 3 días y subtotal 150.00. | El repositorio recibió el periodo inclusivo y subtotal 150.00. | Aprobado |
+| H10-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo de un día | Enviar la misma fecha de inicio y fin con precio diario 50.00. | Cuenta 1 día y subtotal 50.00. | El periodo tuvo un día y subtotal 50.00. | Aprobado |
+| H10-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado y vencimiento inicial | Crear reserva con reloj fijo y revisar persistencia y respuesta. | Estado PENDING y vencimiento exactamente 24 horas después. | Respuesta PENDING; expiresAt quedó en 2026-11-17T18:00:00.000Z. | Aprobado |
+| H10-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mensaje de confirmación | Crear una reserva válida y revisar el mensaje de respuesta. | Incluye «Reserva creada. Tienes 24 horas para pagarla.». | La respuesta contiene el mensaje esperado. | Aprobado |
+| H10-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Aviso al arrendador | Crear reserva y revisar argumentos de NotificationsService.emit. | Se notifica al owner con RESERVATION_CREATED y RESERVATIONS. | Se llamó emit con destinatario, evento, origen y referencia esperados. | Aprobado |
+| H10-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo libre | Simular ausencia de reservas activas y bloqueos, y crear reserva. | La solicitud crea la reserva. | Se consultaron ambos traslapes y se creó la reserva. | Aprobado |
+| H10-U08 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mis reservas y paginación | Consultar con tenant autenticado, page 2, pageSize 5 y status PENDING. | Devuelve solo las reservas del tenant con filtros y paginación. | El repositorio recibió tenantId y filtros; respuesta incluyó total y page solicitados. | Aprobado |
+| H10-U09 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Reservas de bienes propios | Consultar como owner con propertyId y estado, incluyendo tenant relacionado. | Devuelve reserva de bien propio con tenant.name. | Repositorio recibió ownerId y la respuesta incluyó el nombre del arrendatario. | Aprobado |
+| H10-U10 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Vencimiento y avisos a ambas partes | Procesar una reserva vencida devuelta por el repositorio. | Se cancela y se emite aviso al tenant y al owner. | Se solicitó el procesamiento y se emitieron dos avisos RESERVATION_CANCELED_EXPIRED. | Aprobado |
+| H10-U11 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | DTO con datos válidos | Validar propertyId UUID y fechas válidas. | DTO válido. | class-validator no encontró errores. | Aprobado |
+| H10-U12 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Roles de las rutas | Inspeccionar metadata y ejecutar RolesGuard para TENANT. | TENANT puede reservar y consultar sus reservas; OWNER consulta las suyas. | Metadata declaró los roles esperados y el guard autorizó TENANT. | Aprobado |
+| H10-U13 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fecha inexistente | Enviar 2026-02-30 como fecha de inicio. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Formato de fecha inválido | Enviar fecha con formato DD-MM-YYYY. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 y no consulta el repositorio. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U16 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo mayor a 30 días | Enviar periodo inclusivo de 31 días. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fechas pasadas | Enviar fechas anteriores a hoy. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fuera del horizonte | Enviar fecha final posterior a los próximos 90 días. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
+| H10-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId inválido | Validar DTO con valor no UUID. | DTO inválido con error 400 al pasar por ValidationPipe. | class-validator encontró errores en propertyId. | Aprobado |
+| H10-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Campo adicional no permitido | Enviar subtotal adicional usando ValidationPipe estricto. | Rechaza la solicitud con 400. | ValidationPipe lanzó BadRequestException. | Aprobado |
+| H10-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Perfil sin verificar | Simular isVerified false e intentar crear. | Responde 403 y no crea la reserva. | ForbiddenException; no se buscó el bien ni se creó reserva. | Aprobado |
+| H10-U22 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Bien inexistente o no disponible | Simular que no se encuentra bien AVAILABLE. | Responde 404 y no crea la reserva. | NotFoundException; no se creó reserva. | Aprobado |
+| H10-U23 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con reserva activa | Simular una reserva activa en fechas coincidentes. | Responde 409 DATES_UNAVAILABLE. | ConflictException con mensaje de fechas no disponibles; no se creó reserva. | Aprobado |
+| H10-U24 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con bloqueo | Simular bloqueo del arrendador en el periodo solicitado. | Responde 409 DATES_UNAVAILABLE. | ConflictException; no se creó reserva. | Aprobado |
+| H10-U25 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitudes concurrentes | Simular error de serialización Prisma P2034. | Responde 409 con mensaje para elegir otras fechas. | El error P2034 se convirtió a DATES_UNAVAILABLE. | Aprobado |
+| H10-U26 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | OWNER y ADMIN intentan reservar | Ejecutar RolesGuard con OWNER y ADMIN en endpoint de creación. | Ambos reciben 403. | RolesGuard rechazó ambos roles con estado 403. | Aprobado |
+| H10-U27 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitud sin sesión | Ejecutar JwtAuthGuard sin Authorization. | Responde 401. | JwtAuthGuard rechazó la solicitud con estado 401. | Aprobado |
+| H10-U28 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de Mis reservas | Inspeccionar filtros Prisma para la consulta del arrendatario. | findMany y count filtran por tenantId autenticado. | Ambas consultas recibieron únicamente el tenantId de sesión. | Aprobado |
+| H10-U29 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de reservas del arrendador | Inspeccionar filtro de propietario y selección del tenant. | Limita por property.ownerId y solo selecciona tenant.name. | Prisma recibió ownerId autenticado y seleccionó únicamente el nombre del tenant. | Aprobado |
+| H10-U30 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Página inválida | Validar page 0. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U31 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Tamaño de página fuera del máximo | Validar pageSize 101. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U32 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado inválido | Validar status UNKNOWN. | DTO inválido. | class-validator encontró errores. | Aprobado |
+| H10-U33 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId de filtro inválido | Validar propertyId no UUID en consulta OWNER. | DTO inválido. | class-validator encontró errores. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó 1 archivo aprobado y 33 pruebas aprobadas.
+
+## Módulo 3: Reservas y calendario de disponibilidad — H12: Bloqueo de fechas no disponibles (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H12-U01:** El arrendador crea un bloqueo válido y recibe sus datos principales.
+- **H12-U02:** La lista incluye bloqueos que terminan hoy o después, ordenados por inicio.
+- **H12-U03:** Si no hay bloqueos vigentes, el sistema devuelve una lista vacía.
+- **H12-U04:** El arrendador puede eliminar un bloqueo de su propio bien.
+- **H12-U05:** Los días bloqueados aparecen como ocupados en el calendario.
+- **H12-U06:** Al eliminar un bloqueo, sus días vuelven a estar libres si ninguna reserva los ocupa.
+- **H12-U07:** Las rutas de bloqueos permiten el acceso al rol OWNER.
+
+### Casos negativos ejecutados
+
+- **H12-U08:** El sistema rechaza fechas ausentes, con formato inválido o inexistentes en el calendario.
+- **H12-U09:** El sistema no permite iniciar un bloqueo antes de hoy.
+- **H12-U10:** El sistema no permite que la fecha de fin sea anterior a la de inicio.
+- **H12-U11:** El sistema no permite fechas posteriores al horizonte de 90 días.
+- **H12-U12:** El sistema rechaza traslapes con otro bloqueo.
+- **H12-U13:** El sistema rechaza traslapes con reservas PENDING.
+- **H12-U14:** El sistema rechaza traslapes con reservas PAID.
+- **H12-U15:** El sistema no permite bloquear un bien ajeno o inexistente.
+- **H12-U16:** El sistema no permite consultar bloqueos de un bien ajeno o inexistente.
+- **H12-U17:** El sistema responde que no encuentra un bloqueo inexistente al eliminarlo.
+- **H12-U18:** El sistema no permite eliminar un bloqueo perteneciente a otro arrendador.
+- **H12-U19:** Los roles TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401.
+- **H12-U20:** El sistema rechaza identificadores que no tengan formato UUID en las tres rutas.
+- **H12-U21:** Un conflicto de serialización al crear se convierte en 409.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H12-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Crear bloqueo válido | Simular bien propio y periodo libre; llamar al servicio de creación. | Guarda el bloqueo en transacción serializable y responde con id, propertyId, fechas y createdAt. | Se verificó propiedad, se consultaron traslapes y se creó el bloqueo; la respuesta incluyó los cinco campos. | Aprobado |
+| H12-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Listado vigente ordenado | Invocar el repositorio para listar bloqueos desde hoy. | Filtra endDate mayor o igual a hoy y ordena por startDate ascendente. | Prisma recibió el filtro inclusivo y el orden ascendente por inicio. | Aprobado |
+| H12-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Lista vacía | Consultar los bloqueos del bien propio cuando el repositorio no devuelve filas. | Devuelve una lista vacía. | El servicio devolvió `[]`. | Aprobado |
+| H12-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Eliminar bloqueo propio | Simular bloqueo y bien del OWNER; solicitar eliminación. | Elimina el bloqueo propio y la operación termina sin cuerpo. | El servicio verificó propiedad y llamó al repositorio para eliminar el bloqueo. | Aprobado |
+| H12-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Días bloqueados en calendario | Devolver un bloqueo de tres días y consultar disponibilidad. | Los tres días aparecen en `occupiedDates`. | La respuesta incluyó 2026-11-20, 2026-11-21 y 2026-11-22. | Aprobado |
+| H12-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Liberar días al eliminar | Consultar disponibilidad antes y después de eliminar el bloqueo, sin reservas presentes. | Los días ocupados por el bloqueo dejan de aparecer tras eliminarlo. | Antes aparecieron tres días y después la lista quedó vacía. | Aprobado |
+| H12-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Rol OWNER permitido | Inspeccionar metadata y ejecutar RolesGuard para las tres rutas. | Las tres rutas declaran OWNER y el guard lo autoriza. | La metadata y el guard confirmaron el acceso OWNER en crear, listar y eliminar. | Aprobado |
+| H12-U08 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fechas inválidas o ausentes | Validar DTO sin fechas, con formato no ISO y con día inexistente. | El DTO produce errores de validación que se traducen a 400. | class-validator encontró errores para los tres cuerpos inválidos. | Aprobado |
+| H12-U09 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Inicio anterior a hoy | Enviar inicio 2026-11-15 con reloj fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U10 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 antes de consultar o escribir en el repositorio. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U11 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fecha fuera de horizonte | Enviar fecha 2027-02-14 con hoy fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
+| H12-U12 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con otro bloqueo | Simular bloqueo previo en el mismo periodo e intentar crear otro. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U13 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PENDING | Simular reserva PENDING que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PAID | Simular reserva PAID que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al crear | Simular que el bien no pertenece al arrendador de sesión. | Responde 404 y no crea bloqueo. | NotFoundException 404; no se creó el bloqueo. | Aprobado |
+| H12-U16 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al consultar | Simular que no se encuentra un bien propio y consultar su lista. | Responde 404 y no consulta los bloqueos. | NotFoundException 404; listAvailabilityBlocks no fue llamado. | Aprobado |
+| H12-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo inexistente al eliminar | Simular que la consulta del bloqueo no encuentra resultado. | Responde 404 y no elimina registros. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo de otro arrendador | Simular bloqueo existente cuyo bien no pertenece al usuario. | Responde 404 y conserva el bloqueo. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
+| H12-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Sesión o rol no autorizado | Ejecutar RolesGuard como TENANT, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401. | RolesGuard rechazó roles y falta de usuario; JwtAuthGuard rechazó la solicitud sin token con 401. | Aprobado |
+| H12-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | UUID inválido | Pasar un ID inválido por ParseUUIDPipe para cada una de las tres rutas. | Cada ruta rechaza el ID con 400. | ParseUUIDPipe lanzó BadRequestException en las tres comprobaciones. | Aprobado |
+| H12-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Conflicto de serialización | Simular error Prisma P2034 durante la transacción de creación. | Responde 409 DATES_UNAVAILABLE. | El servicio convirtió P2034 en ConflictException con code DATES_UNAVAILABLE. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+
+## Módulo 4: Pagos y depósitos de garantía — H13: Pago de alquiler con detalle del depósito (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H13-U01:** El detalle de pago muestra el bien, el periodo, los días inclusivos, el alquiler, el depósito, el total y la hora límite con montos a dos decimales.
+- **H13-U02:** Una tarjeta terminada en 4242 se procesa después de dos segundos, cambia la reserva a pagada, registra pago, depósito y movimiento, notifica al arrendador y devuelve el comprobante.
+- **H13-U03:** El arrendatario de la reserva consulta sus movimientos con tipo, monto, motivo y fecha.
+- **H13-U04:** El arrendador propietario consulta los movimientos de la reserva.
+- **H13-U05:** Las rutas de resumen y pago requieren el rol TENANT.
+- **H13-U06:** El repositorio ordena los movimientos del más reciente al más antiguo.
+
+### Casos negativos ejecutados
+
+- **H13-U07:** La tarjeta terminada en 0002 se rechaza con el mensaje indicado y no modifica la reserva ni crea registros.
+- **H13-U08:** El resumen no está disponible para una reserva cancelada.
+- **H13-U09:** El resumen no está disponible para una reserva pendiente vencida.
+- **H13-U10:** No se puede pagar una reserva cancelada.
+- **H13-U11:** No se puede pagar una reserva pendiente vencida.
+- **H13-U12:** No se puede volver a pagar una reserva pagada.
+- **H13-U13:** Una carrera de pago que encuentra la reserva ya pagada responde `ALREADY_PAID`.
+- **H13-U14:** El arrendatario no puede pagar una reserva ajena.
+- **H13-U15:** El arrendatario no puede consultar el resumen de una reserva ajena.
+- **H13-U16:** Un tercero no puede consultar movimientos de una reserva ajena.
+- **H13-U17:** No se puede pagar un bien que requiere verificación con un perfil no verificado.
+- **H13-U18:** No se puede consultar el detalle de pago de un bien que requiere verificación con un perfil no verificado.
+- **H13-U19:** El DTO rechaza un UUID requerido ausente o inválido.
+- **H13-U20:** El DTO rechaza los últimos dígitos vacíos.
+- **H13-U21:** El DTO rechaza menos de cuatro dígitos.
+- **H13-U22:** El DTO rechaza más de cuatro dígitos.
+- **H13-U23:** El DTO rechaza caracteres que no sean dígitos.
+- **H13-U24:** OWNER y ADMIN reciben 403 y la solicitud sin sesión recibe 401.
+- **H13-U25:** Un UUID inválido en el identificador del historial responde 400.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H13-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen y desglose del pago | Consultar resumen para periodo inclusivo de tres días con precio diario 50.00 y depósito 100.00. | Devuelve alquiler 150.00, total 250.00, datos del bien y vencimiento. | El resumen incluyó tres días, los importes calculados con dos decimales y `expiresAt`. | Aprobado |
+| H13-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago aprobado y comprobante | Pagar con 4242, avanzar el reloj simulado dos segundos y revisar las operaciones transaccionales y notificación. | Reserva `PAID`; crea Payment, Deposit y movimiento; devuelve recibo y avisa al propietario. | Se confirmaron las escrituras en transacción, recibo con desglose y últimos cuatro dígitos, y notificación al owner del bien. | Aprobado |
+| H13-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendatario | Consultar movimientos usando el ID del tenant relacionado y verificar los campos presentados. | Devuelve tipo, monto, motivo y fecha del movimiento. | La respuesta transformó el movimiento a `COBRO`, monto decimal de dos dígitos y fecha ISO. | Aprobado |
+| H13-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendador | Consultar movimientos usando el ID del owner de la propiedad. | El arrendador relacionado obtiene el historial. | El servicio autorizó al owner y devolvió los movimientos recibidos. | Aprobado |
+| H13-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Rol permitido para resumen y pago | Revisar metadata de ambos handlers y ejecutar RolesGuard como TENANT. | Las rutas declaran TENANT y el guard permite ese rol. | Los dos handlers declararon `TENANT`; RolesGuard autorizó la sesión. | Aprobado |
+| H13-U06 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Orden del historial | Inspeccionar los argumentos de la consulta Prisma del repositorio. | Ordena por fecha descendente y desempata por ID descendente. | Prisma recibió ambos criterios descendentes. | Aprobado |
+| H13-U07 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Fondos insuficientes | Procesar tarjeta 0002 y revisar error y métodos de persistencia. | Responde 400 `INSUFFICIENT_FUNDS` con el mensaje exacto; no actualiza ni crea registros. | El servicio devolvió el error y no ejecutó transacción, pago, depósito ni movimiento. | Aprobado |
+| H13-U08 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva cancelada | Consultar el resumen de una reserva `CANCELED`. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva con estado 409. | Aprobado |
+| H13-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva vencida | Consultar el resumen de una reserva `PENDING` cuyo vencimiento ya pasó. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva vencida con estado 409. | Aprobado |
+| H13-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva cancelada | Intentar pagar una reserva `CANCELED` y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
+| H13-U11 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva vencida | Intentar pagar una reserva `PENDING` expirada y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
+| H13-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Reserva ya pagada | Pagar una reserva en estado `PAID`. | Responde 409 `ALREADY_PAID`. | El servicio rechazó el pago sin iniciar una nueva transacción. | Aprobado |
+| H13-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Doble pago concurrente | Simular conflicto Prisma P2002 y releer la reserva en estado `PAID`. | Convierte el conflicto en 409 `ALREADY_PAID`. | La respuesta del servicio incluyó el código `ALREADY_PAID`. | Aprobado |
+| H13-U14 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva ajena | Intentar pagar con una sesión distinta al tenant de la reserva. | Responde 404 y no inicia la transacción. | El servicio lanzó NotFoundException antes de escribir. | Aprobado |
+| H13-U15 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva ajena | Consultar resumen con otro tenant autenticado. | Responde 404. | El servicio lanzó NotFoundException. | Aprobado |
+| H13-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial de reserva ajena | Consultar los movimientos como un tercero no relacionado. | Responde 404 y no consulta movimientos. | El servicio lanzó NotFoundException y `listTransactions` no fue llamado. | Aprobado |
+| H13-U17 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al pagar | Intentar pagar con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED` y no escribe. | El servicio lanzó ForbiddenException antes de abrir la transacción. | Aprobado |
+| H13-U18 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al consultar resumen | Consultar resumen con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED`. | El servicio respondió 403 con el código esperado. | Aprobado |
+| H13-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID requerido inválido | Validar DTO sin `bookingId` y con valor que no es UUID. | class-validator rechaza ambos cuerpos para responder 400. | Se encontraron errores de validación en ambos DTOs. | Aprobado |
+| H13-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Últimos dígitos vacíos | Validar `last4Digits` como cadena vacía. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U21 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Menos de cuatro dígitos | Validar `last4Digits` con dos dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U22 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Más de cuatro dígitos | Validar `last4Digits` con cinco dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U23 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Caracteres no numéricos | Validar `last4Digits` con una letra. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
+| H13-U24 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Sesión y roles no autorizados | Ejecutar RolesGuard como OWNER, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | OWNER y ADMIN reciben 403; sin sesión recibe 401. | Los guards rechazaron los dos roles y la solicitud sin token con los estados esperados. | Aprobado |
+| H13-U25 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID inválido en historial | Pasar texto que no es UUID por ParseUUIDPipe del parámetro. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H13.spec.ts` — Vitest reportó 1 archivo aprobado y 25 pruebas aprobadas.
+
+## Módulo 4: Pagos y depósitos de garantía — H14: Devolución o retención del depósito de garantía (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H14-U01:** El arrendador devuelve el depósito completo de una reserva finalizada, registra la devolución y notifica al arrendatario.
+- **H14-U02:** El arrendador retiene el depósito completo e informa el motivo en el movimiento y la notificación.
+- **H14-U03:** El arrendador retiene parte del depósito y registra tanto la retención como la devolución del saldo.
+- **H14-U04:** El historial muestra movimientos de devolución y retención con sus montos, motivos y fechas.
+- **H14-U05:** El arrendatario ve el estado y el desglose actualizado del depósito en sus reservas.
+- **H14-U06:** El sistema devuelve automáticamente los depósitos pendientes al cumplirse siete días desde que la reserva pasa a COMPLETED.
+- **H14-U07:** Solo el rol OWNER puede usar el endpoint de decisión.
+
+### Casos negativos ejecutados
+
+- **H14-U08:** El sistema no permite decidir el depósito antes de que la reserva esté COMPLETED.
+- **H14-U09:** El sistema no permite a un arrendador decidir sobre el depósito de un bien ajeno.
+- **H14-U10:** El sistema responde 404 cuando la reserva no tiene depósito.
+- **H14-U11:** El sistema no permite volver a decidir un depósito RETURNED.
+- **H14-U12:** El sistema no permite volver a decidir un depósito RETAINED.
+- **H14-U13:** El sistema no permite volver a decidir un depósito PARTIALLY_RETAINED.
+- **H14-U14:** El sistema rechaza una retención de cero.
+- **H14-U15:** El sistema rechaza una retención mayor que el depósito.
+- **H14-U16:** El DTO rechaza un monto decimal con signo negativo.
+- **H14-U17:** El DTO rechaza un monto que no es numérico.
+- **H14-U18:** El DTO rechaza un monto con más de dos decimales.
+- **H14-U19:** El DTO requiere el monto al elegir RETENER.
+- **H14-U20:** El DTO requiere el motivo al elegir RETENER.
+- **H14-U21:** El DTO rechaza un motivo vacío.
+- **H14-U22:** El DTO rechaza un motivo compuesto solo por espacios.
+- **H14-U23:** El DTO rechaza un motivo de más de 250 caracteres.
+- **H14-U24:** El DTO solo acepta DEVOLVER o RETENER.
+- **H14-U25:** El sistema deniega OWNER y ADMIN con 403 y solicitudes sin sesión con 401.
+- **H14-U26:** El sistema rechaza un UUID inválido en la ruta con 400.
+- **H14-U27:** El sistema conserva el depósito pendiente antes de cumplir los siete días.
+- **H14-U28:** La consulta automática solo selecciona depósitos pendientes positivos de reservas COMPLETED cuyo plazo ya venció.
+- **H14-U29:** Una decisión concurrente no genera un segundo movimiento ni una segunda notificación.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H14-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución total | Enviar `DEVOLVER` para un depósito de 100.00 de una reserva `COMPLETED`; revisar transacción, movimiento y notificación. | Estado `RETURNED`, retenido 0.00, devuelto 100.00 y movimiento REFUND por el total. | Se actualizó el depósito y se registró REFUND por 100.00; el tenant recibió notificación `DEPOSIT_RETURNED`. | Aprobado |
+| H14-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención total | Enviar `RETENER`, monto 100.00 y motivo válido; revisar respuesta, movimiento y notificación. | Estado `RETAINED`, retenido 100.00, devuelto 0.00 y motivo registrado. | Se registró RETENTION por 100.00 con el motivo y se notificó al tenant. | Aprobado |
+| H14-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención parcial | Enviar `RETENER` por 25.00 de un depósito de 100.00. | Estado `PARTIALLY_RETAINED`; crea retención 25.00 y devolución 75.00; ambos suman 100.00. | Se crearon ambos movimientos y el cálculo confirmó retenido más devuelto igual al depósito. | Aprobado |
+| H14-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Movimientos visibles al arrendatario | Consultar historial para una reserva relacionada con movimientos REFUND y RETENTION. | Devuelve DEVOLUCION y RETENCION con monto, motivo y fecha. | El historial tradujo los tipos y presentó todos los campos esperados. | Aprobado |
+| H14-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Estado del depósito en reservas propias | Consultar reservas del tenant con depósito parcialmente retenido. | La reserva incluye estado, monto, retenido, devuelto y fecha de decisión. | La respuesta serializó el desglose actualizado del depósito con montos a dos decimales. | Aprobado |
+| H14-U06 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución automática al cumplir siete días | Fijar la decisión exactamente siete días después de `Booking.updatedAt` y procesar candidatos. | Pasa a RETURNED, registra REFUND con «Plazo de decisión vencido» y notifica al tenant. | Se actualizaron los montos, se registró el movimiento con el motivo exacto y se envió evento `DEPOSIT_RETURNED_AUTO`. | Aprobado |
+| H14-U07 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Acceso del rol OWNER | Revisar metadata del handler y ejecutar RolesGuard con OWNER. | La ruta declara OWNER y el guard lo autoriza. | La metadata y RolesGuard confirmaron acceso OWNER. | Aprobado |
+| H14-U08 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Reserva no finalizada | Intentar devolver un depósito con reserva `PAID`. | Responde 409 `BOOKING_NOT_FINALIZED` sin iniciar transacción. | El servicio respondió el conflicto antes de persistir. | Aprobado |
+| H14-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Bien de otro arrendador | Intentar decidir el depósito con owner distinto al propietario del bien. | Responde 404 y no inicia transacción. | Se lanzó NotFoundException sin persistencia. | Aprobado |
+| H14-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Depósito inexistente | Solicitar devolver el depósito cuando la reserva no tiene depósito asociado. | Responde 404. | Se lanzó NotFoundException. | Aprobado |
+| H14-U11 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETURNED | Intentar decidir un depósito RETURNED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETAINED | Intentar decidir un depósito RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para PARTIALLY_RETAINED | Intentar decidir un depósito PARTIALLY_RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
+| H14-U14 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención de cero | Enviar `RETENER` con monto 0.00 y motivo válido. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto antes de iniciar la transacción. | Aprobado |
+| H14-U15 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención superior al depósito | Enviar monto 100.01 para un depósito de 100.00. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto y no persistió datos. | Aprobado |
+| H14-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decimal negativo | Validar el monto `-1.00` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
+| H14-U17 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Monto no numérico | Validar el monto `no-numérico` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
+| H14-U18 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Exceso de decimales | Validar el monto `1.001` en el DTO. | El DTO produce error de validación 400. | class-validator rechazó el tercer decimal. | Aprobado |
+| H14-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el monto de retención | Validar `RETENER` sin `retentionAmount`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
+| H14-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el motivo | Validar `RETENER` sin `retentionReason`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
+| H14-U21 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo vacío | Validar `retentionReason` como cadena vacía. | El DTO rechaza la solicitud con 400. | class-validator reportó el motivo inválido. | Aprobado |
+| H14-U22 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo solo con espacios | Validar un motivo compuesto por espacios. | El DTO rechaza la solicitud con 400. | La expresión de validación rechazó el motivo sin caracteres visibles. | Aprobado |
+| H14-U23 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Longitud máxima del motivo | Validar un motivo de 251 caracteres. | El DTO rechaza la solicitud con 400. | class-validator encontró error de longitud máxima. | Aprobado |
+| H14-U24 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Tipo de decisión inválido | Validar `decisionType: APROBAR`. | El DTO rechaza la solicitud con 400. | class-validator rechazó el valor fuera de `DEVOLVER`/`RETENER`. | Aprobado |
+| H14-U25 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Rol o sesión no permitidos | Ejecutar RolesGuard como TENANT y ADMIN, sin usuario, y JwtAuthGuard sin token. | Roles distintos de OWNER reciben 403 y ausencia de sesión recibe 401. | Ambos guards devolvieron los estados esperados. | Aprobado |
+| H14-U26 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | UUID inválido en la ruta | Pasar un identificador inválido por ParseUUIDPipe. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
+| H14-U27 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Plazo automático aún no vencido | Consultar candidatos antes de cumplir los siete días. | Conserva el depósito pendiente; no registra movimiento ni notifica. | No se abrió transacción ni se creó movimiento o aviso. | Aprobado |
+| H14-U28 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Filtro de candidatos automáticos | Inspeccionar el filtro Prisma del repositorio para el proceso automático. | Selecciona únicamente depósitos PENDING positivos con reserva COMPLETED y plazo vencido. | Prisma recibió todos los filtros y el orden ascendente esperado. | Aprobado |
+| H14-U29 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisiones concurrentes | Simular que la actualización condicional afecta cero filas porque otra decisión ganó. | Responde 409 `DEPOSIT_ALREADY_DECIDED`; no crea otro movimiento ni notificación. | El servicio devolvió el conflicto y no duplicó movimiento o aviso. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H14.spec.ts` — Vitest reportó 1 archivo aprobado y 29 pruebas aprobadas.
+
 ## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
 
 ### Casos positivos ejecutados
@@ -539,278 +812,6 @@ Ejecución: `npm.cmd test -- test/unit/historia-H22.spec.ts` — Vitest reportó
 | H23-U16 | Positiva | Módulo 8: Notificaciones / H23: Consultar y gestionar notificaciones | Filtro de destinatario y orden en persistencia | Inspeccionar la consulta Prisma de lista para un usuario y página. | Prisma filtra por destinatario y ordena `createdAt` descendente. | La consulta incluyó `recipientId`, orden descendente, `skip: 0` y `take: 10`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H23.spec.ts` — Vitest reportó 1 archivo aprobado y 16 pruebas aprobadas.
-
-## Módulo 3: Reservas y calendario de disponibilidad — H10: Reserva de un bien por un periodo (Unitarias)
-
-### Casos positivos ejecutados
-
-- **H10-U01:** El arrendatario TENANT verificado crea una reserva dentro de una transacción serializable.
-- **H10-U02:** El sistema cuenta inicio y fin y calcula el subtotal con el precio guardado del bien.
-- **H10-U03:** Si inicio y fin coinciden, el periodo cuenta como un día.
-- **H10-U04:** La reserva queda PENDING y vence 24 horas después.
-- **H10-U05:** La respuesta incluye el mensaje de confirmación y el plazo de pago.
-- **H10-U06:** Al crear la reserva, se notifica al arrendador con RESERVATION_CREATED y origen RESERVATIONS.
-- **H10-U07:** Se permite crear una reserva cuando el periodo no tiene traslapes ni bloqueos.
-- **H10-U08:** Mis reservas filtra por el tenant autenticado y aplica estado y paginación.
-- **H10-U09:** Reservas de mis bienes filtra por el owner autenticado e incluye el nombre del arrendatario.
-- **H10-U10:** Al vencer una reserva PENDING, el servicio solicita notificaciones para ambas partes.
-- **H10-U11:** El DTO acepta UUID y fechas válidas con formato YYYY-MM-DD.
-- **H10-U12:** Las rutas declaran TENANT para reserva y consulta propia, y OWNER para consultar reservas de sus bienes.
-
-### Casos negativos ejecutados
-
-- **H10-U13a/b:** Se rechazan fechas inexistentes o con formato inválido.
-- **H10-U14:** Se rechaza una fecha de fin anterior al inicio.
-- **H10-U15:** Se rechaza un periodo mayor a 30 días inclusivos.
-- **H10-U16a/b:** Se rechazan fechas anteriores a hoy o posteriores al horizonte de 90 días.
-- **H10-U17:** Se rechaza un propertyId que no sea UUID.
-- **H10-U18:** Se rechazan campos no permitidos en el cuerpo de la solicitud.
-- **H10-U19:** Un perfil no verificado recibe 403 y no se crea la reserva.
-- **H10-U20:** Un bien inexistente o no disponible responde 404.
-- **H10-U21:** Un traslape con reserva activa responde 409 y no crea otra reserva.
-- **H10-U22:** Un traslape con bloqueo responde 409 y no crea una reserva.
-- **H10-U23:** Un conflicto de serialización concurrente responde 409 con el mensaje de fechas ocupadas.
-- **H10-U24:** OWNER y ADMIN reciben 403 al intentar crear una reserva.
-- **H10-U25:** Una solicitud sin sesión recibe 401.
-- **H10-U26:** La consulta del arrendatario no incluye reservas de otros usuarios.
-- **H10-U27:** La consulta del arrendador no incluye reservas de bienes ajenos.
-- **H10-U28a/d:** Se rechazan estado, página, tamaño de página o propertyId inválidos en las consultas.
-
-### Tabla de resultados
-
-| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
-|---|---|---|---|---|---|---|---|
-| H10-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Crear como arrendatario verificado | Simular perfil verificado, bien disponible y periodo libre; llamar al servicio. | Crea dentro de una transacción serializable. | Se verificó el perfil, se consultó el bien y se creó la reserva dentro de la transacción. | Aprobado |
-| H10-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Subtotal inclusivo de tres días | Reservar del 2026-11-20 al 2026-11-22 con precio diario 50.00. | Cuenta 3 días y subtotal 150.00. | El repositorio recibió el periodo inclusivo y subtotal 150.00. | Aprobado |
-| H10-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo de un día | Enviar la misma fecha de inicio y fin con precio diario 50.00. | Cuenta 1 día y subtotal 50.00. | El periodo tuvo un día y subtotal 50.00. | Aprobado |
-| H10-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado y vencimiento inicial | Crear reserva con reloj fijo y revisar persistencia y respuesta. | Estado PENDING y vencimiento exactamente 24 horas después. | Respuesta PENDING; expiresAt quedó en 2026-11-17T18:00:00.000Z. | Aprobado |
-| H10-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mensaje de confirmación | Crear una reserva válida y revisar el mensaje de respuesta. | Incluye «Reserva creada. Tienes 24 horas para pagarla.». | La respuesta contiene el mensaje esperado. | Aprobado |
-| H10-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Aviso al arrendador | Crear reserva y revisar argumentos de NotificationsService.emit. | Se notifica al owner con RESERVATION_CREATED y RESERVATIONS. | Se llamó emit con destinatario, evento, origen y referencia esperados. | Aprobado |
-| H10-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo libre | Simular ausencia de reservas activas y bloqueos, y crear reserva. | La solicitud crea la reserva. | Se consultaron ambos traslapes y se creó la reserva. | Aprobado |
-| H10-U08 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Mis reservas y paginación | Consultar con tenant autenticado, page 2, pageSize 5 y status PENDING. | Devuelve solo las reservas del tenant con filtros y paginación. | El repositorio recibió tenantId y filtros; respuesta incluyó total y page solicitados. | Aprobado |
-| H10-U09 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Reservas de bienes propios | Consultar como owner con propertyId y estado, incluyendo tenant relacionado. | Devuelve reserva de bien propio con tenant.name. | Repositorio recibió ownerId y la respuesta incluyó el nombre del arrendatario. | Aprobado |
-| H10-U10 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Vencimiento y avisos a ambas partes | Procesar una reserva vencida devuelta por el repositorio. | Se cancela y se emite aviso al tenant y al owner. | Se solicitó el procesamiento y se emitieron dos avisos RESERVATION_CANCELED_EXPIRED. | Aprobado |
-| H10-U11 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | DTO con datos válidos | Validar propertyId UUID y fechas válidas. | DTO válido. | class-validator no encontró errores. | Aprobado |
-| H10-U12 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Roles de las rutas | Inspeccionar metadata y ejecutar RolesGuard para TENANT. | TENANT puede reservar y consultar sus reservas; OWNER consulta las suyas. | Metadata declaró los roles esperados y el guard autorizó TENANT. | Aprobado |
-| H10-U13a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fecha inexistente | Enviar 2026-02-30 como fecha de inicio. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U13b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Formato de fecha inválido | Enviar fecha con formato DD-MM-YYYY. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 y no consulta el repositorio. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Periodo mayor a 30 días | Enviar periodo inclusivo de 31 días. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U16a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fechas pasadas | Enviar fechas anteriores a hoy. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U16b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Fuera del horizonte | Enviar fecha final posterior a los próximos 90 días. | Responde 400. | BadRequestException; la transacción no se invocó. | Aprobado |
-| H10-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId inválido | Validar DTO con valor no UUID. | DTO inválido con error 400 al pasar por ValidationPipe. | class-validator encontró errores en propertyId. | Aprobado |
-| H10-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Campo adicional no permitido | Enviar subtotal adicional usando ValidationPipe estricto. | Rechaza la solicitud con 400. | ValidationPipe lanzó BadRequestException. | Aprobado |
-| H10-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Perfil sin verificar | Simular isVerified false e intentar crear. | Responde 403 y no crea la reserva. | ForbiddenException; no se buscó el bien ni se creó reserva. | Aprobado |
-| H10-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Bien inexistente o no disponible | Simular que no se encuentra bien AVAILABLE. | Responde 404 y no crea la reserva. | NotFoundException; no se creó reserva. | Aprobado |
-| H10-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con reserva activa | Simular una reserva activa en fechas coincidentes. | Responde 409 DATES_UNAVAILABLE. | ConflictException con mensaje de fechas no disponibles; no se creó reserva. | Aprobado |
-| H10-U22 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Traslape con bloqueo | Simular bloqueo del arrendador en el periodo solicitado. | Responde 409 DATES_UNAVAILABLE. | ConflictException; no se creó reserva. | Aprobado |
-| H10-U23 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitudes concurrentes | Simular error de serialización Prisma P2034. | Responde 409 con mensaje para elegir otras fechas. | El error P2034 se convirtió a DATES_UNAVAILABLE. | Aprobado |
-| H10-U24 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | OWNER y ADMIN intentan reservar | Ejecutar RolesGuard con OWNER y ADMIN en endpoint de creación. | Ambos reciben 403. | RolesGuard rechazó ambos roles con estado 403. | Aprobado |
-| H10-U25 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Solicitud sin sesión | Ejecutar JwtAuthGuard sin Authorization. | Responde 401. | JwtAuthGuard rechazó la solicitud con estado 401. | Aprobado |
-| H10-U26 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de Mis reservas | Inspeccionar filtros Prisma para la consulta del arrendatario. | findMany y count filtran por tenantId autenticado. | Ambas consultas recibieron únicamente el tenantId de sesión. | Aprobado |
-| H10-U27 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Privacidad de reservas del arrendador | Inspeccionar filtro de propietario y selección del tenant. | Limita por property.ownerId y solo selecciona tenant.name. | Prisma recibió ownerId autenticado y seleccionó únicamente el nombre del tenant. | Aprobado |
-| H10-U28a | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Página inválida | Validar page 0. | DTO inválido. | class-validator encontró errores. | Aprobado |
-| H10-U28b | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Tamaño de página fuera del máximo | Validar pageSize 101. | DTO inválido. | class-validator encontró errores. | Aprobado |
-| H10-U28c | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | Estado inválido | Validar status UNKNOWN. | DTO inválido. | class-validator encontró errores. | Aprobado |
-| H10-U28d | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H10: Reserva de un bien por un periodo | propertyId de filtro inválido | Validar propertyId no UUID en consulta OWNER. | DTO inválido. | class-validator encontró errores. | Aprobado |
-
-Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó 1 archivo aprobado y 33 pruebas aprobadas.
-
-
-## Módulo 3: Reservas y calendario de disponibilidad — H12: Bloqueo de fechas no disponibles (Unitarias)
-
-### Casos positivos ejecutados
-
-- **H12-U01:** El arrendador crea un bloqueo válido y recibe sus datos principales.
-- **H12-U02:** La lista incluye bloqueos que terminan hoy o después, ordenados por inicio.
-- **H12-U03:** Si no hay bloqueos vigentes, el sistema devuelve una lista vacía.
-- **H12-U04:** El arrendador puede eliminar un bloqueo de su propio bien.
-- **H12-U05:** Los días bloqueados aparecen como ocupados en el calendario.
-- **H12-U06:** Al eliminar un bloqueo, sus días vuelven a estar libres si ninguna reserva los ocupa.
-- **H12-U07:** Las rutas de bloqueos permiten el acceso al rol OWNER.
-
-### Casos negativos ejecutados
-
-- **H12-U08:** El sistema rechaza fechas ausentes, con formato inválido o inexistentes en el calendario.
-- **H12-U09:** El sistema no permite iniciar un bloqueo antes de hoy.
-- **H12-U10:** El sistema no permite que la fecha de fin sea anterior a la de inicio.
-- **H12-U11:** El sistema no permite fechas posteriores al horizonte de 90 días.
-- **H12-U12:** El sistema rechaza traslapes con otro bloqueo.
-- **H12-U13:** El sistema rechaza traslapes con reservas PENDING.
-- **H12-U14:** El sistema rechaza traslapes con reservas PAID.
-- **H12-U15:** El sistema no permite bloquear un bien ajeno o inexistente.
-- **H12-U16:** El sistema no permite consultar bloqueos de un bien ajeno o inexistente.
-- **H12-U17:** El sistema responde que no encuentra un bloqueo inexistente al eliminarlo.
-- **H12-U18:** El sistema no permite eliminar un bloqueo perteneciente a otro arrendador.
-- **H12-U19:** Los roles TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401.
-- **H12-U20:** El sistema rechaza identificadores que no tengan formato UUID en las tres rutas.
-- **H12-U21:** Un conflicto de serialización al crear se convierte en 409.
-
-### Tabla de resultados
-
-| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
-|---|---|---|---|---|---|---|---|
-| H12-U01 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Crear bloqueo válido | Simular bien propio y periodo libre; llamar al servicio de creación. | Guarda el bloqueo en transacción serializable y responde con id, propertyId, fechas y createdAt. | Se verificó propiedad, se consultaron traslapes y se creó el bloqueo; la respuesta incluyó los cinco campos. | Aprobado |
-| H12-U02 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Listado vigente ordenado | Invocar el repositorio para listar bloqueos desde hoy. | Filtra endDate mayor o igual a hoy y ordena por startDate ascendente. | Prisma recibió el filtro inclusivo y el orden ascendente por inicio. | Aprobado |
-| H12-U03 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Lista vacía | Consultar los bloqueos del bien propio cuando el repositorio no devuelve filas. | Devuelve una lista vacía. | El servicio devolvió `[]`. | Aprobado |
-| H12-U04 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Eliminar bloqueo propio | Simular bloqueo y bien del OWNER; solicitar eliminación. | Elimina el bloqueo propio y la operación termina sin cuerpo. | El servicio verificó propiedad y llamó al repositorio para eliminar el bloqueo. | Aprobado |
-| H12-U05 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Días bloqueados en calendario | Devolver un bloqueo de tres días y consultar disponibilidad. | Los tres días aparecen en `occupiedDates`. | La respuesta incluyó 2026-11-20, 2026-11-21 y 2026-11-22. | Aprobado |
-| H12-U06 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Liberar días al eliminar | Consultar disponibilidad antes y después de eliminar el bloqueo, sin reservas presentes. | Los días ocupados por el bloqueo dejan de aparecer tras eliminarlo. | Antes aparecieron tres días y después la lista quedó vacía. | Aprobado |
-| H12-U07 | Positiva | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Rol OWNER permitido | Inspeccionar metadata y ejecutar RolesGuard para las tres rutas. | Las tres rutas declaran OWNER y el guard lo autoriza. | La metadata y el guard confirmaron el acceso OWNER en crear, listar y eliminar. | Aprobado |
-| H12-U08 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fechas inválidas o ausentes | Validar DTO sin fechas, con formato no ISO y con día inexistente. | El DTO produce errores de validación que se traducen a 400. | class-validator encontró errores para los tres cuerpos inválidos. | Aprobado |
-| H12-U09 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Inicio anterior a hoy | Enviar inicio 2026-11-15 con reloj fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
-| H12-U10 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fin anterior al inicio | Enviar inicio 2026-11-22 y fin 2026-11-21. | Responde 400 antes de consultar o escribir en el repositorio. | BadRequestException; la transacción no fue invocada. | Aprobado |
-| H12-U11 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Fecha fuera de horizonte | Enviar fecha 2027-02-14 con hoy fijado en 2026-11-16. | Responde 400 antes de iniciar la transacción. | BadRequestException; la transacción no fue invocada. | Aprobado |
-| H12-U12 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con otro bloqueo | Simular bloqueo previo en el mismo periodo e intentar crear otro. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
-| H12-U13 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PENDING | Simular reserva PENDING que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
-| H12-U14 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Traslape con reserva PAID | Simular reserva PAID que ocupa el periodo e intentar bloquearlo. | Responde 409 DATES_UNAVAILABLE y no crea el registro. | ConflictException 409; createAvailabilityBlock no fue llamado. | Aprobado |
-| H12-U15 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al crear | Simular que el bien no pertenece al arrendador de sesión. | Responde 404 y no crea bloqueo. | NotFoundException 404; no se creó el bloqueo. | Aprobado |
-| H12-U16 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bien ajeno o inexistente al consultar | Simular que no se encuentra un bien propio y consultar su lista. | Responde 404 y no consulta los bloqueos. | NotFoundException 404; listAvailabilityBlocks no fue llamado. | Aprobado |
-| H12-U17 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo inexistente al eliminar | Simular que la consulta del bloqueo no encuentra resultado. | Responde 404 y no elimina registros. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
-| H12-U18 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Bloqueo de otro arrendador | Simular bloqueo existente cuyo bien no pertenece al usuario. | Responde 404 y conserva el bloqueo. | NotFoundException 404; deleteAvailabilityBlock no fue llamado. | Aprobado |
-| H12-U19 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Sesión o rol no autorizado | Ejecutar RolesGuard como TENANT, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | TENANT y ADMIN reciben 403; una solicitud sin sesión recibe 401. | RolesGuard rechazó roles y falta de usuario; JwtAuthGuard rechazó la solicitud sin token con 401. | Aprobado |
-| H12-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | UUID inválido | Pasar un ID inválido por ParseUUIDPipe para cada una de las tres rutas. | Cada ruta rechaza el ID con 400. | ParseUUIDPipe lanzó BadRequestException en las tres comprobaciones. | Aprobado |
-| H12-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Conflicto de serialización | Simular error Prisma P2034 durante la transacción de creación. | Responde 409 DATES_UNAVAILABLE. | El servicio convirtió P2034 en ConflictException con code DATES_UNAVAILABLE. | Aprobado |
-
-Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
-
-## Módulo 4: Pagos y depósitos de garantía — H13: Pago de alquiler con detalle del depósito (Unitarias)
-
-### Casos positivos ejecutados
-
-- **H13-U01:** El detalle de pago muestra el bien, el periodo, los días inclusivos, el alquiler, el depósito, el total y la hora límite con montos a dos decimales.
-- **H13-U02:** Una tarjeta terminada en 4242 se procesa después de dos segundos, cambia la reserva a pagada, registra pago, depósito y movimiento, notifica al arrendador y devuelve el comprobante.
-- **H13-U03:** El arrendatario de la reserva consulta sus movimientos con tipo, monto, motivo y fecha.
-- **H13-U04:** El arrendador propietario consulta los movimientos de la reserva.
-- **H13-U05:** Las rutas de resumen y pago requieren el rol TENANT.
-- **H13-U18:** El repositorio ordena los movimientos del más reciente al más antiguo.
-
-### Casos negativos ejecutados
-
-- **H13-U06:** La tarjeta terminada en 0002 se rechaza con el mensaje indicado y no modifica la reserva ni crea registros.
-- **H13-U07a:** El resumen no está disponible para una reserva cancelada.
-- **H13-U07b:** El resumen no está disponible para una reserva pendiente vencida.
-- **H13-U08a:** No se puede pagar una reserva cancelada.
-- **H13-U08b:** No se puede pagar una reserva pendiente vencida.
-- **H13-U09:** No se puede volver a pagar una reserva pagada.
-- **H13-U10:** Una carrera de pago que encuentra la reserva ya pagada responde `ALREADY_PAID`.
-- **H13-U11:** El arrendatario no puede pagar una reserva ajena.
-- **H13-U12:** El arrendatario no puede consultar el resumen de una reserva ajena.
-- **H13-U13:** Un tercero no puede consultar movimientos de una reserva ajena.
-- **H13-U14:** No se puede pagar un bien que requiere verificación con un perfil no verificado.
-- **H13-U15:** No se puede consultar el detalle de pago de un bien que requiere verificación con un perfil no verificado.
-- **H13-U16:** El DTO rechaza un UUID requerido ausente o inválido.
-- **H13-U17a:** El DTO rechaza los últimos dígitos vacíos.
-- **H13-U17b:** El DTO rechaza menos de cuatro dígitos.
-- **H13-U17c:** El DTO rechaza más de cuatro dígitos.
-- **H13-U17d:** El DTO rechaza caracteres que no sean dígitos.
-- **H13-U19:** OWNER y ADMIN reciben 403 y la solicitud sin sesión recibe 401.
-- **H13-U20:** Un UUID inválido en el identificador del historial responde 400.
-
-### Tabla de resultados
-
-| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
-|---|---|---|---|---|---|---|---|
-| H13-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen y desglose del pago | Consultar resumen para periodo inclusivo de tres días con precio diario 50.00 y depósito 100.00. | Devuelve alquiler 150.00, total 250.00, datos del bien y vencimiento. | El resumen incluyó tres días, los importes calculados con dos decimales y `expiresAt`. | Aprobado |
-| H13-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago aprobado y comprobante | Pagar con 4242, avanzar el reloj simulado dos segundos y revisar las operaciones transaccionales y notificación. | Reserva `PAID`; crea Payment, Deposit y movimiento; devuelve recibo y avisa al propietario. | Se confirmaron las escrituras en transacción, recibo con desglose y últimos cuatro dígitos, y notificación al owner del bien. | Aprobado |
-| H13-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendatario | Consultar movimientos usando el ID del tenant relacionado y verificar los campos presentados. | Devuelve tipo, monto, motivo y fecha del movimiento. | La respuesta transformó el movimiento a `COBRO`, monto decimal de dos dígitos y fecha ISO. | Aprobado |
-| H13-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial para el arrendador | Consultar movimientos usando el ID del owner de la propiedad. | El arrendador relacionado obtiene el historial. | El servicio autorizó al owner y devolvió los movimientos recibidos. | Aprobado |
-| H13-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Rol permitido para resumen y pago | Revisar metadata de ambos handlers y ejecutar RolesGuard como TENANT. | Las rutas declaran TENANT y el guard permite ese rol. | Los dos handlers declararon `TENANT`; RolesGuard autorizó la sesión. | Aprobado |
-| H13-U06 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Fondos insuficientes | Procesar tarjeta 0002 y revisar error y métodos de persistencia. | Responde 400 `INSUFFICIENT_FUNDS` con el mensaje exacto; no actualiza ni crea registros. | El servicio devolvió el error y no ejecutó transacción, pago, depósito ni movimiento. | Aprobado |
-| H13-U07a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva cancelada | Consultar el resumen de una reserva `CANCELED`. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva con estado 409. | Aprobado |
-| H13-U07b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva vencida | Consultar el resumen de una reserva `PENDING` cuyo vencimiento ya pasó. | Responde 409 `BOOKING_NOT_PAYABLE`. | El servicio rechazó la reserva vencida con estado 409. | Aprobado |
-| H13-U08a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva cancelada | Intentar pagar una reserva `CANCELED` y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
-| H13-U08b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva vencida | Intentar pagar una reserva `PENDING` expirada y revisar escrituras. | Responde 409 y no crea pago. | Se rechazó antes de abrir la transacción y no se creó Payment. | Aprobado |
-| H13-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Reserva ya pagada | Pagar una reserva en estado `PAID`. | Responde 409 `ALREADY_PAID`. | El servicio rechazó el pago sin iniciar una nueva transacción. | Aprobado |
-| H13-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Doble pago concurrente | Simular conflicto Prisma P2002 y releer la reserva en estado `PAID`. | Convierte el conflicto en 409 `ALREADY_PAID`. | La respuesta del servicio incluyó el código `ALREADY_PAID`. | Aprobado |
-| H13-U11 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Pago de reserva ajena | Intentar pagar con una sesión distinta al tenant de la reserva. | Responde 404 y no inicia la transacción. | El servicio lanzó NotFoundException antes de escribir. | Aprobado |
-| H13-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Resumen de reserva ajena | Consultar resumen con otro tenant autenticado. | Responde 404. | El servicio lanzó NotFoundException. | Aprobado |
-| H13-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Historial de reserva ajena | Consultar los movimientos como un tercero no relacionado. | Responde 404 y no consulta movimientos. | El servicio lanzó NotFoundException y `listTransactions` no fue llamado. | Aprobado |
-| H13-U14 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al pagar | Intentar pagar con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED` y no escribe. | El servicio lanzó ForbiddenException antes de abrir la transacción. | Aprobado |
-| H13-U15 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Verificación requerida al consultar resumen | Consultar resumen con perfil no verificado cuando `verifiedOnly` es true. | Responde 403 `VERIFICATION_REQUIRED`. | El servicio respondió 403 con el código esperado. | Aprobado |
-| H13-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID requerido inválido | Validar DTO sin `bookingId` y con valor que no es UUID. | class-validator rechaza ambos cuerpos para responder 400. | Se encontraron errores de validación en ambos DTOs. | Aprobado |
-| H13-U17a | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Últimos dígitos vacíos | Validar `last4Digits` como cadena vacía. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
-| H13-U17b | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Menos de cuatro dígitos | Validar `last4Digits` con dos dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
-| H13-U17c | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Más de cuatro dígitos | Validar `last4Digits` con cinco dígitos. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
-| H13-U17d | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Caracteres no numéricos | Validar `last4Digits` con una letra. | El DTO rechaza la entrada con error 400. | class-validator reportó errores de validación. | Aprobado |
-| H13-U18 | Positiva | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Orden del historial | Inspeccionar los argumentos de la consulta Prisma del repositorio. | Ordena por fecha descendente y desempata por ID descendente. | Prisma recibió ambos criterios descendentes. | Aprobado |
-| H13-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | Sesión y roles no autorizados | Ejecutar RolesGuard como OWNER, ADMIN y sin usuario; ejecutar JwtAuthGuard sin token. | OWNER y ADMIN reciben 403; sin sesión recibe 401. | Los guards rechazaron los dos roles y la solicitud sin token con los estados esperados. | Aprobado |
-| H13-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H13: Pago de alquiler con detalle del depósito | UUID inválido en historial | Pasar texto que no es UUID por ParseUUIDPipe del parámetro. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
-
-Ejecución: `npm.cmd test -- test/unit/historia-H13.spec.ts` — Vitest reportó 1 archivo aprobado y 25 pruebas aprobadas.
-
-## Módulo 4: Pagos y depósitos de garantía — H14: Devolución o retención del depósito de garantía (Unitarias)
-
-### Casos positivos ejecutados
-
-- **H14-U01:** El arrendador devuelve el depósito completo de una reserva finalizada, registra la devolución y notifica al arrendatario.
-- **H14-U02:** El arrendador retiene el depósito completo e informa el motivo en el movimiento y la notificación.
-- **H14-U03:** El arrendador retiene parte del depósito y registra tanto la retención como la devolución del saldo.
-- **H14-U04:** El historial muestra movimientos de devolución y retención con sus montos, motivos y fechas.
-- **H14-U05:** El arrendatario ve el estado y el desglose actualizado del depósito en sus reservas.
-- **H14-U06:** El sistema devuelve automáticamente los depósitos pendientes al cumplirse siete días desde que la reserva pasa a COMPLETED.
-- **H14-U07:** Solo el rol OWNER puede usar el endpoint de decisión.
-
-### Casos negativos ejecutados
-
-- **H14-U08:** El sistema no permite decidir el depósito antes de que la reserva esté COMPLETED.
-- **H14-U09:** El sistema no permite a un arrendador decidir sobre el depósito de un bien ajeno.
-- **H14-U10:** El sistema responde 404 cuando la reserva no tiene depósito.
-- **H14-U11a:** El sistema no permite volver a decidir un depósito RETURNED.
-- **H14-U11b:** El sistema no permite volver a decidir un depósito RETAINED.
-- **H14-U11c:** El sistema no permite volver a decidir un depósito PARTIALLY_RETAINED.
-- **H14-U12:** El sistema rechaza una retención de cero.
-- **H14-U13:** El sistema rechaza una retención mayor que el depósito.
-- **H14-U14a:** El DTO rechaza un monto decimal con signo negativo.
-- **H14-U14b:** El DTO rechaza un monto que no es numérico.
-- **H14-U14c:** El DTO rechaza un monto con más de dos decimales.
-- **H14-U15a:** El DTO requiere el monto al elegir RETENER.
-- **H14-U15b:** El DTO requiere el motivo al elegir RETENER.
-- **H14-U15c:** El DTO rechaza un motivo vacío.
-- **H14-U15d:** El DTO rechaza un motivo compuesto solo por espacios.
-- **H14-U16:** El DTO rechaza un motivo de más de 250 caracteres.
-- **H14-U17:** El DTO solo acepta DEVOLVER o RETENER.
-- **H14-U18:** El sistema deniega OWNER y ADMIN con 403 y solicitudes sin sesión con 401.
-- **H14-U19:** El sistema rechaza un UUID inválido en la ruta con 400.
-- **H14-U20:** El sistema conserva el depósito pendiente antes de cumplir los siete días.
-- **H14-U21:** La consulta automática solo selecciona depósitos pendientes positivos de reservas COMPLETED cuyo plazo ya venció.
-- **H14-U22:** Una decisión concurrente no genera un segundo movimiento ni una segunda notificación.
-
-### Tabla de resultados
-
-| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
-|---|---|---|---|---|---|---|---|
-| H14-U01 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución total | Enviar `DEVOLVER` para un depósito de 100.00 de una reserva `COMPLETED`; revisar transacción, movimiento y notificación. | Estado `RETURNED`, retenido 0.00, devuelto 100.00 y movimiento REFUND por el total. | Se actualizó el depósito y se registró REFUND por 100.00; el tenant recibió notificación `DEPOSIT_RETURNED`. | Aprobado |
-| H14-U02 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención total | Enviar `RETENER`, monto 100.00 y motivo válido; revisar respuesta, movimiento y notificación. | Estado `RETAINED`, retenido 100.00, devuelto 0.00 y motivo registrado. | Se registró RETENTION por 100.00 con el motivo y se notificó al tenant. | Aprobado |
-| H14-U03 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención parcial | Enviar `RETENER` por 25.00 de un depósito de 100.00. | Estado `PARTIALLY_RETAINED`; crea retención 25.00 y devolución 75.00; ambos suman 100.00. | Se crearon ambos movimientos y el cálculo confirmó retenido más devuelto igual al depósito. | Aprobado |
-| H14-U04 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Movimientos visibles al arrendatario | Consultar historial para una reserva relacionada con movimientos REFUND y RETENTION. | Devuelve DEVOLUCION y RETENCION con monto, motivo y fecha. | El historial tradujo los tipos y presentó todos los campos esperados. | Aprobado |
-| H14-U05 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Estado del depósito en reservas propias | Consultar reservas del tenant con depósito parcialmente retenido. | La reserva incluye estado, monto, retenido, devuelto y fecha de decisión. | La respuesta serializó el desglose actualizado del depósito con montos a dos decimales. | Aprobado |
-| H14-U06 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Devolución automática al cumplir siete días | Fijar la decisión exactamente siete días después de `Booking.updatedAt` y procesar candidatos. | Pasa a RETURNED, registra REFUND con «Plazo de decisión vencido» y notifica al tenant. | Se actualizaron los montos, se registró el movimiento con el motivo exacto y se envió evento `DEPOSIT_RETURNED_AUTO`. | Aprobado |
-| H14-U07 | Positiva | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Acceso del rol OWNER | Revisar metadata del handler y ejecutar RolesGuard con OWNER. | La ruta declara OWNER y el guard lo autoriza. | La metadata y RolesGuard confirmaron acceso OWNER. | Aprobado |
-| H14-U08 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Reserva no finalizada | Intentar devolver un depósito con reserva `PAID`. | Responde 409 `BOOKING_NOT_FINALIZED` sin iniciar transacción. | El servicio respondió el conflicto antes de persistir. | Aprobado |
-| H14-U09 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Bien de otro arrendador | Intentar decidir el depósito con owner distinto al propietario del bien. | Responde 404 y no inicia transacción. | Se lanzó NotFoundException sin persistencia. | Aprobado |
-| H14-U10 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Depósito inexistente | Solicitar devolver el depósito cuando la reserva no tiene depósito asociado. | Responde 404. | Se lanzó NotFoundException. | Aprobado |
-| H14-U11a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETURNED | Intentar decidir un depósito RETURNED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
-| H14-U11b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para RETAINED | Intentar decidir un depósito RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
-| H14-U11c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisión duplicada para PARTIALLY_RETAINED | Intentar decidir un depósito PARTIALLY_RETAINED. | Responde 409 `DEPOSIT_ALREADY_DECIDED`. | El servicio rechazó la segunda decisión con el código esperado. | Aprobado |
-| H14-U12 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención de cero | Enviar `RETENER` con monto 0.00 y motivo válido. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto antes de iniciar la transacción. | Aprobado |
-| H14-U13 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Retención superior al depósito | Enviar monto 100.01 para un depósito de 100.00. | Responde 400 `VALIDATION_ERROR` sin transacción. | El servicio rechazó el monto y no persistió datos. | Aprobado |
-| H14-U14a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decimal negativo | Validar el monto `-1.00` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
-| H14-U14b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Monto no numérico | Validar el monto `no-numérico` en el DTO. | El DTO produce error de validación 400. | class-validator encontró errores en el DTO. | Aprobado |
-| H14-U14c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Exceso de decimales | Validar el monto `1.001` en el DTO. | El DTO produce error de validación 400. | class-validator rechazó el tercer decimal. | Aprobado |
-| H14-U15a | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el monto de retención | Validar `RETENER` sin `retentionAmount`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
-| H14-U15b | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Falta el motivo | Validar `RETENER` sin `retentionReason`. | El DTO rechaza la solicitud con 400. | class-validator encontró errores para el campo requerido condicional. | Aprobado |
-| H14-U15c | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo vacío | Validar `retentionReason` como cadena vacía. | El DTO rechaza la solicitud con 400. | class-validator reportó el motivo inválido. | Aprobado |
-| H14-U15d | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Motivo solo con espacios | Validar un motivo compuesto por espacios. | El DTO rechaza la solicitud con 400. | La expresión de validación rechazó el motivo sin caracteres visibles. | Aprobado |
-| H14-U16 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Longitud máxima del motivo | Validar un motivo de 251 caracteres. | El DTO rechaza la solicitud con 400. | class-validator encontró error de longitud máxima. | Aprobado |
-| H14-U17 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Tipo de decisión inválido | Validar `decisionType: APROBAR`. | El DTO rechaza la solicitud con 400. | class-validator rechazó el valor fuera de `DEVOLVER`/`RETENER`. | Aprobado |
-| H14-U18 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Rol o sesión no permitidos | Ejecutar RolesGuard como TENANT y ADMIN, sin usuario, y JwtAuthGuard sin token. | Roles distintos de OWNER reciben 403 y ausencia de sesión recibe 401. | Ambos guards devolvieron los estados esperados. | Aprobado |
-| H14-U19 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | UUID inválido en la ruta | Pasar un identificador inválido por ParseUUIDPipe. | Responde 400. | ParseUUIDPipe lanzó BadRequestException. | Aprobado |
-| H14-U20 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Plazo automático aún no vencido | Consultar candidatos antes de cumplir los siete días. | Conserva el depósito pendiente; no registra movimiento ni notifica. | No se abrió transacción ni se creó movimiento o aviso. | Aprobado |
-| H14-U21 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Filtro de candidatos automáticos | Inspeccionar el filtro Prisma del repositorio para el proceso automático. | Selecciona únicamente depósitos PENDING positivos con reserva COMPLETED y plazo vencido. | Prisma recibió todos los filtros y el orden ascendente esperado. | Aprobado |
-| H14-U22 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisiones concurrentes | Simular que la actualización condicional afecta cero filas porque otra decisión ganó. | Responde 409 `DEPOSIT_ALREADY_DECIDED`; no crea otro movimiento ni notificación. | El servicio devolvió el conflicto y no duplicó movimiento o aviso. | Aprobado |
-
-Ejecución: `npm.cmd test -- test/unit/historia-H14.spec.ts` — Vitest reportó 1 archivo aprobado y 29 pruebas aprobadas.
 
 ## Módulo 9: Panel de reportes para el arrendador — H24: Ingresos totales (Unitarias)
 
