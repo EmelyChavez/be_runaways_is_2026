@@ -37,6 +37,7 @@ export class BookingsRepository {
         title: true,
         pricePerDay: true,
         securityDeposit: true,
+        verifiedOnly: true,
       },
     });
   }
