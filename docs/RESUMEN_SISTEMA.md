@@ -47,6 +47,12 @@ Este módulo permite que el arrendatario inicie una conversación desde el detal
 
 - **H15 — Preguntar dudas sobre el alquiler:** el arrendatario inicia o recupera el hilo asociado a un bien y puede enviar mensajes al arrendador propietario. El sistema limita cada hilo a sus participantes, registra la fecha y hora de los mensajes, actualiza los mensajes recibidos como leídos al abrir el hilo y notifica al otro participante cada vez que se envía un mensaje.
 
+## Módulo 6: Reseñas y calificaciones
+
+Este módulo permite que el arrendatario comparta su experiencia con un bien y su arrendador después de completar una reserva. Las calificaciones ayudan a que otras personas conozcan la experiencia antes de alquilar.
+
+- **H17 — Calificar experiencia sobre un bien y su arrendador:** después de que su reserva queda finalizada, el arrendatario puede calificar el bien y a su arrendador, y agregar un comentario. Tiene 14 días para hacerlo y solo puede enviar una calificación por reserva; el sistema actualiza los promedios que se muestran en el detalle del bien y el perfil del arrendador.
+
 ## Módulo 7: Verificación de identidad/documentos
 
 Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado. Por ahora, estas funciones están disponibles mediante la API del backend.

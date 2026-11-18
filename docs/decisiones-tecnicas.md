@@ -144,6 +144,7 @@ el vocabulario de la historia.
 
 ## Decisión de devolución o retención del depósito
 
+
 `DepositDecisionsService` aplica las decisiones y `DepositsRepository` encapsula las
 consultas y escrituras. La decisión se limita al OWNER propietario, a reservas `COMPLETED` y a
 depósitos positivos en estado `PENDING`. Una transacción serializable actualiza condicionalmente el
@@ -157,3 +158,7 @@ busca depósitos todavía `PENDING` cuyas reservas completadas superaron ese pla
 devolución con motivo «Plazo de decisión vencido». La actualización condicional y serializable evita
 que una decisión manual concurrente provoque una devolución doble. Esta equivalencia debe mantenerse
 si una historia futura incorpora un evento o campo específico para registrar la devolución física.
+
+## Calificación del bien y del arrendador
+
+`ReviewsService` permite que el TENANT dueño de una reserva `COMPLETED` publique una reseña dentro de los 14 días contados desde `Booking.updatedAt`, que registra el cambio a finalizada. La escritura usa una transacción serializable y una clave única por reserva y tipo de reseña para impedir duplicados concurrentes. Los promedios del bien y del arrendador se calculan desde las reseñas `RENTER_TO_PROPERTY`, se presentan con un decimal y no se almacenan por separado.

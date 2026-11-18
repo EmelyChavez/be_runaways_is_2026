@@ -306,6 +306,7 @@ model Review {
 
   @@index([propertyId, reviewType])
   @@index([targetUserId, reviewType])
+  @@unique([reservationId, reviewType])
   @@map("reviews")
 }
 

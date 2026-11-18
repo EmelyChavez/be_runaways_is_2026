@@ -38,6 +38,7 @@ flowchart LR
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación solo cuando el bien tiene `verifiedOnly`, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
 | `payments` | presenta el detalle de cobros de una reserva, simula el pago, marca la reserva como pagada, crea el depósito e historial de movimientos, y permite consultar ese historial a los participantes. `PaymentsService` concentra las reglas; `PaymentsRepository` coordina persistencia en transacciones serializables y reutiliza `Payment` del esquema H24. |
 | `messaging` | Inicia o recupera conversaciones entre el arrendatario y el propietario de un bien, lista hilos y mensajes, marca como leídos los mensajes entrantes al consultar el hilo y emite notificaciones mediante `NotificationsService`. `MessagingService` controla la participación y el auto-envío; `MessagingRepository` encapsula consultas y escrituras Prisma. |
+| `reviews` | Publica la calificación de un arrendatario a un bien y su propietario tras completar una reserva. `ReviewsService` valida titularidad, estado, plazo y duplicados; `ReviewsRepository` guarda la reseña transaccionalmente y obtiene el detalle y promedios actuales. |
 | `income` | Consulta agregada del ingreso del `OWNER` autenticado mediante `GET /income/reports` y `GET /income/reports/by-property`, calculando alquileres desde pagos y depósitos retenidos desde las decisiones registradas. |
 | `notifications` | Servicio interno unificado para emitir avisos y API autenticada para consultar la bandeja, el contador de no leídas y marcar notificaciones propias como leídas. El destinatario de cada consulta se obtiene de la sesión. |
 | `health` | Health check público. |
@@ -83,6 +84,10 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   persistir los hilos y mensajes, y solicita una notificación al otro participante por cada mensaje.
   Al consultar mensajes, el repositorio marca como leídos únicamente los mensajes recibidos por quien
   consulta.
+- Calificación: `ReviewsController` obtiene el TENANT de la sesión y delega a `ReviewsService`; el
+  servicio valida la reserva finalizada y su ventana de 14 días y `ReviewsRepository` guarda la reseña
+  en una transacción serializable. Los detalles de bien y perfil calculan los promedios desde estas
+  reseñas, por lo que reflejan la publicación sin almacenamiento duplicado.
 
 ## Validación y documentación HTTP
 
