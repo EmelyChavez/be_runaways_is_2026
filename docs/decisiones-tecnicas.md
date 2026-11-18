@@ -171,3 +171,15 @@ si una historia futura incorpora un evento o campo específico para registrar la
 ## Calificación del arrendatario
 
 Para `OWNER_TO_RENTER`, solo el OWNER propietario de la reserva puede calificar al TENANT dentro de los 14 días contados desde `Booking.updatedAt`. El promedio y el conteo se consultan desde las reseñas en `GET /profile` y en `GET /owner/bookings`; este último agrupa los promedios de los arrendatarios de la página en una consulta para evitar lecturas individuales por reserva.
+
+## Reporte de calificaciones por bien
+
+`GET /owner/reports/ratings` se implementa dentro del módulo `reviews`, porque el reporte deriva de
+las reseñas `RENTER_TO_PROPERTY`. El repositorio obtiene los bienes del OWNER autenticado y agrega
+promedio y conteo de sus reseñas; el servicio redondea el promedio a un decimal y pagina el resultado.
+Los bienes sin reseñas devuelven `averageRating: null` y `reviewCount: 0`; al no guardarse un promedio
+separado, una nueva calificación se refleja en la siguiente consulta. El orden ascendente o
+descendente compara los promedios sin redondear; los bienes sin calificaciones quedan al final en
+ambos órdenes y los empates se ordenan por título e identificador. La ruta solo permite GET, así que
+el arrendador puede consultar las calificaciones recibidas, pero no modificarlas ni eliminarlas desde
+este panel.
