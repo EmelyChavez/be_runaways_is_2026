@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 334 | 334 | 0 |
+| Unitarias | 368 | 368 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **334** | **334** | **0** |
+| **Total** | **368** | **368** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -143,6 +143,120 @@ Ejecución: `npm.cmd test -- test/unit/historia-H28.spec.ts` — Vitest reportó
 | H29-U21 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de TENANT | Revisar roles declarados en reservas, pagos y publicaciones/gestión. | TENANT puede reservar y pagar; no puede publicar ni gestionar. | La metadata autoriza TENANT en reservas/pagos y lo excluye de publicar/gestionar. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+
+
+## Módulo 1: Catálogo de propiedades/equipo — H2: Consultar el catálogo de bienes disponibles (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H2-U01:** La respuesta del catálogo incluye los datos necesarios para cada tarjeta y devuelve el precio diario con dos decimales.
+- **H2-U02:** La consulta de detalle devuelve la información del bien disponible seleccionado.
+- **H2-U03:** El repositorio consulta hasta 12 bienes y los ordena del más reciente al más antiguo.
+- **H2-U04:** El sistema permite solicitar otra página y devuelve los metadatos de paginación.
+- **H2-U05:** Si no hay bienes disponibles, el sistema devuelve una lista vacía y total cero.
+- **H2-U06:** El sistema permite consultar el catálogo al rol `TENANT`.
+
+### Casos negativos ejecutados
+
+- **H2-U07:** El catálogo excluye bienes `PAUSED` al consultar únicamente bienes `AVAILABLE`.
+- **H2-U08:** El catálogo excluye bienes `DELETED` al consultar únicamente bienes `AVAILABLE`.
+- **H2-U09:** El sistema rechaza la consulta sin sesión con 401.
+- **H2-U10:** El sistema deniega la consulta al rol `OWNER` con 403.
+- **H2-U11:** El sistema deniega la consulta al rol `ADMIN` con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H2-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Datos para las tarjetas y formato del precio | Consultar catálogo con un bien que incluye imagen, nombre, ubicación, categoría y precio. | Devuelve esos campos y el precio diario como cadena con dos decimales. | La respuesta incluyó los datos e imágenes y `pricePerDay: "45.00"`. | Aprobado |
+| H2-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Detalle del bien seleccionado | Solicitar el detalle de un bien disponible por su ID. | Devuelve la información del bien consultado. | El servicio consultó el ID indicado y devolvió el detalle con precio formateado. | Aprobado |
+| H2-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Límite y orden de resultados | Inspeccionar la consulta Prisma del catálogo en página 1. | Prisma filtra `AVAILABLE`, ordena `createdAt` descendente y limita a 12 resultados. | La consulta recibió el filtro `AVAILABLE`, `orderBy: createdAt desc`, `skip: 0` y `take: 12`. | Aprobado |
+| H2-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Paginación del catálogo | Solicitar la página 2 para un catálogo con 13 resultados. | La respuesta indica página 2, tamaño 12, total 13 y los datos de esa página. | El repositorio recibió página 2 y la respuesta incluyó `page: 2`, `pageSize: 12` y `total: 13`. | Aprobado |
+| H2-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Catálogo sin bienes disponibles | Consultar cuando el repositorio devuelve cero bienes. | Devuelve lista vacía y total cero. | La respuesta fue `{ data: [], total: 0, page: 1, pageSize: 12 }`. | Aprobado |
+| H2-U06 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Acceso para TENANT | Revisar el rol declarado por la ruta y evaluar `RolesGuard` con TENANT. | `TENANT` está autorizado y pasa el guard. | La ruta declara `TENANT` y el guard permitió el acceso. | Aprobado |
+| H2-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Bienes pausados excluidos | Inspeccionar el filtro enviado a Prisma para listar el catálogo. | La consulta exige estado `AVAILABLE`, por lo que no incluye `PAUSED`. | Prisma recibió `where.status: AVAILABLE`, distinto de `PAUSED`. | Aprobado |
+| H2-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Bienes eliminados excluidos | Inspeccionar el filtro enviado a Prisma para listar el catálogo. | La consulta exige estado `AVAILABLE`, por lo que no incluye `DELETED`. | Prisma recibió `where.status: AVAILABLE`, distinto de `DELETED`. | Aprobado |
+| H2-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Solicitud sin sesión | Ejecutar `JwtAuthGuard` para la ruta sin encabezado Bearer. | Rechaza la solicitud con 401. | El guard rechazó la solicitud con estado 401. | Aprobado |
+| H2-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Rol OWNER no permitido | Ejecutar `RolesGuard` con una sesión OWNER. | Rechaza el acceso con 403. | El guard rechazó el acceso con estado 403. | Aprobado |
+| H2-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H2: Consultar el catálogo de bienes disponibles | Rol ADMIN no permitido | Ejecutar `RolesGuard` con una sesión ADMIN. | Rechaza el acceso con 403. | El guard rechazó el acceso con estado 403. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H2.spec.ts` — Vitest reportó 1 archivo aprobado y 11 pruebas aprobadas.
+
+## Módulo 1: Catálogo de propiedades/equipo — H3: Detalle de un bien (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H3-U01:** El detalle devuelve las fotos, información completa del bien, precio y depósito con dos decimales y nombre del arrendador.
+- **H3-U02:** La respuesta incluye el promedio de calificación con un decimal y la cantidad de reseñas.
+- **H3-U03:** Si no hay reseñas, la respuesta incluye calificación nula y cantidad cero.
+- **H3-U04:** Si el depósito es cero, la API lo devuelve como `0.00` para que el cliente pueda mostrar «Sin depósito».
+- **H3-U05:** El endpoint autoriza al rol `TENANT`.
+
+### Casos negativos ejecutados
+
+- **H3-U06:** El detalle de un bien `PAUSED` no está disponible y responde 404.
+- **H3-U07:** El detalle de un bien `DELETED` no está disponible y responde 404.
+- **H3-U08:** El detalle de un bien inexistente responde 404.
+- **H3-U09:** El sistema rechaza la consulta del detalle sin sesión con 401.
+- **H3-U10:** El sistema bloquea con 403 la reserva de un bien que requiere verificación cuando el perfil del arrendatario no está verificado.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H3-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Información e imágenes del bien | Consultar el detalle de un bien disponible con dos imágenes, descripción y datos del arrendador. | Devuelve todas las fotos, datos descriptivos, precio y depósito con dos decimales, y nombre del arrendador. | La respuesta incluyó ambas imágenes, los campos del bien, `45.00`, `100.00` y el nombre del arrendador. | Aprobado |
+| H3-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Promedio y cantidad de reseñas | Consultar detalle con promedio agregado 4.54 y doce reseñas. | Devuelve el promedio como `4.5` y cantidad `12`. | La respuesta devolvió `propertyRatingAverage: "4.5"` y `propertyReviewCount: 12`. | Aprobado |
+| H3-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Bien sin calificaciones | Consultar detalle cuando el promedio agregado es nulo y el conteo es cero. | Devuelve calificación nula y cantidad cero para que el cliente muestre «Sin calificaciones». | La API devolvió `propertyRatingAverage: null` y `propertyReviewCount: 0`. | Aprobado |
+| H3-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Bien sin depósito | Consultar detalle de un bien cuyo depósito guardado es cero. | La API devuelve `0.00` para que el cliente muestre «Sin depósito». | La respuesta devolvió `securityDeposit: "0.00"`. | Aprobado |
+| H3-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Acceso del rol TENANT | Revisar el rol declarado por el endpoint y ejecutar `RolesGuard` como TENANT. | La ruta autoriza a TENANT. | La ruta declara `TENANT` y el guard permitió el acceso. | Aprobado |
+| H3-U06 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien PAUSED | Consultar un bien pausado usando la búsqueda restringida a `AVAILABLE`. | No devuelve el detalle y responde 404. | Prisma recibió el estado `AVAILABLE`; al no encontrar el bien, el servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien DELETED | Consultar un bien eliminado usando la búsqueda restringida a `AVAILABLE`. | No devuelve el detalle y responde 404. | Prisma recibió el estado `AVAILABLE`; al no encontrar el bien, el servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Detalle de bien inexistente | Consultar un ID que no corresponde a un bien disponible. | No devuelve el detalle y responde 404. | El servicio respondió `PROPERTY_NOT_AVAILABLE` con 404. | Aprobado |
+| H3-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Consulta sin sesión | Ejecutar `JwtAuthGuard` para el endpoint sin encabezado Bearer. | Rechaza la solicitud con 401. | El guard rechazó la solicitud con estado 401. | Aprobado |
+| H3-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H3: Detalle de un bien | Reserva requiere verificación | Intentar crear una reserva para un bien `verifiedOnly` con perfil no verificado. | Responde 403 `VERIFICATION_REQUIRED` y no crea la reserva. | El servicio respondió 403 con `VERIFICATION_REQUIRED`; `createPendingBooking` no fue invocado. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H3.spec.ts` — Vitest reportó 1 archivo aprobado y 10 pruebas aprobadas.
+
+## Módulo 1: Catálogo de propiedades/equipo — H4: Ver y editar mis publicaciones (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H4-U01:** La lista limita los resultados al arrendador autenticado, incluye estados `AVAILABLE` y `PAUSED`, ordena del más reciente al más antiguo y pagina de 12 en 12.
+- **H4-U02:** La lista devuelve metadatos de paginación y precios con dos decimales.
+- **H4-U03:** El arrendador puede consultar el detalle de una publicación propia para editarla.
+- **H4-U04:** El reemplazo integral actualiza los datos, conserva las imágenes elegidas y agrega nuevas fotos.
+- **H4-U05:** La edición permite conservar entre 1 y 5 fotos.
+- **H4-U06:** Con reservas activas, se pueden editar otros campos si precio y depósito no cambian.
+
+### Casos negativos ejecutados
+
+- **H4-U07:** El sistema responde 404 si el bien no existe o pertenece a otro arrendador al consultar o editarlo.
+- **H4-U08:** El sistema rechaza solicitudes sin sesión con 401 y deniega los roles `TENANT` y `ADMIN` con 403.
+- **H4-U09:** El sistema rechaza campos obligatorios o valores inválidos con error 400.
+- **H4-U10:** El sistema rechaza cambios que dejan cero o más de cinco fotos, o intentan quitar una foto ajena al bien.
+- **H4-U11:** Cambiar el precio de un bien con reservas `PENDING` o `PAID` responde 409 con el mensaje definido.
+- **H4-U12:** Cambiar el depósito de un bien con reservas `PENDING` o `PAID` responde 409 con el mensaje definido.
+- **H4-U13:** La carga de una foto mayor de 5 MB responde 413.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H4-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Filtro, orden y paginación de publicaciones propias | Consultar la primera página del repositorio de publicaciones del propietario. | Filtra por propietario y estados `AVAILABLE`/`PAUSED`, ordena por fecha descendente y devuelve hasta 12. | Prisma recibió esos estados y `ownerId`, `orderBy: createdAt desc`, `skip: 0`, `take: 12`. | Aprobado |
+| H4-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Metadatos y formato de precio | Consultar la página 2 con una publicación de precio 45.00. | Devuelve total, página, tamaño 12 y precio con dos decimales. | La respuesta incluyó `total: 13`, `page: 2`, `pageSize: 12` y `pricePerDay: "45.00"`. | Aprobado |
+| H4-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Consulta de detalle propio | Solicitar el detalle con el ID del arrendador y del bien. | Devuelve el detalle si el bien pertenece al arrendador. | El servicio consultó con ambos IDs y devolvió la publicación propia. | Aprobado |
+| H4-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Actualización de datos e imágenes | Enviar reemplazo integral, quitar una imagen, cargar una nueva y guardar. | Persiste los campos enviados y las imágenes restantes y nuevas; devuelve el bien actualizado. | El repositorio recibió los campos y la lista final de imágenes; la respuesta incluyó los datos actualizados. | Aprobado |
+| H4-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Límite permitido de fotos | Editar una vez conservando una foto y otra vez conservando cinco. | Ambas cantidades se aceptan. | Las dos actualizaciones completaron con sus cantidades finales de imágenes correspondientes. | Aprobado |
+| H4-U06 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Edición de campos no protegidos con reservas activas | Actualizar el título manteniendo el precio y el depósito, con reservas activas simuladas. | Permite el cambio de los demás campos. | La publicación se actualizó y no se consultó el conteo de reservas para bloquearla. | Aprobado |
+| H4-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Bien inexistente o ajeno | Consultar y editar un bien no encontrado bajo el ID del arrendador actual. | Ambas operaciones responden 404 y no actualizan el bien. | La consulta y la edición lanzaron `NotFoundException`; `updateOwned` no se ejecutó. | Aprobado |
+| H4-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Sesión y roles no permitidos | Ejecutar `JwtAuthGuard` sin token y `RolesGuard` con `TENANT` y `ADMIN`. | Sin sesión responde 401; los roles no autorizados reciben 403. | El guard devolvió 401 sin token y 403 para ambos roles; las rutas declaran `OWNER`. | Aprobado |
+| H4-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Validación del reemplazo integral | Validar payload vacío, título vacío, precio cero y categoría inválida. | Cada payload inválido produce errores de validación 400. | class-validator encontró errores en los cuatro payloads. | Aprobado |
+| H4-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cantidad e identidad de fotos inválida | Intentar dejar cero fotos, agregar suficientes para superar cinco y quitar una URL ajena. | Rechaza cada solicitud con error 400 y no actualiza el bien. | Los tres intentos lanzaron `BadRequestException`; la actualización no se realizó. | Aprobado |
+| H4-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cambio de precio con reservas activas | Cambiar el precio cuando el conteo de reservas activas es mayor que cero y revisar el filtro de estados. | Responde 409 con `PROPERTY_PRICE_CHANGE_BLOCKED`; el conteo incluye `PENDING` y `PAID`. | Se obtuvo 409 con el mensaje esperado; Prisma filtra `PENDING` y `PAID`, y no se actualizó el bien. | Aprobado |
+| H4-U12 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Cambio de depósito con reservas activas | Cambiar el depósito cuando existen reservas activas. | Responde 409 con `PROPERTY_PRICE_CHANGE_BLOCKED` y no actualiza el bien. | El servicio devolvió 409 con el mensaje esperado y no invocó la actualización. | Aprobado |
+| H4-U13 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H4: Ver y editar mis publicaciones | Archivo mayor de 5 MB | Enviar por PUT una foto que excede el límite del interceptor de carga. | Responde 413 antes de ejecutar la actualización. | Nest/Multer devolvió 413 y el servicio de actualización no fue llamado. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H4.spec.ts` — Vitest reportó 1 archivo aprobado y 13 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H5: Pausar, reactivar o eliminar una publicación
@@ -924,4 +1038,3 @@ Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó
 | H25-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
-
