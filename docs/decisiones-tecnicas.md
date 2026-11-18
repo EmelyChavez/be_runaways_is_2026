@@ -137,9 +137,14 @@ el número completo, vencimiento ni CVC. El modelo `Payment` creado por H24 cons
 alquiler y depósito para reportes futuros por arrendador, pero H13 no transfiere dinero a cuentas
 externas.
 
-La consulta de movimientos exige que la sesión corresponda al arrendatario de la reserva o al
-arrendador de su bien. `Property.verifiedOnly` determina si se requiere `Profile.isVerified` al
-reservar y pagar. El historial guarda el tipo enum `CHARGE` y la API lo presenta como `COBRO`, según
+Se requiere `Profile.isVerified` para reservar y pagar cualquier bien. `BookingsService` comprueba
+el perfil del TENANT de la sesión dentro de la transacción de reserva. `PaymentsService` vuelve a
+comprobarlo antes del resumen y del cobro, incluida la transacción de pago. El cliente no puede
+enviar el estado de verificación. `Property.verifiedOnly` se conserva por compatibilidad, pero el
+backend lo fija en `true` al crear o actualizar bienes, y la migración actualiza los registros
+existentes y prohíbe persistir `false`. La consulta de movimientos exige que la sesión
+corresponda al arrendatario de la reserva o al arrendador de su bien. El historial guarda el tipo
+enum `CHARGE` y la API lo presenta como `COBRO`, según
 el vocabulario de la historia.
 
 ## Decisión de devolución o retención del depósito
