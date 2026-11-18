@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, ReviewType } from '@PrismaClient';
+import { BookingStatus, Prisma, ReviewType, type PropertyStatus } from '@PrismaClient';
 import { PrismaService } from '@Prisma/services';
 
 @Injectable()
@@ -88,6 +88,37 @@ export class ReviewsRepository {
       where: { targetUserId: userId, reviewType: ReviewType.OWNER_TO_RENTER },
       _avg: { userRating: true },
       _count: { _all: true },
+    });
+  }
+
+  async getOwnerPropertyRatings(ownerId: string) {
+    const properties = await this.prisma.property.findMany({
+      where: { ownerId },
+      orderBy: [{ title: 'asc' }, { id: 'asc' }],
+      select: { id: true, title: true, status: true },
+    });
+    if (properties.length === 0) return [];
+
+    const ratings = await this.prisma.review.groupBy({
+      by: ['propertyId'],
+      where: {
+        propertyId: { in: properties.map(({ id }) => id) },
+        reviewType: ReviewType.RENTER_TO_PROPERTY,
+      },
+      _avg: { propertyRating: true },
+      _count: { _all: true },
+    });
+    const ratingsByPropertyId = new Map(ratings.map((rating) => [rating.propertyId, rating]));
+
+    return properties.map((property) => {
+      const rating = ratingsByPropertyId.get(property.id);
+      return {
+        propertyId: property.id,
+        title: property.title,
+        status: property.status as PropertyStatus,
+        averageRating: rating?._avg.propertyRating ?? null,
+        reviewCount: rating?._count._all ?? 0,
+      };
     });
   }
 }

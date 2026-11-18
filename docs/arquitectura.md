@@ -38,7 +38,7 @@ flowchart LR
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación obligatoria del perfil del TENANT autenticado para cualquier bien, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
 | `payments` | presenta el detalle de cobros de una reserva, simula el pago, marca la reserva como pagada, crea el depósito e historial de movimientos, y permite consultar ese historial a los participantes. `PaymentsService` concentra las reglas; `PaymentsRepository` coordina persistencia en transacciones serializables y reutiliza `Payment` del esquema H24. |
 | `messaging` | Inicia o recupera conversaciones entre el arrendatario y el propietario de un bien, lista hilos y mensajes, marca como leídos los mensajes entrantes al consultar el hilo y emite notificaciones mediante `NotificationsService`. `MessagingService` controla la participación y el auto-envío; `MessagingRepository` encapsula consultas y escrituras Prisma. |
-| `reviews` | Publica calificaciones entre las partes de una reserva completada. `ReviewsService` valida titularidad, estado, plazo y duplicados; `ReviewsRepository` persiste las reseñas y consulta promedios. Las calificaciones de arrendatarios se agregan al perfil y a las reservas que consulta el arrendador. |
+| `reviews` | Publica calificaciones entre las partes de una reserva completada y entrega al OWNER un reporte paginado de calificaciones de sus bienes. `ReviewsService` valida titularidad, estado, plazo y duplicados; `ReviewsRepository` persiste las reseñas y calcula promedios y conteos desde las reseñas `RENTER_TO_PROPERTY`. Las calificaciones de arrendatarios se agregan al perfil y a las reservas que consulta el arrendador. |
 | `income` | Consulta agregada del ingreso del `OWNER` autenticado mediante `GET /income/reports` y `GET /income/reports/by-property`, calculando alquileres desde pagos y depósitos retenidos desde las decisiones registradas. |
 | `notifications` | Servicio interno unificado para emitir avisos y API autenticada para consultar la bandeja, el contador de no leídas y marcar notificaciones propias como leídas. El destinatario de cada consulta se obtiene de la sesión. |
 | `health` | Health check público. |
@@ -92,6 +92,10 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   el repositorio valida que sea dueño del bien, guarda la reseña `OWNER_TO_RENTER` y devuelve el
   detalle con el promedio actualizado del TENANT. El perfil y las reservas del arrendador consultan
   esas mismas reseñas agregadas.
+- Reporte de calificaciones: `OwnerRatingsController` obtiene el OWNER de la sesión y delega a
+  `ReviewsService`; `ReviewsRepository` agrega las reseñas `RENTER_TO_PROPERTY` de sus bienes. El
+  servicio ordena por promedio y pagina la respuesta; los bienes sin reseñas se incluyen sin promedio.
+  La ruta es de solo lectura y no expone operaciones para editar o eliminar reseñas.
 
 ## Validación y documentación HTTP
 

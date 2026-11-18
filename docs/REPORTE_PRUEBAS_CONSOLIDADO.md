@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 408 | 408 | 0 |
+| Unitarias | 416 | 416 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **408** | **408** | **0** |
+| **Total** | **416** | **416** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -1163,3 +1163,34 @@ Ejecución: `npm.cmd test -- test/unit/historia-H24.spec.ts` — Vitest reportó
 | H25-U12 | Negativa | Módulo 9: Panel de reportes para el arrendador / H25: Visualización de ingresos por bien publicado | Rol ADMIN no permitido | Ejecutar `RolesGuard` para `ADMIN` en la ruta H25. | El guard rechaza el acceso con 403. | Se lanzó `ForbiddenException`. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
+
+## Módulo 9: Panel de reportes para el arrendador — H26: Visualización de calificación de los bienes (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H26-U01:** El reporte muestra los bienes propios con estado, promedio y cantidad de reseñas, e incluye los bienes sin calificaciones.
+- **H26-U02:** Al registrar una nueva reseña, la siguiente consulta refleja el promedio y la cantidad actualizados.
+- **H26-U03:** El arrendador ordena por calificación de mayor a menor o de menor a mayor; bienes sin calificaciones quedan al final.
+- **H26-U04:** El reporte pagina sus bienes y conserva el total general.
+- **H26-U05:** La ruta del reporte es GET de solo lectura y requiere el OWNER autenticado.
+
+### Casos negativos ejecutados
+
+- **H26-U06:** El sistema rechaza orden y parámetros de paginación inválidos con error 400.
+- **H26-U07:** El sistema rechaza la consulta sin sesión con 401.
+- **H26-U08:** El sistema deniega el acceso a TENANT y ADMIN con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H26-U01 | Positiva | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Promedio, conteo y bienes sin reseñas propios | Consultar el reporte con dos bienes del OWNER y una agrupación de reseñas para uno de ellos. | Devuelve promedio 4.3, conteo 2 y el bien sin reseñas con promedio nulo y conteo 0; filtra la agregación por los IDs propios y `RENTER_TO_PROPERTY`. | La respuesta incluyó ambos bienes y Prisma recibió el filtro por propiedad y tipo de reseña esperado. | Aprobado |
+| H26-U02 | Positiva | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Actualización después de nueva reseña | Consultar el reporte, registrar una reseña de bien y volver a consultar el reporte. | La nueva lectura refleja promedio 5 y conteo 1. | `ReviewsService` registró la reseña y la siguiente lectura devolvió promedio 5 y conteo 1. | Aprobado |
+| H26-U03 | Positiva | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Orden ascendente y descendente | Consultar el mismo conjunto con `order=asc` y `order=desc`. | Los promedios se ordenan según la dirección solicitada y los bienes sin reseñas permanecen al final. | Ambas respuestas quedaron ordenadas correctamente y el bien sin calificaciones quedó al final. | Aprobado |
+| H26-U04 | Positiva | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Paginación del reporte | Consultar página 2 con tamaño 1 para un conjunto de tres bienes. | Devuelve el bien correspondiente y `total: 3`. | La respuesta incluyó el bien de la segunda posición, `page: 2` y `total: 3`. | Aprobado |
+| H26-U05 | Positiva | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Ruta de lectura y rol OWNER | Inspeccionar metadata HTTP, metadata de roles y ejecutar `RolesGuard` con OWNER. | La ruta es `GET /owner/reports/ratings`, no ofrece operaciones de edición/eliminación y permite OWNER. | El controlador expuso únicamente `getRatings` con método GET y `RolesGuard` permitió OWNER. | Aprobado |
+| H26-U06 | Negativa | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Parámetros inválidos | Validar order desconocido, page cero o decimal y pageSize negativo o mayor a 100. | Cada consulta inválida responde 400. | `ValidationPipe` rechazó todos los valores inválidos; valores válidos pasaron la validación. | Aprobado |
+| H26-U07 | Negativa | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Consulta sin sesión | Ejecutar `JwtAuthGuard` sin encabezado Bearer. | El guard rechaza la solicitud con 401. | Se lanzó `UnauthorizedException`. | Aprobado |
+| H26-U08 | Negativa | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Roles no autorizados | Ejecutar `RolesGuard` para TENANT y ADMIN. | Ambos roles reciben 403. | `RolesGuard` lanzó `ForbiddenException` para TENANT y ADMIN. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H26.spec.ts` — Vitest reportó 1 archivo aprobado y 8 pruebas aprobadas.

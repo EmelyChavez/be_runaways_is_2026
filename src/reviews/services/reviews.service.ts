@@ -2,6 +2,8 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { BookingStatus, Prisma, ReviewType } from '@PrismaClient';
 import type { CreatePropertyReviewDto } from '../dto/create-property-review.dto.js';
 import type { CreateRenterReviewDto } from '../dto/create-renter-review.dto.js';
+import type { OwnerRatingsQueryDto } from '../dto/owner-ratings-query.dto.js';
+import { OwnerRatingsReportResponseDto } from '../dto/owner-ratings-report-response.dto.js';
 import { ReviewsRepository } from '../repositories/reviews.repository.js';
 
 const REVIEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -9,6 +11,30 @@ const REVIEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 @Injectable()
 export class ReviewsService {
   constructor(private readonly reviewsRepository: ReviewsRepository) {}
+
+  async getOwnerPropertyRatings(ownerId: string, query: OwnerRatingsQueryDto) {
+    const properties = await this.reviewsRepository.getOwnerPropertyRatings(ownerId);
+    const direction = query.order === 'asc' ? 1 : -1;
+    properties.sort((left, right) => {
+      if (left.averageRating === null && right.averageRating !== null) return 1;
+      if (left.averageRating !== null && right.averageRating === null) return -1;
+      if (left.averageRating !== null && right.averageRating !== null) {
+        const ratingOrder = (left.averageRating - right.averageRating) * direction;
+        if (ratingOrder !== 0) return ratingOrder;
+      }
+      return left.title.localeCompare(right.title) || left.propertyId.localeCompare(right.propertyId);
+    });
+
+    const startIndex = (query.page - 1) * query.pageSize;
+    const data = properties.slice(startIndex, startIndex + query.pageSize).map((property) => ({
+      ...property,
+      averageRating: property.averageRating === null
+        ? null
+        : Math.round(property.averageRating * 10) / 10,
+    }));
+
+    return new OwnerRatingsReportResponseDto({ data, total: properties.length, page: query.page });
+  }
 
   async createPropertyReview(authorId: string, reservationId: string, dto: CreatePropertyReviewDto) {
     let propertyId: string;
