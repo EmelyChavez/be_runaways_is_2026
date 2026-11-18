@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 416 | 416 | 0 |
+| Unitarias | 422 | 422 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **416** | **416** | **0** |
+| **Total** | **422** | **422** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -1194,3 +1194,30 @@ Ejecución: `npm.cmd test -- test/unit/historia-H25.spec.ts` — Vitest reportó
 | H26-U08 | Negativa | Módulo 9: Panel de reportes para el arrendador / H26: Visualización de calificación de los bienes | Roles no autorizados | Ejecutar `RolesGuard` para TENANT y ADMIN. | Ambos roles reciben 403. | `RolesGuard` lanzó `ForbiddenException` para TENANT y ADMIN. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H26.spec.ts` — Vitest reportó 1 archivo aprobado y 8 pruebas aprobadas.
+
+## Módulo 9: Panel de reportes para el arrendador — H27: Visualización de la tasa de ocupación por bien (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H27-U01:** El reporte calcula los días ocupados y la tasa con reservas `PAID` y `COMPLETED`, e informa cero para bienes sin reservas elegibles.
+- **H27-U02:** Si no se selecciona un período, el reporte usa los últimos 30 días contando hoy en El Salvador.
+- **H27-U03:** El reporte ordena ascendente o descendentemente y pagina los bienes, conservando el total.
+- **H27-U04:** El endpoint obtiene el OWNER de la sesión y solo permite consulta al rol `OWNER`.
+
+### Casos negativos ejecutados
+
+- **H27-U05:** El sistema rechaza fechas incompletas, invertidas, inválidas o rangos mayores a 365 días con `400 VALIDATION_ERROR`; acepta 365 días inclusivos.
+- **H27-U06:** El sistema rechaza solicitudes sin sesión con 401 y deniega TENANT y ADMIN con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H27-U01 | Positiva | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Días y porcentaje ocupados; estados excluidos | Consultar siete días con dos días de reserva PAID y uno COMPLETED; incluir un bien sin reservas y revisar los filtros Prisma. | Devuelve 3 días y 42.9% para el primer bien, 0 días y 0 para el segundo; la consulta solo incluye PAID/COMPLETED y no consulta bloqueos. | La respuesta devolvió `occupiedDays: 3`, `occupancyRate: 42.9` y cero para el bien libre; Prisma filtró los estados esperados y `NoAvailability` no fue consultado. | Aprobado |
+| H27-U02 | Positiva | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Período predeterminado de 30 días | Fijar hoy en 2026-11-18 y consultar sin fechas. | Usa desde 2026-10-20 hasta 2026-11-18, ambos inclusivos, para un total de 30 días. | El repositorio recibió esos límites y la respuesta reportó `periodDays: 30`. | Aprobado |
+| H27-U03 | Positiva | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Orden y paginación | Consultar primero `desc`, página 1, tamaño 1; después `asc`, página 2, tamaño 1. | El primer resultado descendente es el bien más ocupado; la página ascendente devuelve el segundo bien y ambos reportan el total 3. | La página descendente devolvió el bien de mayor ocupación y la ascendente el bien correspondiente a la segunda posición; ambas conservaron `total: 3`. | Aprobado |
+| H27-U04 | Positiva | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Identidad y autorización del OWNER | Invocar el método del controlador con usuario de sesión OWNER e inspeccionar metadata HTTP y de roles. | Pasa el ID de sesión al servicio; la ruta es GET `owner/reports/occupancy` y permite OWNER. | El servicio recibió el ID de sesión; metadata declaró GET, la ruta requerida y el rol OWNER; `RolesGuard` permitió acceso. | Aprobado |
+| H27-U05 | Negativa | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Validación de fechas y período | Probar fechas faltantes por separado, rango invertido, 366 días, fecha inexistente y parámetros inválidos; consultar también un rango válido de 365 días. | Los rangos inválidos responden 400 `VALIDATION_ERROR`; el rango de 365 días se acepta. | Se rechazaron fechas y parámetros inválidos antes de consultar datos; el período de 365 días fue aceptado. | Aprobado |
+| H27-U06 | Negativa | Módulo 9: Panel de reportes para el arrendador / H27: Visualización de la tasa de ocupación por bien | Acceso sin sesión o con rol distinto de OWNER | Ejecutar `JwtAuthGuard` sin token y `RolesGuard` para TENANT y ADMIN. | Sin sesión responde 401; TENANT y ADMIN reciben 403. | `JwtAuthGuard` respondió 401 y `RolesGuard` denegó ambos roles con 403. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H27.spec.ts` — Vitest reportó 1 archivo aprobado y 6 pruebas aprobadas.

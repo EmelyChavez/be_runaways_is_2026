@@ -183,3 +183,16 @@ descendente compara los promedios sin redondear; los bienes sin calificaciones q
 ambos órdenes y los empates se ordenan por título e identificador. La ruta solo permite GET, así que
 el arrendador puede consultar las calificaciones recibidas, pero no modificarlas ni eliminarlas desde
 este panel.
+
+## Reporte de tasa de ocupación por bien (H27)
+
+`GET /owner/reports/occupancy` se implementa en el módulo `properties`, que es dueño de las
+publicaciones y consulta sus reservas. Si no se envía período, el servicio usa hoy y los 29 días
+anteriores en la zona `America/El_Salvador`; si se envía uno, `from` y `to` deben venir juntos como
+fechas `YYYY-MM-DD`. El rango es inclusivo y acepta hasta 365 días. Para cada bien del OWNER, el
+repositorio selecciona reservas `PAID` y `COMPLETED` que intersectan el rango; el servicio intersecta
+cada reserva con el período y cuenta días únicos, evitando doble conteo si existieran traslapes.
+`occupancyRate` es `occupiedDays / periodDays * 100`, redondeado a un decimal. No se cuentan reservas
+`PENDING` o `CANCELED`, ni bloqueos de disponibilidad. Los bienes sin reservas elegibles devuelven
+cero días y una tasa `0.0`; el reporte ordena por días ocupados, pagina y solo permite lectura al
+OWNER autenticado.

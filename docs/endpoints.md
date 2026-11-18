@@ -10,6 +10,7 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `GET /api/v1/income/reports` | `OWNER` autenticado | `from`, `to` opcionales (fecha ISO; límites inclusivos para fechas `YYYY-MM-DD`) | `200`: `{ from, to, rentalIncome, retainedDepositIncome, totalIncome }`; solo propiedades del arrendador en sesión |
 | `GET /api/v1/income/reports/by-property` | `OWNER` autenticado | `from`, `to` opcionales; `order` (`asc`/`desc`, por defecto `desc`); `page` (1), `pageSize` (10, máximo 100) | `200`: `{ from, to, data: [{ propertyId, title, category, rentalIncome, retainedDepositIncome, totalIncome }], rentalIncome, retainedDepositIncome, totalIncome, total, page, pageSize }` |
 | `GET /api/v1/owner/reports/ratings` | `OWNER` autenticado | `order` (`asc`/`desc`, por defecto `desc`); `page` (1); `pageSize` (10, máximo 100) | `200`: `{ data: [{ propertyId, title, status, averageRating, reviewCount }], total, page }`; `averageRating` es nulo y `reviewCount` es 0 cuando no hay calificaciones |
+| `GET /api/v1/owner/reports/occupancy` | `OWNER` autenticado | `from` y `to` opcionales como fechas `YYYY-MM-DD` (ambas o ninguna); `order` (`asc`/`desc`, por defecto `desc`); `page` (1); `pageSize` (10, máximo 100) | `200`: `{ from, to, periodDays, data: [{ propertyId, title, status, occupiedDays, occupancyRate }], total, page }`; `occupancyRate` es un número con un decimal; si no se envían fechas, usa los últimos 30 días contando hoy |
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
 | `POST /api/v1/reservations/:id/reviews/property` | `TENANT` autenticado | `id` UUID; `{ propertyRating, userRating, comment? }`, puntuaciones enteras de 1 a 5 y comentario de hasta 200 caracteres | `200`: detalle actualizado del bien, reseñas, promedios con un decimal y `reviewCreatedAt` ISO; `404` reserva inexistente o ajena; `409` reserva no finalizada, calificada o con plazo vencido |
 | `POST /api/v1/reservations/:id/reviews/renter` | `OWNER` autenticado, propietario del bien reservado | `id` UUID; `{ userRating, comment? }`, puntuación entera de 1 a 5 y comentario de hasta 200 caracteres | `200`: detalle del bien, arrendatario con promedio y cantidad de reseñas, y `reviewCreatedAt` ISO; `404` reserva inexistente o de un bien ajeno; `409` reserva no finalizada, ya calificada por OWNER o con plazo vencido |
@@ -119,6 +120,9 @@ existentes en `src/`; las planificadas aún no tienen controlador.
   `ADMIN`; `409 ROLE_UNCHANGED` si se solicita el mismo rol y `409 ROLE_CHANGE_BLOCKED` si hay
   reservas `PENDING`/`PAID` o depósitos `PENDING` que bloquean el cambio. Rol fuera de `TENANT` y
   `OWNER` responde `400 VALIDATION_ERROR`.
+- Reporte de ocupación: `GET /api/v1/owner/reports/occupancy` requiere `OWNER`; sin sesión responde
+  `401` y con rol distinto responde `403`. Devuelve `400 VALIDATION_ERROR` si solo se envía una fecha,
+  `to` es anterior a `from`, el rango supera 365 días o una fecha no usa `YYYY-MM-DD` válido.
 
 Las respuestas de usuario no incluyen `passwordHash`. El backend devuelve tokens en JSON y no
 establece una cookie HTTP.
@@ -140,7 +144,5 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
 | Notificaciones | `NotificationsService.emit` (función interna); `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
-| Otros reportes del arrendador | `GET /api/v1/owner/reports/occupancy` | `OWNER` |
-
 Los parámetros y respuestas de las rutas planificadas se documentarán al implementar cada historia.
 

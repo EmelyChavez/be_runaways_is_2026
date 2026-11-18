@@ -273,6 +273,26 @@ export class PropertiesRepository {
     return [...bookings, ...blocks];
   }
 
+  async findOwnerOccupancyData(ownerId: string, from: Date, to: Date) {
+    const properties = await this.prisma.property.findMany({
+      where: { ownerId },
+      orderBy: [{ title: 'asc' }, { id: 'asc' }],
+      select: { id: true, title: true, status: true },
+    });
+    if (properties.length === 0) return { properties, bookings: [] };
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        propertyId: { in: properties.map(({ id }) => id) },
+        status: { in: [BookingStatus.PAID, BookingStatus.COMPLETED] },
+        startDate: { lte: to },
+        endDate: { gte: from },
+      },
+      select: { propertyId: true, startDate: true, endDate: true },
+    });
+    return { properties, bookings };
+  }
+
   findPropertyRating(propertyId: string) {
     return this.prisma.review.aggregate({
       where: { propertyId, reviewType: 'RENTER_TO_PROPERTY' },
