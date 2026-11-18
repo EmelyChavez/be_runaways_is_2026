@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 396 | 396 | 0 |
+| Unitarias | 408 | 408 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **396** | **396** | **0** |
+| **Total** | **408** | **408** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -950,6 +950,45 @@ Ejecución: `npm.cmd test -- test/unit/historia-H19.spec.ts` — Vitest reportó
 Ejecución: `npm.cmd test -- test/unit/historia-H20.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
 
 Nota: no se probaron las notificaciones porque el servicio del Módulo 8 no existe todavía en este backend. Los mensajes, botones y estados visuales pertenecen al frontend y no se cubren con estas pruebas unitarias.
+
+## Módulo 7: Verificación de identidad/documentos — H21: Rentar solo a usuarios verificados (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H21-U01:** El detalle del bien expone `verifiedOnly: true` para que se muestre la etiqueta de cuenta verificada.
+- **H21-U02:** Un TENANT puede consultar catálogo, detalle y calendario sin que se le exija verificación.
+- **H21-U03:** Un TENANT con perfil verificado crea una reserva `PENDING`; el servicio consulta el perfil usando el ID de sesión.
+- **H21-U04:** Un TENANT verificado puede pagar, aunque el bien provenga de datos anteriores con `verifiedOnly` desactivado.
+- **H21-U05:** Al crear o actualizar cualquier bien, el backend persiste `verifiedOnly: true`.
+
+### Casos negativos ejecutados
+
+- **H21-U06:** Una reserva con perfil no verificado responde `403 VERIFICATION_REQUIRED` con el mensaje indicado y no crea la reserva.
+- **H21-U07:** Una reserva sin perfil verificado responde `403 VERIFICATION_REQUIRED` y no crea la reserva.
+- **H21-U08:** El pago con cuenta no verificada responde `403 VERIFICATION_REQUIRED` y no marca la reserva como pagada ni crea movimientos.
+- **H21-U09:** El pago vuelve a validar la verificación dentro de la transacción antes de marcar la reserva como pagada.
+- **H21-U10:** Los DTOs rechazan los datos de verificación enviados por el cliente.
+- **H21-U11:** Las rutas de reserva y pago requieren el rol `TENANT`; `OWNER` recibe 403.
+- **H21-U12:** La creación de una reserva sin sesión responde 401.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H21-U01 | Positiva | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Indicador de requisito en detalle | Consultar el detalle de un bien disponible. | La respuesta incluye `verifiedOnly: true` para presentar «Requiere cuenta verificada». | El detalle devolvió `verifiedOnly: true`. | Aprobado |
+| H21-U02 | Positiva | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Consulta de bienes sin verificación | Consultar catálogo, detalle y calendario como TENANT sin perfil de verificación. | Las tres consultas responden correctamente y no requieren perfil verificado. | Catálogo, detalle y calendario devolvieron información del bien; calendario no expuso participantes. | Aprobado |
+| H21-U03 | Positiva | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Reserva con perfil verificado | Crear una reserva con `Profile.isVerified: true` asociado al TENANT de sesión. | Crea una reserva `PENDING` y consulta el perfil con el ID de sesión. | La reserva se creó como `PENDING` y la consulta recibió el ID del TENANT y la transacción. | Aprobado |
+| H21-U04 | Positiva | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Pago de usuario verificado | Pagar una reserva vigente cuyo perfil está verificado y el bien tiene la opción antigua desactivada. | El pago se procesa y la reserva se marca pagada. | Se confirmó el pago y se invocó el cambio de estado a `PAID`. | Aprobado |
+| H21-U05 | Positiva | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Regla fija al crear y editar publicaciones | Crear y actualizar un bien inspeccionando los datos enviados a Prisma. | Ambas operaciones fijan `verifiedOnly` en `true`. | Las escrituras de creación y actualización incluyeron `verifiedOnly: true`. | Aprobado |
+| H21-U06 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Reserva de cuenta no verificada | Intentar reservar con `Profile.isVerified: false`. | Responde 403 `VERIFICATION_REQUIRED` y «Debes verificar tu cuenta para rentar.»; no crea reserva. | Se devolvió el error exacto y no se invocó la creación. | Aprobado |
+| H21-U07 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Perfil inexistente | Intentar reservar cuando no existe un perfil verificado para el usuario de sesión. | Responde 403 `VERIFICATION_REQUIRED` y no crea reserva. | El servicio consultó el usuario de sesión y rechazó la operación sin crear reserva. | Aprobado |
+| H21-U08 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Pago de cuenta no verificada | Intentar pagar una reserva vigente cuyo arrendatario tiene `isVerified: false`. | Responde 403 `VERIFICATION_REQUIRED` y no registra pago, depósito, movimientos ni estado `PAID`. | Se rechazó con el mensaje requerido antes de abrir la transacción y no hubo escrituras. | Aprobado |
+| H21-U09 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Revalidación dentro de la transacción de pago | Iniciar pago con cuenta verificada y devolver perfil no verificado en la lectura transaccional. | Responde 403 y no cambia el estado de la reserva. | La segunda consulta encontró el perfil no verificado y no se marcó la reserva como pagada. | Aprobado |
+| H21-U10 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Verificación enviada por el cliente | Enviar `isVerified` en reserva/pago y `verifiedOnly` en publicación usando validación estricta. | Los campos no permitidos se rechazan con 400. | `ValidationPipe` rechazó los cuerpos que incluían esos campos. | Aprobado |
+| H21-U11 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Rol no autorizado | Ejecutar `RolesGuard` sobre reserva y pago con un usuario `OWNER`. | El acceso se deniega con 403; las rutas requieren `TENANT`. | Metadata declaró `TENANT` y `RolesGuard` rechazó el rol `OWNER`. | Aprobado |
+| H21-U12 | Negativa | Módulo 7: Verificación de identidad/documentos / H21: Rentar solo a usuarios verificados | Reserva sin sesión | Ejecutar `JwtAuthGuard` para creación de reserva sin token. | El guard rechaza la operación con 401. | `JwtAuthGuard` respondió 401. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H21.spec.ts` — Vitest reportó 1 archivo aprobado y 12 pruebas aprobadas.
 
 ## Módulo 8: Notificaciones — H22: Centralizar la generación y despacho de notificaciones (Unitarias)
 

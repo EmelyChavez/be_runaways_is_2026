@@ -3,7 +3,6 @@ import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsArray,
-  IsBoolean,
   IsOptional,
   IsString,
   Matches,
@@ -60,16 +59,6 @@ export class CreatePropertyRequestDto {
   @IsString()
   @Matches(NON_NEGATIVE_MONEY, { message: 'El depósito debe ser un monto no negativo con hasta dos decimales.' })
   securityDeposit!: string;
-
-  @ApiPropertyOptional({ description: 'Si solo usuarios verificados pueden reservar el bien.', default: false })
-  @Transform(({ value }: { value: unknown }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'verifiedOnly debe ser true o false.' })
-  verifiedOnly?: boolean;
 
   @ApiProperty({
     type: 'array',

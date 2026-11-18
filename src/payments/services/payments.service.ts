@@ -165,10 +165,10 @@ export class PaymentsService {
   }
 
   private assertVerifiedIfRequired(booking: PaymentBookingContext) {
-    if (booking.property.verifiedOnly && !booking.tenant.profile?.isVerified) {
+    if (!booking.tenant.profile?.isVerified) {
       throw new ForbiddenException({
         code: 'VERIFICATION_REQUIRED',
-        message: 'Debes verificar tu cuenta para pagar la reserva de este bien.',
+        message: 'Debes verificar tu cuenta para rentar.',
       });
     }
   }

@@ -66,14 +66,12 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
           });
         }
 
-        if (property.verifiedOnly !== false) {
-          const profile = await this.bookingsRepository.findVerifiedProfile(tenantId, transaction);
-          if (!profile?.isVerified) {
-            throw new ForbiddenException({
-              code: 'VERIFICATION_REQUIRED',
-              message: 'Debes verificar tu cuenta para reservar este bien.',
-            });
-          }
+        const profile = await this.bookingsRepository.findVerifiedProfile(tenantId, transaction);
+        if (!profile?.isVerified) {
+          throw new ForbiddenException({
+            code: 'VERIFICATION_REQUIRED',
+            message: 'Debes verificar tu cuenta para rentar.',
+          });
         }
 
         const [overlappingBooking, overlappingBlock] = await Promise.all([

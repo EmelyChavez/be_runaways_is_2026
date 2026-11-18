@@ -56,11 +56,13 @@ Este módulo permite que ambas partes compartan su experiencia después de compl
 
 ## Módulo 7: Verificación de identidad/documentos
 
-Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado. Por ahora, estas funciones están disponibles mediante la API del backend.
+Este módulo permite que el arrendatario envíe su documento para verificar la cuenta antes de poder pasar a arrendador o reservar. El sistema conserva el estado de revisión y permite volver a presentar el documento si fue rechazado; una vez verificada la cuenta, habilita la renta de cualquier bien. Por ahora, estas funciones están disponibles mediante la API del backend.
 
 - **H19 — Enviar documento de identidad para verificación:** el tenant selecciona DUI o pasaporte e informa el número y el archivo de identidad. El sistema valida que los datos y el archivo cumplan los formatos admitidos y registra el trámite como pendiente. Mientras espera revisión o si la cuenta ya está verificada, no acepta otro envío; después de un rechazo, permite presentar un documento nuevo.
 
 - **H20 — Aprobar o rechazar documentos de identidad:** el administrador consulta los documentos pendientes y revisa el archivo antes de decidir. Al aprobar, el sistema marca el documento como aprobado y la cuenta como verificada; al rechazar, guarda el motivo. Ambas decisiones registran cuándo se revisaron.Al aprobar o rechazar, el sistema también solicita una notificación para el usuario.
+
+- **H21 — Rentar solo a usuarios verificados:** el arrendatario puede explorar el catálogo, consultar el detalle y revisar la disponibilidad aunque su cuenta todavía no esté verificada. El sistema muestra que todos los bienes requieren una cuenta verificada y bloquea la creación y el pago de una reserva hasta que el arrendatario complete la verificación. La regla es global y el arrendador no puede desactivarla.
 
 ## Módulo 8: Notificaciones
 
