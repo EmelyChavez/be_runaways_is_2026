@@ -162,3 +162,7 @@ si una historia futura incorpora un evento o campo específico para registrar la
 ## Calificación del bien y del arrendador
 
 `ReviewsService` permite que el TENANT dueño de una reserva `COMPLETED` publique una reseña dentro de los 14 días contados desde `Booking.updatedAt`, que registra el cambio a finalizada. La escritura usa una transacción serializable y una clave única por reserva y tipo de reseña para impedir duplicados concurrentes. Los promedios del bien y del arrendador se calculan desde las reseñas `RENTER_TO_PROPERTY`, se presentan con un decimal y no se almacenan por separado.
+
+## Calificación del arrendatario
+
+Para `OWNER_TO_RENTER`, solo el OWNER propietario de la reserva puede calificar al TENANT dentro de los 14 días contados desde `Booking.updatedAt`. El promedio y el conteo se consultan desde las reseñas en `GET /profile` y en `GET /owner/bookings`; este último agrupa los promedios de los arrendatarios de la página en una consulta para evitar lecturas individuales por reserva.

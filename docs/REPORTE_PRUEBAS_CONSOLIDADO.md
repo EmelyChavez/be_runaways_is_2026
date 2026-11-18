@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 387 | 387 | 0 |
+| Unitarias | 396 | 396 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **387** | **387** | **0** |
+| **Total** | **396** | **396** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -820,6 +820,39 @@ Ejecución: `npm.cmd test -- test/unit/historia-H15.spec.ts` — Vitest reportó
 | H17-U19 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Acceso del rol ADMIN | Ejecutar RolesGuard con ADMIN para ruta TENANT. | Responde 403. | El guard lanzó ForbiddenException. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H17.spec.ts` — Vitest reportó 1 archivo aprobado y 19 pruebas aprobadas.
+
+## Módulo 6: Reseñas y calificaciones — H18: Calificar experiencia con arrendatario (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H18-U01:** El OWNER califica al arrendatario de una reserva propia finalizada; la reseña queda asociada a reserva, bien y arrendatario, y la respuesta devuelve el promedio actualizado y fecha ISO.
+- **H18-U02:** El sistema acepta comentario opcional, puntuaciones límite de 1 y 5 y comentario de 200 caracteres.
+- **H18-U03:** El promedio actualizado del arrendatario aparece en su perfil y en las reservas de los bienes del OWNER.
+- **H18-U04:** El OWNER puede calificar exactamente al cumplirse el plazo de 14 días.
+
+### Casos negativos ejecutados
+
+- **H18-U05:** Una reserva inexistente o de un bien ajeno responde 404.
+- **H18-U06:** Reserva no finalizada, ya calificada o con plazo vencido responde 409.
+- **H18-U07:** Se rechazan puntuaciones no enteras o fuera del rango, comentarios de más de 200 caracteres y comentarios que no sean texto.
+- **H18-U08:** Los conflictos Prisma por duplicado y transacción serializable responden 409.
+- **H18-U09:** Sin sesión responde 401; los roles TENANT y ADMIN reciben 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H18-U01 | Positiva | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Publicar reseña y devolver detalle actualizado | Simular reserva COMPLETED propia, publicar calificación y revisar metadata de ruta, datos persistidos y respuesta. | Ruta OWNER con HTTP 200; reseña OWNER_TO_RENTER asociada a reserva, bien y arrendatario; promedio y fecha ISO en respuesta. | La ruta declara OWNER y 200; Prisma recibió las asociaciones correctas y la respuesta incluyó average 4.3, count 3 y fecha ISO. | Aprobado |
+| H18-U02 | Positiva | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Comentario opcional y límites válidos | Crear reseña sin comentario; validar puntuación 5 con comentario de 200 caracteres. | Se acepta la reseña sin comentario y el DTO acepta los límites permitidos. | La creación omitió comment y class-validator no produjo errores para los límites válidos. | Aprobado |
+| H18-U03 | Positiva | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Promedio en perfil y reservas de mis bienes | Simular reseñas OWNER_TO_RENTER con promedio 4.26; consultar perfil TENANT y reservas del OWNER. | Perfil y reservas muestran average 4.3 y count 3. | El perfil consultó OWNER_TO_RENTER y ambas respuestas mostraron average 4.3 y count 3. | Aprobado |
+| H18-U04 | Positiva | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Límite de 14 días | Fijar finalización exactamente 14 días antes y publicar reseña. | La reseña se acepta en el límite del plazo. | El servicio publicó la reseña y devolvió la fecha ISO. | Aprobado |
+| H18-U05 | Negativa | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Reserva inexistente o bien ajeno | Simular reserva no encontrada y reserva cuyo ownerId es otro usuario. | Ambos escenarios responden 404. | El servicio lanzó NotFoundException con estado 404 en ambos escenarios. | Aprobado |
+| H18-U06 | Negativa | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Reserva no elegible | Intentar calificar reserva PAID, una con reseña previa y otra finalizada hace más de 14 días. | Los tres escenarios responden 409 y no se crea reseña. | El servicio lanzó ConflictException con estado 409 en los tres escenarios y no llamó a create. | Aprobado |
+| H18-U07 | Negativa | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Puntuación y comentario inválidos | Validar puntuaciones 0, 6, 2.5 y texto; comentario de 201 caracteres y comentario numérico. | Todos los valores inválidos son rechazados por el DTO. | class-validator produjo errores para cada entrada inválida. | Aprobado |
+| H18-U08 | Negativa | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Conflictos concurrentes | Simular errores Prisma P2002 y P2034 al publicar reseña. | Ambos conflictos se traducen a 409. | El servicio tradujo ambos errores a ConflictException con estado 409. | Aprobado |
+| H18-U09 | Negativa | Módulo 6: Reseñas y calificaciones / H18: Calificar experiencia con arrendatario | Sesión y rol sin permiso | Ejecutar JwtAuthGuard sin Bearer y RolesGuard para TENANT y ADMIN en ruta OWNER. | Sin sesión responde 401; TENANT y ADMIN responden 403. | JwtAuthGuard lanzó UnauthorizedException y RolesGuard lanzó ForbiddenException para ambos roles. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H18.spec.ts` — Vitest reportó 1 archivo aprobado y 9 pruebas aprobadas.
 
 ## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
 

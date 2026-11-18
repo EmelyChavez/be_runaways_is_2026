@@ -49,9 +49,10 @@ Este módulo permite que el arrendatario inicie una conversación desde el detal
 
 ## Módulo 6: Reseñas y calificaciones
 
-Este módulo permite que el arrendatario comparta su experiencia con un bien y su arrendador después de completar una reserva. Las calificaciones ayudan a que otras personas conozcan la experiencia antes de alquilar.
+Este módulo permite que ambas partes compartan su experiencia después de completar una reserva: el arrendatario califica el bien y al arrendador, y el arrendador califica al arrendatario. Las calificaciones ayudan a generar confianza antes de alquilar.
 
 - **H17 — Calificar experiencia sobre un bien y su arrendador:** después de que su reserva queda finalizada, el arrendatario puede calificar el bien y a su arrendador, y agregar un comentario. Tiene 14 días para hacerlo y solo puede enviar una calificación por reserva; el sistema actualiza los promedios que se muestran en el detalle del bien y el perfil del arrendador.
+- **H18 — Calificar experiencia con arrendatario:** después de que finaliza una reserva de uno de sus bienes, el arrendador puede calificar al arrendatario y agregar un comentario. Tiene 14 días para hacerlo y solo puede calificar una vez cada reserva; el promedio del arrendatario se refleja en su perfil y en las reservas de los bienes del arrendador.
 
 ## Módulo 7: Verificación de identidad/documentos
 
