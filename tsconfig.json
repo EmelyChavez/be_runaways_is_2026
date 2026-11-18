@@ -55,6 +55,8 @@
       "@Income/*": ["./src/income/*/index.ts"],
       "@Messaging": ["./src/messaging/index.ts"],
       "@Messaging/*": ["./src/messaging/*/index.ts"],
+        "@Reviews": ["./src/reviews/index.ts"],
+        "@Reviews/*": ["./src/reviews/*/index.ts"],
         "@Notifications": ["./src/notifications/index.ts"],
         "@Notifications/*": ["./src/notifications/*/index.ts"],
       "@Health": ["./src/health/index.ts"],

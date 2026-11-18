@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 368 | 368 | 0 |
+| Unitarias | 387 | 387 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **368** | **368** | **0** |
+| **Total** | **387** | **387** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -767,6 +767,59 @@ Ejecución: `npm.cmd test -- test/unit/historia-H14.spec.ts` — Vitest reportó
 | H15-U11 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Roles y sesión | Revisar metadata; autorizar TENANT/OWNER según ruta; intentar con OWNER al iniciar, ADMIN y sin sesión. | Solo TENANT inicia; rutas compartidas permiten TENANT/OWNER; ADMIN recibe 403 y sin sesión se responde 401. | RolesGuard permitió los roles previstos, rechazó roles no autorizados con 403 y JwtAuthGuard rechazó la solicitud sin token con 401. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H15.spec.ts` — Vitest reportó 1 archivo aprobado y 11 pruebas aprobadas.
+
+## Módulo 6: Reseñas y calificaciones — H17: Calificar experiencia sobre un bien y su arrendador (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H17-U01:** La reseña se publica en la reserva y la respuesta incluye detalle del bien, fecha ISO y promedios actualizados con un decimal.
+- **H17-U02:** Se acepta una reseña sin comentario.
+- **H17-U03:** Se aceptan puntuaciones límite de 1 y 5 y un comentario de 200 caracteres.
+- **H17-U04:** Se permite calificar exactamente al cumplirse los 14 días desde la finalización.
+- **H17-U05:** El endpoint permite el acceso al rol TENANT.
+
+### Casos negativos ejecutados
+
+- **H17-U06:** Una reserva inexistente responde 404.
+- **H17-U07:** Una reserva de otro arrendatario responde 404.
+- **H17-U08:** Una reserva que no está COMPLETED responde 409.
+- **H17-U09:** Una reserva ya calificada responde 409.
+- **H17-U10:** Una reserva cuyo plazo de 14 días venció responde 409.
+- **H17-U11:** Un duplicado reportado por Prisma responde 409.
+- **H17-U12:** Un conflicto serializable concurrente responde 409.
+- **H17-U13:** Se rechazan puntuaciones del bien fuera del rango o no enteras.
+- **H17-U14:** Se rechazan puntuaciones del arrendador fuera del rango o no enteras.
+- **H17-U15:** Se rechaza un comentario de más de 200 caracteres.
+- **H17-U16:** Se rechaza un comentario que no es texto.
+- **H17-U17:** La solicitud sin sesión responde 401.
+- **H17-U18:** El rol OWNER recibe 403.
+- **H17-U19:** El rol ADMIN recibe 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H17-U01 | Positiva | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Publicación y respuesta con promedios | Crear reseña válida con ambas puntuaciones y comentario; simular agregaciones y consultar respuesta. | Guarda la reseña en la transacción y devuelve el detalle con promedios a un decimal y fecha ISO. | Se guardó con reserva, bien, autor y arrendador; los promedios fueron 4.3 y 4.8 y la fecha se serializó en ISO. | Aprobado |
+| H17-U02 | Positiva | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Comentario opcional | Crear reseña válida sin enviar comment. | La reseña se crea y comment no se persiste como dato enviado. | La creación omitió comment. | Aprobado |
+| H17-U03 | Positiva | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Límites de puntuación y comentario | Validar puntuaciones 1 y 5 y comentario de 200 caracteres. | DTO válido. | class-validator no produjo errores. | Aprobado |
+| H17-U04 | Positiva | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Límite de 14 días | Fijar finalización hace exactamente 14 días y crear reseña. | La publicación se acepta hasta el límite de 14 días. | El servicio creó la reseña y devolvió fecha ISO. | Aprobado |
+| H17-U05 | Positiva | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Acceso y estado HTTP exitoso | Consultar metadata del endpoint y ejecutar RolesGuard con TENANT. | El endpoint declara TENANT, responde 200 y el guard permite el acceso. | La metadata contiene TENANT y código 200; RolesGuard permitió la solicitud. | Aprobado |
+| H17-U06 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Reserva inexistente | Simular que el repositorio no encuentra la reserva y solicitar la reseña. | Responde 404. | El servicio lanzó NotFoundException con estado 404. | Aprobado |
+| H17-U07 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Reserva ajena | Simular reserva cuyo tenantId no coincide con la sesión. | Responde 404. | El servicio lanzó NotFoundException con estado 404. | Aprobado |
+| H17-U08 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Reserva no finalizada | Simular reserva PAID e intentar calificarla. | Responde 409. | El servicio lanzó ConflictException con estado 409. | Aprobado |
+| H17-U09 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Reserva ya calificada | Simular una reseña previa del tipo RENTER_TO_PROPERTY. | Responde 409. | El servicio lanzó ConflictException con estado 409. | Aprobado |
+| H17-U10 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Plazo vencido | Simular finalización hace 14 días y 1 ms e intentar calificar. | Responde 409. | El servicio lanzó ConflictException con estado 409. | Aprobado |
+| H17-U11 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Duplicado de base de datos | Simular error Prisma P2002 al guardar la reseña. | Convierte el duplicado en 409. | El servicio tradujo P2002 a ConflictException con estado 409. | Aprobado |
+| H17-U12 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Conflicto transaccional concurrente | Simular error Prisma P2034 en la transacción serializable. | Responde 409. | El servicio tradujo P2034 a ConflictException con estado 409. | Aprobado |
+| H17-U13 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Puntuación del bien inválida | Validar valores 0, 6, 2.5 y texto "5" para propertyRating. | Todos los valores son rechazados. | class-validator produjo errores para cada entrada inválida. | Aprobado |
+| H17-U14 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Puntuación del arrendador inválida | Validar valores 0, 6, 2.5 y texto "5" para userRating. | Todos los valores son rechazados. | class-validator produjo errores para cada entrada inválida. | Aprobado |
+| H17-U15 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Comentario excede el límite | Validar comentario de 201 caracteres. | DTO inválido. | class-validator produjo errores de longitud. | Aprobado |
+| H17-U16 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Comentario de tipo inválido | Validar comment numérico. | DTO inválido. | class-validator rechazó el tipo de comment. | Aprobado |
+| H17-U17 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Solicitud sin sesión | Ejecutar JwtAuthGuard sin encabezado Bearer. | Responde 401. | El guard lanzó UnauthorizedException. | Aprobado |
+| H17-U18 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Acceso del rol OWNER | Ejecutar RolesGuard con OWNER para ruta TENANT. | Responde 403. | El guard lanzó ForbiddenException. | Aprobado |
+| H17-U19 | Negativa | Módulo 6: Reseñas y calificaciones / H17: Calificar experiencia sobre un bien y su arrendador | Acceso del rol ADMIN | Ejecutar RolesGuard con ADMIN para ruta TENANT. | Responde 403. | El guard lanzó ForbiddenException. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H17.spec.ts` — Vitest reportó 1 archivo aprobado y 19 pruebas aprobadas.
 
 ## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
 
