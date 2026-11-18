@@ -37,6 +37,8 @@ incluye bloqueos cuyo fin es hoy o posterior y los ordena por fecha de inicio; l
 
 `NoAvailability` registra los periodos que el arrendador bloquea para una propiedad. El catálogo y el calendario los consideran junto con las reservas `PAID` y `PENDING`; la respuesta de disponibilidad solo expone los días ocupados, nunca la identidad del arrendatario.
 
+La tasa de ocupación se deriva de `Booking` para los bienes del OWNER. Cuenta días únicos de reservas `PAID` o `COMPLETED` dentro del rango inclusivo; no cuenta reservas `PENDING` o `CANCELED` ni registros `NoAvailability`. No se almacena una tasa precalculada.
+
 ## Enums actuales
 
 - `Role`: `TENANT`, `OWNER`, `ADMIN`.

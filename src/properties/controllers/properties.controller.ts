@@ -34,6 +34,8 @@ import { CurrentUser, Roles } from '@Auth/decorators';
 import {
   CreatePropertyRequestDto,
   CreatePropertyResponseDto,
+  OccupancyReportQueryDto,
+  OccupancyReportResponseDto,
   PropertyCatalogQueryDto,
   UpdatePropertyRequestDto,
   UpdatePropertyStatusDto,
@@ -46,11 +48,11 @@ const MAX_FILES = 5;
 
 @ApiTags('properties')
 @ApiBearerAuth()
-@Controller('properties')
+@Controller()
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 
-  @Post()
+  @Post('properties')
   @Roles(Role.OWNER)
   @UseInterceptors(
     FilesInterceptor('images', MAX_FILES, {
@@ -80,7 +82,7 @@ export class PropertiesController {
     return CreatePropertyResponseDto.fromEntity(property);
   }
 
-  @Get()
+  @Get('properties')
   @Roles(Role.TENANT)
   @ApiOperation({ summary: 'Lista el catálogo de bienes disponibles' })
   @ApiOkResponse({ description: 'Catálogo paginado de bienes disponibles, filtrable por texto, ubicación, categoría, depósito y precio.' })
@@ -90,7 +92,7 @@ export class PropertiesController {
     return this.propertiesService.listCatalog(query);
   }
 
-  @Get('mine')
+  @Get('properties/mine')
   @Roles(Role.OWNER)
   @ApiOperation({ summary: 'Lista las publicaciones del arrendador actual' })
   @ApiOkResponse({ description: 'Publicaciones AVAILABLE o PAUSED, paginadas.' })
@@ -99,7 +101,7 @@ export class PropertiesController {
     return this.propertiesService.listMine(user.id, query.page);
   }
 
-  @Get(':id/owner')
+  @Get('properties/:id/owner')
   @Roles(Role.OWNER)
   @ApiOperation({ summary: 'Obtiene un bien propio para editarlo' })
   @ApiOkResponse({ type: CreatePropertyResponseDto })
@@ -115,7 +117,7 @@ export class PropertiesController {
     return CreatePropertyResponseDto.fromEntity(property);
   }
 
-  @Put(':id')
+  @Put('properties/:id')
   @Roles(Role.OWNER)
   @UseInterceptors(
     FilesInterceptor('images', MAX_FILES, {
@@ -149,7 +151,7 @@ export class PropertiesController {
     return CreatePropertyResponseDto.fromEntity(property);
   }
 
-  @Patch(':id/status')
+  @Patch('properties/:id/status')
   @Roles(Role.OWNER)
   @ApiOperation({ summary: 'Pausa o reactiva una publicación propia' })
   @ApiOkResponse({ description: 'Estado actualizado.', schema: { example: { id: 'uuid', status: 'PAUSED', statusChangedAt: '2026-11-13T12:00:00.000Z' } } })
@@ -166,7 +168,7 @@ export class PropertiesController {
     return this.propertiesService.updateOwnedStatus(user.id, id, dto);
   }
 
-  @Delete(':id')
+  @Delete('properties/:id')
   @Roles(Role.OWNER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Elimina una publicación propia' })
@@ -178,7 +180,7 @@ export class PropertiesController {
     await this.propertiesService.deleteOwned(user.id, id);
   }
 
-  @Get(':id')
+  @Get('properties/:id')
   @Roles(Role.TENANT)
   @ApiOperation({ summary: 'Obtiene el detalle de un bien disponible' })
   @ApiOkResponse({ description: 'Detalle del bien y su arrendador.' })
@@ -189,7 +191,7 @@ export class PropertiesController {
     return this.propertiesService.getDetail(id);
   }
 
-  @Get(':id/availability')
+  @Get('properties/:id/availability')
   @Roles(Role.TENANT, Role.OWNER)
   @ApiOperation({ summary: 'Consulta los días ocupados de un bien durante los próximos 90 días' })
   @ApiOkResponse({ description: 'Rango consultado y fechas ocupadas, sin datos de las reservas.' })
@@ -202,5 +204,16 @@ export class PropertiesController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.propertiesService.getAvailability(id, user.id, user.role);
+  }
+
+  @Get('owner/reports/occupancy')
+  @Roles(Role.OWNER)
+  @ApiOperation({ summary: 'Consulta la tasa de ocupación de los bienes del arrendador autenticado' })
+  @ApiOkResponse({ type: OccupancyReportResponseDto })
+  @ApiBadRequestResponse({ description: 'Fechas, orden o paginación inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo OWNER puede consultar este reporte.' })
+  getOccupancy(@CurrentUser() user: User, @Query() query: OccupancyReportQueryDto) {
+    return this.propertiesService.getOccupancyReport(user.id, query);
   }
 }

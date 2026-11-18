@@ -34,7 +34,7 @@ flowchart LR
 | `users` | Creación, consulta y actualización de cuentas; `UserRepository` encapsula Prisma. |
 | `profile` | Consulta del perfil propio, documento de identidad y calificación según rol vigente; cambio del rol entre `TENANT` y `OWNER`. |
 | `identity-document` | Lógica, persistencia y almacenamiento privado de documentos de identidad. `ProfileController` expone el envío y consulta propia, y rutas administrativas para listar, abrir y revisar documentos bajo `/profile/document/admin`. Cloudinary genera enlaces temporales para los archivos privados. |
-| `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables.Creación, listado y eliminación de bloqueos mediante `AvailabilityBlocksController`, DTOs, `PropertiesService` y `PropertiesRepository`. |
+| `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. También calcula para OWNER la ocupación por bien, agregando los días distintos cubiertos por reservas `PAID` y `COMPLETED`. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables. Creación, listado y eliminación de bloqueos mediante `AvailabilityBlocksController`, DTOs, `PropertiesService` y `PropertiesRepository`. |
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación obligatoria del perfil del TENANT autenticado para cualquier bien, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
 | `payments` | presenta el detalle de cobros de una reserva, simula el pago, marca la reserva como pagada, crea el depósito e historial de movimientos, y permite consultar ese historial a los participantes. `PaymentsService` concentra las reglas; `PaymentsRepository` coordina persistencia en transacciones serializables y reutiliza `Payment` del esquema H24. |
 | `messaging` | Inicia o recupera conversaciones entre el arrendatario y el propietario de un bien, lista hilos y mensajes, marca como leídos los mensajes entrantes al consultar el hilo y emite notificaciones mediante `NotificationsService`. `MessagingService` controla la participación y el auto-envío; `MessagingRepository` encapsula consultas y escrituras Prisma. |
@@ -96,6 +96,11 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   `ReviewsService`; `ReviewsRepository` agrega las reseñas `RENTER_TO_PROPERTY` de sus bienes. El
   servicio ordena por promedio y pagina la respuesta; los bienes sin reseñas se incluyen sin promedio.
   La ruta es de solo lectura y no expone operaciones para editar o eliminar reseñas.
+- Reporte de ocupación: `PropertiesController` obtiene el OWNER de la sesión y delega a
+  `PropertiesService`; `PropertiesRepository` consulta solo sus bienes y reservas `PAID` o
+  `COMPLETED` que intersectan el período. El servicio cuenta los días ocupados distintos, calcula el
+  porcentaje y aplica orden y paginación. Los bloqueos del arrendador y las reservas pendientes o
+  canceladas no cuentan como ocupación.
 
 ## Validación y documentación HTTP
 

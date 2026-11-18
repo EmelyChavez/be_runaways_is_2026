@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CloudinaryService, type UploadedImage } from './cloudinary.service.js';
 import { PropertiesRepository } from '@Properties/repositories';
-import { AvailabilityBlockResponseDto, type CreateAvailabilityBlockDto, type CreatePropertyRequestDto, type UpdatePropertyRequestDto, type UpdatePropertyStatusDto } from '@Properties/dto';
+import { AvailabilityBlockResponseDto, OccupancyReportResponseDto, type CreateAvailabilityBlockDto, type CreatePropertyRequestDto, type OccupancyReportQueryDto, type UpdatePropertyRequestDto, type UpdatePropertyStatusDto } from '@Properties/dto';
 import type { Property } from '@PrismaClient';
 import { BookingStatus, Prisma, PropertyStatus, Role } from '@PrismaClient';
 import type { PropertyCatalogResponseDto } from '@Properties/dto';
@@ -17,6 +17,8 @@ const MAX_IMAGES = 5;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const EL_SALVADOR_TIME_ZONE = 'America/El_Salvador';
 const AVAILABILITY_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_OCCUPANCY_PERIOD_DAYS = 365;
 
 export interface PropertyImageFile {
   buffer: Buffer;
@@ -30,6 +32,88 @@ export class PropertiesService {
     private readonly propertiesRepository: PropertiesRepository,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  async getOccupancyReport(ownerId: string, query: OccupancyReportQueryDto) {
+    const { from, to } = this.resolveOccupancyPeriod(query.from, query.to);
+    const periodDays = Math.floor((to.getTime() - from.getTime()) / DAY_MS) + 1;
+    const { properties, bookings } = await this.propertiesRepository.findOwnerOccupancyData(ownerId, from, to);
+    const occupiedDatesByProperty = new Map(properties.map(({ id }) => [id, new Set<string>()]));
+
+    for (const booking of bookings) {
+      const occupiedDates = occupiedDatesByProperty.get(booking.propertyId);
+      if (!occupiedDates) continue;
+      const startDate = new Date(Math.max(booking.startDate.getTime(), from.getTime()));
+      const endDate = new Date(Math.min(booking.endDate.getTime(), to.getTime()));
+      for (const day = new Date(startDate); day <= endDate; day.setUTCDate(day.getUTCDate() + 1)) {
+        occupiedDates.add(day.toISOString().slice(0, 10));
+      }
+    }
+
+    const direction = query.order === 'asc' ? 1 : -1;
+    const allProperties = properties.map((property) => {
+      const occupiedDays = occupiedDatesByProperty.get(property.id)?.size ?? 0;
+      return {
+        propertyId: property.id,
+        title: property.title,
+        status: property.status,
+        occupiedDays,
+        occupancyRate: Math.round((occupiedDays / periodDays) * 1_000) / 10,
+      };
+    });
+    allProperties.sort((left, right) => {
+      const occupancyOrder = (left.occupiedDays - right.occupiedDays) * direction;
+      return occupancyOrder || left.title.localeCompare(right.title) || left.propertyId.localeCompare(right.propertyId);
+    });
+
+    const startIndex = (query.page - 1) * query.pageSize;
+    return new OccupancyReportResponseDto({
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+      periodDays,
+      data: allProperties.slice(startIndex, startIndex + query.pageSize),
+      total: allProperties.length,
+      page: query.page,
+    });
+  }
+
+  private resolveOccupancyPeriod(fromValue?: string, toValue?: string) {
+    if ((fromValue === undefined) !== (toValue === undefined)) {
+      throw this.invalidOccupancyPeriod('Debes indicar las fechas from y to juntas.');
+    }
+
+    if (fromValue === undefined || toValue === undefined) {
+      const to = this.getTodayInElSalvador();
+      const from = new Date(to);
+      from.setUTCDate(from.getUTCDate() - 29);
+      return { from, to };
+    }
+
+    const from = this.parseOccupancyDate(fromValue, 'from');
+    const to = this.parseOccupancyDate(toValue, 'to');
+    if (to < from) {
+      throw this.invalidOccupancyPeriod('La fecha to no puede ser anterior a from.');
+    }
+    const periodDays = Math.floor((to.getTime() - from.getTime()) / DAY_MS) + 1;
+    if (periodDays > MAX_OCCUPANCY_PERIOD_DAYS) {
+      throw this.invalidOccupancyPeriod('El período no puede superar 365 días.');
+    }
+    return { from, to };
+  }
+
+  private parseOccupancyDate(value: string, field: 'from' | 'to'): Date {
+    if (!this.isDateOnly(value)) {
+      throw this.invalidOccupancyPeriod(`${field} debe usar el formato YYYY-MM-DD.`);
+    }
+    const date = new Date(`${value}T00:00:00.000Z`);
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+      throw this.invalidOccupancyPeriod(`${field} no es una fecha válida.`);
+    }
+    return date;
+  }
+
+  private invalidOccupancyPeriod(message: string): BadRequestException {
+    return new BadRequestException({ code: 'VALIDATION_ERROR', message });
+  }
 
   async create(ownerId: string, dto: CreatePropertyRequestDto, files: PropertyImageFile[]): Promise<Property> {
     this.validateImages(files, true);
