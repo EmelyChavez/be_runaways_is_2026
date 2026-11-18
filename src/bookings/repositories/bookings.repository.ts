@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, PropertyStatus } from '@PrismaClient';
+import { BookingStatus, Prisma, PropertyStatus, ReviewType } from '@PrismaClient';
 import { PrismaService } from '@Prisma/services';
 
 export interface CreatePendingBookingData {
@@ -156,6 +156,19 @@ export class BookingsRepository {
       this.prisma.booking.count({ where }),
     ]);
     return { data, total };
+  }
+
+  getRenterRatings(tenantIds: string[]) {
+    if (tenantIds.length === 0) return Promise.resolve([]);
+    return this.prisma.review.groupBy({
+      by: ['targetUserId'],
+      where: {
+        targetUserId: { in: tenantIds },
+        reviewType: ReviewType.OWNER_TO_RENTER,
+      },
+      _avg: { userRating: true },
+      _count: { _all: true },
+    });
   }
 
   async cancelExpiredPendingBookings(now: Date) {

@@ -13,6 +13,7 @@ import { CurrentUser, Roles } from '@Auth/decorators';
 import type { User } from '@PrismaClient';
 import { Role } from '@PrismaClient';
 import { CreatePropertyReviewDto } from '../dto/create-property-review.dto.js';
+import { CreateRenterReviewDto } from '../dto/create-renter-review.dto.js';
 import { ReviewsService } from '../services/reviews.service.js';
 
 @ApiTags('reviews')
@@ -36,5 +37,22 @@ export class ReviewsController {
     @Body() dto: CreatePropertyReviewDto,
   ) {
     return this.reviewsService.createPropertyReview(user.id, reservationId, dto);
+  }
+
+  @Post('renter')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.OWNER)
+  @ApiOkResponse({ description: 'Reseña publicada; devuelve el bien detallado y la calificación actualizada del arrendatario.' })
+  @ApiBadRequestResponse({ description: 'Puntuación o comentario inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo el OWNER del bien puede calificar al arrendatario.' })
+  @ApiNotFoundResponse({ description: 'La reserva no existe o no pertenece a un bien del arrendador.' })
+  @ApiConflictResponse({ description: 'La reserva no está finalizada, ya fue calificada o venció el plazo.' })
+  createRenterReview(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) reservationId: string,
+    @Body() dto: CreateRenterReviewDto,
+  ) {
+    return this.reviewsService.createRenterReview(user.id, reservationId, dto);
   }
 }

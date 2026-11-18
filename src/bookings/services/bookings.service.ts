@@ -138,10 +138,22 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
   async listForOwner(ownerId: string, query: OwnerBookingQueryDto) {
     const result = await this.bookingsRepository.listOwnerBookings(ownerId, query);
+    const ratings = await this.bookingsRepository.getRenterRatings(
+      [...new Set(result.data.map((booking) => booking.tenantId))],
+    );
+    const ratingsByTenant = new Map(ratings.map((rating) => [rating.targetUserId, rating]));
     return {
       data: result.data.map((booking) => ({
         ...this.serializeBooking(booking),
-        tenant: booking.tenant,
+        tenant: {
+          ...booking.tenant,
+          rating: {
+            average: ratingsByTenant.get(booking.tenantId)?._avg.userRating == null
+              ? null
+              : Math.round(ratingsByTenant.get(booking.tenantId)!._avg.userRating! * 10) / 10,
+            count: ratingsByTenant.get(booking.tenantId)?._count._all ?? 0,
+          },
+        },
       })),
       total: result.total,
       page: query.page,

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { BookingStatus, Prisma } from '@PrismaClient';
+import { BookingStatus, Prisma, ReviewType } from '@PrismaClient';
 import type { CreatePropertyReviewDto } from '../dto/create-property-review.dto.js';
+import type { CreateRenterReviewDto } from '../dto/create-renter-review.dto.js';
 import { ReviewsRepository } from '../repositories/reviews.repository.js';
 
 const REVIEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -32,6 +33,7 @@ export class ReviewsService {
           propertyId: booking.propertyId,
           authorId,
           targetUserId: booking.property.ownerId,
+          reviewType: ReviewType.RENTER_TO_PROPERTY,
           propertyRating: dto.propertyRating,
           userRating: dto.userRating,
           ...(dto.comment !== undefined && { comment: dto.comment }),
@@ -51,6 +53,71 @@ export class ReviewsService {
         ownerRatingAverage: ownerRating._avg.userRating?.toFixed(1) ?? null,
         ownerReviewCount: ownerRating._count._all,
         reviews,
+        reviewCreatedAt: result.review.createdAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && ['P2002', 'P2034'].includes(error.code)) {
+        throw this.reviewConflict('Esta reserva ya fue calificada.');
+      }
+      throw error;
+    }
+  }
+
+  async createRenterReview(ownerId: string, reservationId: string, dto: CreateRenterReviewDto) {
+    try {
+      const result = await this.reviewsRepository.serializableTransaction(async (transaction) => {
+        const booking = await this.reviewsRepository.findBooking(
+          reservationId,
+          transaction,
+          ReviewType.OWNER_TO_RENTER,
+        );
+        if (!booking || booking.property.ownerId !== ownerId) {
+          throw new NotFoundException({
+            code: 'BOOKING_NOT_FOUND',
+            message: 'La reserva no existe o no pertenece a uno de tus bienes.',
+          });
+        }
+        if (booking.status !== BookingStatus.COMPLETED) {
+          throw this.reviewConflict('Solo puedes calificar una reserva finalizada.');
+        }
+        if (booking.reviews.length > 0) {
+          throw this.reviewConflict('Esta reserva ya fue calificada.');
+        }
+        if (Date.now() - booking.updatedAt.getTime() > REVIEW_WINDOW_MS) {
+          throw this.reviewConflict('El plazo de 14 días para calificar esta reserva venció.');
+        }
+
+        const review = await this.reviewsRepository.create({
+          reservationId: booking.id,
+          propertyId: booking.propertyId,
+          authorId: ownerId,
+          targetUserId: booking.tenantId,
+          reviewType: ReviewType.OWNER_TO_RENTER,
+          userRating: dto.userRating,
+          ...(dto.comment !== undefined && { comment: dto.comment }),
+        }, transaction);
+        return { review, booking };
+      });
+
+      const detail = await this.reviewsRepository.findPropertyDetail(result.booking.propertyId);
+      if (!detail) {
+        throw new NotFoundException({ code: 'PROPERTY_NOT_FOUND', message: 'El bien asociado no existe.' });
+      }
+      const rating = await this.reviewsRepository.getRenterRating(result.booking.tenantId);
+      return {
+        ...detail,
+        pricePerDay: detail.pricePerDay.toFixed(2),
+        securityDeposit: detail.securityDeposit.toFixed(2),
+        tenant: {
+          id: result.booking.tenant.id,
+          name: result.booking.tenant.name,
+          rating: {
+            average: rating._avg.userRating === null
+              ? null
+              : Math.round(rating._avg.userRating * 10) / 10,
+            count: rating._count._all,
+          },
+        },
         reviewCreatedAt: result.review.createdAt.toISOString(),
       };
     } catch (error) {

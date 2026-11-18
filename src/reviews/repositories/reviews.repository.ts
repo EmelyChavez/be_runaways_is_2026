@@ -12,7 +12,11 @@ export class ReviewsRepository {
     });
   }
 
-  findBooking(reservationId: string, transaction: Prisma.TransactionClient) {
+  findBooking(
+    reservationId: string,
+    transaction: Prisma.TransactionClient,
+    reviewType: ReviewType = ReviewType.RENTER_TO_PROPERTY,
+  ) {
     return transaction.booking.findUnique({
       where: { id: reservationId },
       select: {
@@ -21,8 +25,9 @@ export class ReviewsRepository {
         propertyId: true,
         status: true,
         updatedAt: true,
+        tenant: { select: { id: true, name: true } },
         property: { select: { ownerId: true } },
-        reviews: { where: { reviewType: ReviewType.RENTER_TO_PROPERTY }, select: { id: true } },
+        reviews: { where: { reviewType }, select: { id: true } },
       },
     });
   }
@@ -32,14 +37,14 @@ export class ReviewsRepository {
     propertyId: string;
     authorId: string;
     targetUserId: string;
-    propertyRating: number;
+    reviewType: ReviewType;
+    propertyRating?: number;
     userRating: number;
     comment?: string;
   }, transaction: Prisma.TransactionClient) {
     return transaction.review.create({
       data: {
         ...data,
-        reviewType: ReviewType.RENTER_TO_PROPERTY,
       },
       select: { id: true, createdAt: true },
     });
@@ -76,5 +81,13 @@ export class ReviewsRepository {
         },
       }),
     ]);
+  }
+
+  getRenterRating(userId: string) {
+    return this.prisma.review.aggregate({
+      where: { targetUserId: userId, reviewType: ReviewType.OWNER_TO_RENTER },
+      _avg: { userRating: true },
+      _count: { _all: true },
+    });
   }
 }
