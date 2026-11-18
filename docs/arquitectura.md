@@ -37,6 +37,7 @@ flowchart LR
 | `properties` | Creación y gestión de publicaciones por propietarios, validación de imágenes y carga a Cloudinary. Consulta paginada del catálogo, detalle y disponibilidad de bienes disponibles. La consulta de disponibilidad combina las fechas de reservas activas con bloqueos del arrendador sin exponer participantes. El servicio aplica propiedad, bloqueos por reservas y borrado lógico en transacciones serializables.Creación, listado y eliminación de bloqueos mediante `AvailabilityBlocksController`, DTOs, `PropertiesService` y `PropertiesRepository`. |
 | `bookings` | Creación de reservas pendientes, validación de disponibilidad y verificación solo cuando el bien tiene `verifiedOnly`, consultas privadas para arrendatarios y arrendadores, y cancelación de reservas vencidas. Emite notificaciones de solicitud y vencimiento mediante `NotificationsService`. |
 | `payments` | presenta el detalle de cobros de una reserva, simula el pago, marca la reserva como pagada, crea el depósito e historial de movimientos, y permite consultar ese historial a los participantes. `PaymentsService` concentra las reglas; `PaymentsRepository` coordina persistencia en transacciones serializables y reutiliza `Payment` del esquema H24. |
+| `messaging` | Inicia o recupera conversaciones entre el arrendatario y el propietario de un bien, lista hilos y mensajes, marca como leídos los mensajes entrantes al consultar el hilo y emite notificaciones mediante `NotificationsService`. `MessagingService` controla la participación y el auto-envío; `MessagingRepository` encapsula consultas y escrituras Prisma. |
 | `income` | Consulta agregada del ingreso del `OWNER` autenticado mediante `GET /income/reports` y `GET /income/reports/by-property`, calculando alquileres desde pagos y depósitos retenidos desde las decisiones registradas. |
 | `notifications` | Servicio interno unificado para emitir avisos y API autenticada para consultar la bandeja, el contador de no leídas y marcar notificaciones propias como leídas. El destinatario de cada consulta se obtiene de la sesión. |
 | `health` | Health check público. |
@@ -77,6 +78,11 @@ guard JWT. Las rutas con restricción de rol declaran `@Roles(...)`.
   decisión y movimientos mediante `DepositsRepository` en una transacción serializable. El proceso
   periódico devuelve automáticamente depósitos pendientes siete días después de que la reserva pasa
   a `COMPLETED`, y notifica al arrendatario.
+- Mensajería: `ConversationsController` recibe peticiones autenticadas y delega a `MessagingService`.
+  El servicio limita el acceso a tenant y propietario del bien, coordina `MessagingRepository` para
+  persistir los hilos y mensajes, y solicita una notificación al otro participante por cada mensaje.
+  Al consultar mensajes, el repositorio marca como leídos únicamente los mensajes recibidos por quien
+  consulta.
 
 ## Validación y documentación HTTP
 

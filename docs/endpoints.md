@@ -11,6 +11,10 @@ existentes en `src/`; las planificadas aún no tienen controlador.
 | `GET /api/v1/income/reports/by-property` | `OWNER` autenticado | `from`, `to` opcionales; `order` (`asc`/`desc`, por defecto `desc`); `page` (1), `pageSize` (10, máximo 100) | `200`: `{ from, to, data: [{ propertyId, title, category, rentalIncome, retainedDepositIncome, totalIncome }], rentalIncome, retainedDepositIncome, totalIncome, total, page, pageSize }` |
 | `GET /api/v1/` | Público | Sin cuerpo | `200`, texto `Hello World!` |
 | `GET /api/v1/notifications` | Sesión (`TENANT` o `OWNER`) | `page` opcional (1); `limit` opcional (10, máximo 100) | `200`: `{ data, total, page, limit, totalPages }`, en orden descendente de emisión |
+| `POST /api/v1/conversations` | `TENANT` autenticado | `{ propertyId }` UUID | `200`: `{ id, propertyId, tenantId, createdAt }`; recupera el hilo existente o inicia uno para el bien; `404` si el bien no existe; `409` si el usuario intenta iniciar un hilo con su propio bien |
+| `GET /api/v1/conversations` | `TENANT` o `OWNER` autenticado | Sin cuerpo | `200`: lista de hilos propios con bien, otro participante, cantidad de mensajes no leídos y fecha del último mensaje |
+| `GET /api/v1/conversations/:id/messages` | `TENANT` o `OWNER` participante | `id` UUID | `200`: mensajes cronológicos `{ id, senderId, content, isRead, createdAt }`; marca como leídos los mensajes entrantes; `403` si no participa, `404` si el hilo no existe |
+| `POST /api/v1/conversations/:id/messages` | `TENANT` o `OWNER` participante | `id` UUID; `{ content }` de 1 a 500 caracteres | `201`: `{ id, senderId, content, isRead, createdAt }`; emite `MESSAGE_NEW` al otro participante; `400` contenido inválido, `403` si no participa, `404` si el hilo no existe, `409` auto-envío |
 | `GET /api/v1/notifications/unread-count` | Sesión (`TENANT` o `OWNER`) | Sin parámetros | `200`: `{ unreadCount }` |
 | `PATCH /api/v1/notifications/:id/read` | Sesión (`TENANT` o `OWNER`) | `id` UUID | `200`: notificación actualizada a `READ`; `403` si pertenece a otro usuario o el rol no está permitido, `404` si no existe |
 | `PATCH /api/v1/notifications/read-all` | Sesión (`TENANT` o `OWNER`) | Sin parámetros | `200`: `{ updatedCount }` |
@@ -131,7 +135,6 @@ arrendador que se traslapen con el periodo. Reservas `CANCELED`, `COMPLETED` y `
 | Bloqueos de fechas | `POST /api/v1/properties/:id/blocks`; `GET /api/v1/properties/:id/blocks`; `DELETE /api/v1/blocks/:id` | `OWNER` dueño |
 | Reservas y pagos | `POST /api/v1/bookings`; `GET /api/v1/bookings/mine`; `GET /api/v1/owner/bookings`; `POST /api/v1/payments`; `POST /api/v1/bookings/:id/deposit/decision` | `TENANT` o `OWNER` dueño según ruta |
 | Reseñas | `POST /api/v1/reservations/:id/reviews/property`; `POST /api/v1/reservations/:id/reviews/renter` | `TENANT` o `OWNER` |
-| Mensajería | `GET /api/v1/conversations`; `GET /api/v1/conversations/:id/messages`; `POST /api/v1/conversations/:id/messages` | Sesión; mensajes limitados a participantes |
 | Notificaciones | `NotificationsService.emit` (función interna); `GET /api/v1/notifications`; `GET /api/v1/notifications/unread-count`; `PATCH /api/v1/notifications/:id/read`; `PATCH /api/v1/notifications/read-all` | Servicio interno o sesión |
 | Otros reportes del arrendador | `GET /api/v1/owner/reports/ratings`; `GET /api/v1/owner/reports/occupancy` | `OWNER` |
 
