@@ -125,25 +125,27 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens   RefreshToken[]
-  profile         Profile? //permite que sea opcional
-  ownedProperties Property[]     @relation("PropertyOwner")
-  tenantBookings  Booking[]      @relation("BookingTenant")
-  transactionDecisions TransactionHistory[] @relation("TransactionActor")
-  depositsDecided Deposit[]      @relation("DepositDecidedBy")
-  reviewsAuthored Review[]       @relation("ReviewAuthor")
-  reviewsReceived Review[]       @relation("ReviewTargetUser")
-  notifications   Notification[]
-  payments        Payment[]
+  refreshTokens         RefreshToken[]
+  profile               Profile? //permite que sea opcional
+  ownedProperties       Property[]           @relation("PropertyOwner")
+  tenantBookings        Booking[]            @relation("BookingTenant")
+  transactionDecisions  TransactionHistory[] @relation("TransactionActor")
+  depositsDecided       Deposit[]            @relation("DepositDecidedBy")
+  reviewsAuthored       Review[]             @relation("ReviewAuthor")
+  reviewsReceived       Review[]             @relation("ReviewTargetUser")
+  notifications         Notification[]
+  payments              Payment[]
+  conversationsAsTenant Conversation[]       @relation("ConversationTenant")
+  sentMessages          Message[]            @relation("MessageSender")
 
   @@map("users")
 }
 
 model Profile {
-  id         String  @id @default(uuid()) @db.Uuid
-  userId     String  @unique @map("user_id") @db.Uuid
-  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isVerified Boolean @default(false) @map("is_verified")
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @unique @map("user_id") @db.Uuid
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isVerified       Boolean           @default(false) @map("is_verified")
   identityDocument IdentityDocument?
 
   @@map("profiles")
@@ -155,7 +157,7 @@ model IdentityDocument {
   profile         Profile                @relation(fields: [profileId], references: [id], onDelete: Cascade)
   documentType    IdentityDocumentType   @map("document_type")
   documentNumber  String                 @map("document_number")
-  documentUrl      String                @map("document_url")
+  documentUrl     String                 @map("document_url")
   documentStatus  IdentityDocumentStatus @default(PENDING) @map("document_status")
   submittedAt     DateTime               @default(now()) @map("submitted_at")
   rejectionReason String?                @map("rejection_reason")
@@ -210,9 +212,10 @@ model Property {
   updatedAt       DateTime         @updatedAt @map("updated_at")
   createdAt       DateTime         @default(now()) @map("created_at")
 
-  bookings Booking[]
-  reviews  Review[]
+  bookings           Booking[]
+  reviews            Review[]
   availabilityBlocks NoAvailability[]
+  conversations      Conversation[]
 
   @@index([ownerId, status])
   @@map("properties")
@@ -232,10 +235,10 @@ model Booking {
   createdAt  DateTime      @default(now()) @map("created_at")
   updatedAt  DateTime      @updatedAt @map("updated_at")
 
-  deposit Deposit?
-  payment Payment?
+  deposit            Deposit?
+  payment            Payment?
   transactionHistory TransactionHistory[]
-  reviews Review[]
+  reviews            Review[]
 
   @@index([tenantId, status])
   @@index([propertyId, status])
@@ -252,6 +255,37 @@ model NoAvailability {
 
   @@index([propertyId, startDate, endDate])
   @@map("no_availabilities")
+}
+
+model Conversation {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenantId   String   @map("tenant_id") @db.Uuid
+  tenant     User     @relation("ConversationTenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  messages Message[]
+
+  @@unique([propertyId, tenantId])
+  @@index([tenantId, updatedAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id") @db.Uuid
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  content        String       @db.VarChar(500)
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, isRead])
+  @@map("messages")
 }
 
 model Review {

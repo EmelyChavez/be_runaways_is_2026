@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 357 | 357 | 0 |
+| Unitarias | 368 | 368 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **357** | **357** | **0** |
+| **Total** | **368** | **368** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -730,6 +730,43 @@ Ejecución: `npm.cmd test -- test/unit/historia-H13.spec.ts` — Vitest reportó
 | H14-U29 | Negativa | Módulo 4: Pagos y depósitos de garantía / H14: Devolución o retención del depósito de garantía | Decisiones concurrentes | Simular que la actualización condicional afecta cero filas porque otra decisión ganó. | Responde 409 `DEPOSIT_ALREADY_DECIDED`; no crea otro movimiento ni notificación. | El servicio devolvió el conflicto y no duplicó movimiento o aviso. | Aprobado |
 
 Ejecución: `npm.cmd test -- test/unit/historia-H14.spec.ts` — Vitest reportó 1 archivo aprobado y 29 pruebas aprobadas.
+
+## Módulo 5: Mensajería entre arrendador y arrendatario — H15: Preguntar dudas sobre el alquiler (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H15-U01:** TENANT inicia o recupera el hilo asociado al bien con su identidad autenticada.
+- **H15-U02:** La bandeja lista hilos propios con el otro participante, mensajes no leídos y fecha del último mensaje, ordenados por actividad reciente.
+- **H15-U03:** La consulta del hilo devuelve los mensajes cronológicamente y marca como leídos los mensajes entrantes.
+- **H15-U04:** Un mensaje del TENANT se guarda con su fecha y hora y genera una notificación para el OWNER.
+- **H15-U05:** Una respuesta del OWNER se guarda y genera una notificación para el TENANT.
+- **H15-U06:** El DTO acepta mensajes de 1 y 500 caracteres.
+
+### Casos negativos ejecutados
+
+- **H15-U07:** El DTO rechaza contenido vacío, compuesto solo por espacios o de más de 500 caracteres.
+- **H15-U08:** El sistema rechaza el autoenvío al iniciar un hilo con el propio bien o enviar un mensaje a sí mismo.
+- **H15-U09:** Un tercero no puede leer ni enviar mensajes en un hilo y no altera sus mensajes ni lecturas.
+- **H15-U10:** Un bien o hilo inexistente responde 404.
+- **H15-U11:** Solo TENANT inicia hilos; TENANT y OWNER acceden a las rutas compartidas; ADMIN recibe 403 y la falta de sesión 401.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H15-U01 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Iniciar o recuperar hilo | Como TENANT, solicitar el hilo de un bien; revisar IDs y fecha de creación. | El servicio usa el propertyId y tenantId autenticado y devuelve el hilo con fecha ISO. | Se consultó el bien, se solicitó el hilo asociado y la respuesta serializó createdAt. | Aprobado |
+| H15-U02 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Bandeja e indicador de no leídos | Consultar la bandeja con un hilo que tiene mensajes no leídos; revisar filtro, orden y participante. | Solo aparecen hilos del usuario y se devuelve contraparte, contador de no leídos y fecha del último mensaje en orden reciente. | Prisma recibió el filtro de participación y orden descendente; el servicio devolvió la contraparte, contador y fecha esperados. | Aprobado |
+| H15-U03 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Lectura cronológica y actualización de lectura | Abrir un hilo con mensajes entrantes y propios; revisar el resultado y las consultas Prisma. | Devuelve mensajes del más antiguo al más reciente y marca leídos los recibidos por el usuario. | Prisma actualizó solo mensajes entrantes no leídos y consultó el historial en orden cronológico. | Aprobado |
+| H15-U04 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Envío del arrendatario y aviso al arrendador | Enviar contenido válido desde TENANT; revisar mensaje creado y llamada de notificación. | Devuelve id, remitente, texto, estado y fecha exacta; notifica al OWNER con MESSAGE_NEW. | El servicio guardó el mensaje, serializó la fecha y emitió MESSAGE_NEW al propietario del bien. | Aprobado |
+| H15-U05 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Respuesta del arrendador y aviso al arrendatario | Enviar contenido válido desde OWNER en su hilo; verificar destinatario de la notificación. | Guarda la respuesta con remitente y fecha y notifica al TENANT relacionado. | Se guardó el mensaje del OWNER y se solicitó MESSAGE_NEW para el tenant del hilo. | Aprobado |
+| H15-U06 | Positiva | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Límites válidos del mensaje | Validar contenido de 1 y 500 caracteres con el DTO. | Ambos contenidos cumplen la validación. | class-validator no reportó errores para ninguno de los dos límites. | Aprobado |
+| H15-U07 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Contenido inválido | Validar texto vacío, espacios y texto de 501 caracteres. | El DTO rechaza los tres contenidos con errores de validación. | class-validator reportó errores para cada entrada inválida. | Aprobado |
+| H15-U08 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Autoenvío | Intentar iniciar un hilo sobre el propio bien y enviar dentro de un hilo cuyo remitente y destinatario son el mismo usuario. | Responde 409 SELF_MESSAGE y no crea conversación, mensaje ni notificación. | Ambos intentos lanzaron ConflictException y no se ejecutaron escrituras ni avisos. | Aprobado |
+| H15-U09 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Acceso de un tercero | Como usuario ajeno, solicitar mensajes y enviar texto en un hilo existente. | Ambas solicitudes responden 403 sin leer, guardar ni notificar. | MessagingService lanzó ForbiddenException y no llamó a operaciones de lectura, escritura o notificación. | Aprobado |
+| H15-U10 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Bien o hilo inexistente | Intentar iniciar conversación para un bien ausente y consultar un hilo inexistente. | Ambos casos responden 404. | El servicio lanzó NotFoundException en ambas solicitudes. | Aprobado |
+| H15-U11 | Negativa | Módulo 5: Mensajería entre arrendador y arrendatario / H15: Preguntar dudas sobre el alquiler | Roles y sesión | Revisar metadata; autorizar TENANT/OWNER según ruta; intentar con OWNER al iniciar, ADMIN y sin sesión. | Solo TENANT inicia; rutas compartidas permiten TENANT/OWNER; ADMIN recibe 403 y sin sesión se responde 401. | RolesGuard permitió los roles previstos, rechazó roles no autorizados con 403 y JwtAuthGuard rechazó la solicitud sin token con 401. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H15.spec.ts` — Vitest reportó 1 archivo aprobado y 11 pruebas aprobadas.
 
 ## Módulo 7: Verificación de identidad/documentos — H19: Enviar documento de identidad para verificación (Unitarias)
 

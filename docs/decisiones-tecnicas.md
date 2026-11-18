@@ -98,6 +98,20 @@ los controladores no acceden directamente a la base.
 
 Al confirmar la aprobación o el rechazo de un documento, `IdentityDocumentService` invoca `NotificationsService.emit` para el usuario propietario del documento. El evento `DOCUMENT_REJECTED` recibe el motivo para completar su plantilla; `DOCUMENT_APPROVED` usa su plantilla fija. La llamada ocurre después de persistir el cambio de estado.
 
+## Mensajería entre arrendatarios y propietarios
+
+`MessagingService` aplica la participación del usuario, determina al destinatario desde el hilo y
+rechaza el auto-envío. `MessagingRepository` contiene solo operaciones de Prisma: asegura un hilo
+único por bien y arrendatario, consulta mensajes cronológicamente, actualiza el indicador de lectura
+de mensajes entrantes y persiste cada mensaje junto con la actividad reciente del hilo en una
+transacción. Al persistir el mensaje, el servicio solicita a `NotificationsService.emit` el evento
+`MESSAGE_NEW` para el otro participante. No se acepta el destinatario desde el cuerpo de la petición.
+
+`POST /conversations` es el punto de entrada que permite al arrendatario iniciar el hilo desde el
+detalle del bien; es idempotente y devuelve el hilo existente si ya lo había iniciado. Solo TENANT
+puede iniciar conversaciones, mientras TENANT y OWNER pueden leer y responder dentro de hilos donde
+participan.
+
 ## Creación y vencimiento de reservas
 
 `BookingsService` valida fechas de calendario en horario de El Salvador, cuenta los días incluyendo

@@ -12,6 +12,7 @@ import { BookingsModule } from '@Bookings';
 import { UsersModule } from '@Users';
 import { PaymentsModule } from '@Payments';
 import { IncomeModule } from '@Income';
+import { MessagingModule } from '@Messaging';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -32,6 +33,7 @@ import { validateEnv } from '@Config';
     BookingsModule,
     PaymentsModule,
     IncomeModule,
+    MessagingModule,
   ],
   providers: [
     {

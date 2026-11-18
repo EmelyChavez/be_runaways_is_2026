@@ -26,6 +26,8 @@ Diagrama conceptual de la base de datos del equipo:
 | `Deposit` | Depósito asociado 1 a 1 con una reserva; puede tener un `decidedBy` opcional y guarda monto, estado, montos devuelto/retenido y fechas de decisión. Se limita la decisión al propietario de la reserva `COMPLETED` y garantiza que las partes retenida y devuelta sumen el monto original. |
 | `Review` | Reseña asociada a una reserva (`reservationId` referencia `Booking.id`), un bien, autor y usuario objetivo. `RENTER_TO_PROPERTY` requiere `propertyRating`; `OWNER_TO_RENTER` no la usa. `userRating` siempre es obligatorio. Ambas puntuaciones van de 1 a 5 y `comment` admite hasta 200 caracteres. |
 | `Notification` | Aviso dirigido a un usuario con evento, módulo de origen, título (máximo 100), mensaje (máximo 250), referencia UUID opcional, estado `UNREAD`/`READ` y marcas de tiempo. |
+| `Conversation` | Hilo único por combinación de `propertyId` y `tenantId`, asociado al bien y al arrendatario. `updatedAt` permite ordenar los hilos por actividad reciente. |
+| `Message` | Mensaje de texto de hasta 500 caracteres asociado a una conversación y a su remitente. `isRead` permite contar mensajes entrantes pendientes; `createdAt` conserva la fecha y hora de envío. |
 
 ## Bloqueos de disponibilidad
 

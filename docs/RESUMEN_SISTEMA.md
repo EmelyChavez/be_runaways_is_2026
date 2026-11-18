@@ -2,7 +2,7 @@
 
 ## Módulo 0: Autenticación y perfil
 
-Este módulo permite que cada persona cree y acceda a su cuenta y use el sistema según el rol que tiene activo. Desde su perfil puede consultar sus datos y cambiar entre arrendatario y arrendador cuando cumple las reglas; el sistema conserva la verificación, protege las operaciones y pausa sus bienes disponibles al volver a arrendatario. Solo API por ahora.
+Este módulo permite que cada persona cree y acceda a su cuenta y use el sistema según el rol que tiene activo. Desde su perfil puede consultar sus datos y cambiar entre arrendatario y arrendador cuando cumple las reglas; el sistema conserva la verificación, protege las operaciones y pausa sus bienes disponibles al volver a arrendatario.
 
 - **H28 — Registro, inicio, renovación y cierre de sesión:** una persona crea una cuenta con su perfil asociado y el sistema siempre le asigna el rol de arrendatario. Puede iniciar sesión, renovar sus tokens y cerrar sesión; el backend entrega los tokens para que Next.js los gestione en una cookie HttpOnly. El sistema valida la contraseña, protege rutas según sesión y rol, limita intentos fallidos y evita revelar si falló el correo o la contraseña.
 - **H29 — Consulta de perfil y cambio de rol entre arrendatario y arrendador:** el usuario consulta su nombre, correo, rol, verificación, documento con el número enmascarado y calificación correspondiente a su rol actual. Puede cambiar entre arrendatario y arrendador para ofrecer bienes o volver a reservar y pagar. El sistema bloquea el cambio si hay reservas pendientes o pagadas, depósitos pendientes de decisión o si ya tiene el rol solicitado; ADMIN no puede cambiarlo. Al volver a arrendatario, sus bienes disponibles quedan pausados.
@@ -35,11 +35,17 @@ Este módulo ayuda al arrendatario a consultar fechas disponibles y solicitar la
 
 ## Módulo 4: Pagos y depósitos de garantía
 
-Este módulo permite al arrendatario completar el pago de una reserva y consultar los cobros asociados, mientras el arrendador administra la devolución o retención del depósito de garantía. Ambas partes pueden consultar los movimientos y el estado del depósito de sus reservas relacionadas. Solo API por ahora.
+Este módulo permite al arrendatario completar el pago de una reserva y consultar los cobros asociados, mientras el arrendador administra la devolución o retención del depósito de garantía. Ambas partes pueden consultar los movimientos y el estado del depósito de sus reservas relacionadas.
 
 - **H13 — Pago de alquiler con detalle del depósito:** antes de pagar, el arrendatario consulta el detalle del bien, el periodo, el alquiler, el depósito y el total. El pago simulado aprobado cambia la reserva a pagada, registra el desglose del cobro y el depósito, y devuelve un comprobante; la tarjeta terminada en 0002 se rechaza sin cambiar la reserva. El sistema impide cobrar reservas ajenas, vencidas, canceladas o ya pagadas y limita el historial de movimientos al arrendatario y al arrendador involucrados.
 
 - **H14 — Devolución o retención del depósito de garantía:** cuando la reserva está finalizada, el arrendador propietario decide devolver el depósito o retener una parte o el total, indicando el motivo. El sistema registra la decisión y sus movimientos, notifica al arrendatario y mantiene visible cuánto se retuvo y cuánto se devolvió. Si no se decide dentro del plazo de siete días, el depósito se devuelve automáticamente.
+
+## Módulo 5: Mensajería entre arrendador y arrendatario
+
+Este módulo permite que el arrendatario inicie una conversación desde el detalle de un bien y que ambas partes coordinen sus dudas y detalles del alquiler dentro de un hilo privado. El sistema conserva los mensajes, muestra los pendientes de lectura y notifica al otro participante.
+
+- **H15 — Preguntar dudas sobre el alquiler:** el arrendatario inicia o recupera el hilo asociado a un bien y puede enviar mensajes al arrendador propietario. El sistema limita cada hilo a sus participantes, registra la fecha y hora de los mensajes, actualiza los mensajes recibidos como leídos al abrir el hilo y notifica al otro participante cada vez que se envía un mensaje.
 
 ## Módulo 7: Verificación de identidad/documentos
 
@@ -47,11 +53,11 @@ Este módulo permite que el arrendatario envíe su documento para verificar la c
 
 - **H19 — Enviar documento de identidad para verificación:** el tenant selecciona DUI o pasaporte e informa el número y el archivo de identidad. El sistema valida que los datos y el archivo cumplan los formatos admitidos y registra el trámite como pendiente. Mientras espera revisión o si la cuenta ya está verificada, no acepta otro envío; después de un rechazo, permite presentar un documento nuevo.
 
-- **H20 — Aprobar o rechazar documentos de identidad:** el administrador consulta los documentos pendientes y revisa el archivo antes de decidir. Al aprobar, el sistema marca el documento como aprobado y la cuenta como verificada; al rechazar, guarda el motivo. Ambas decisiones registran cuándo se revisaron. Solo API por ahora; al aprobar o rechazar, el sistema también solicita una notificación para el usuario.
+- **H20 — Aprobar o rechazar documentos de identidad:** el administrador consulta los documentos pendientes y revisa el archivo antes de decidir. Al aprobar, el sistema marca el documento como aprobado y la cuenta como verificada; al rechazar, guarda el motivo. Ambas decisiones registran cuándo se revisaron.Al aprobar o rechazar, el sistema también solicita una notificación para el usuario.
 
 ## Módulo 8: Notificaciones
 
-Este módulo centraliza la generación de avisos y permite que cada usuario consulte y organice su propia bandeja. Las notificaciones se guardan como no leídas, se pueden marcar individualmente o todas y el contador refleja las pendientes. Solo API por ahora.
+Este módulo centraliza la generación de avisos y permite que cada usuario consulte y organice su propia bandeja. Las notificaciones se guardan como no leídas, se pueden marcar individualmente o todas y el contador refleja las pendientes.
 
 - **H22 — Centralizar la generación y despacho de notificaciones:** los módulos solicitan avisos mediante un servicio común, que valida los datos, selecciona la plantilla del evento y registra la notificación para su destinatario. La revisión administrativa de documentos ya utiliza este flujo: al aprobar, se notifica la verificación de la cuenta; al rechazar, se comunica el motivo.
 
