@@ -1,4 +1,4 @@
-# Resumen del sistema
+﻿# Resumen del sistema
 
 ## Módulo 0: Autenticación y perfil
 
@@ -10,6 +10,7 @@ Este módulo permite que cada persona cree y acceda a su cuenta y use el sistema
 ## Módulo 1: Catálogo de propiedades/equipo
 
 Este módulo reúne las publicaciones de bienes disponibles para alquilar. El arrendador administra sus propios bienes y el arrendatario consulta la información para decidir cuál reservar. Por ahora, estas funciones están disponibles mediante la API del backend.
+- **H1 — Publicar una propiedad:** el arrendador registra un bien con su nombre, descripción, categoría, ubicación, precio diario, depósito y entre una y cinco fotos. El sistema valida los datos requeridos y que las fotos sean JPG o PNG de hasta 5 MB, y publica el bien para que aparezca en el catálogo; solo una cuenta con rol `OWNER` puede hacerlo.
 - **H2 — Consultar el catálogo de bienes disponibles:** el arrendatario consulta las publicaciones que puede alquilar y obtiene la información necesaria para reconocer cada bien, incluida su imagen, ubicación, categoría y precio diario. El sistema presenta los bienes disponibles del más reciente al más antiguo, en páginas de 12, y excluye los pausados o eliminados. Si no hay publicaciones disponibles, la API devuelve una lista vacía; el acceso requiere una sesión con rol `TENANT`.
 - **H3 — Ver detalle de un bien:** el arrendatario consulta las fotos, descripción, ubicación, categoría, precio, depósito y nombre del arrendador para decidir si desea alquilarlo. La API incluye la calificación promedio y la cantidad de reseñas, y solo devuelve el detalle de bienes disponibles; los bienes pausados, eliminados o inexistentes no se pueden consultar. Solo API por ahora; la presentación de «Sin depósito», «Sin calificaciones» y los mensajes y enlaces de la pantalla corresponde al frontend.
 - **H4 — Ver y editar mis publicaciones:** el arrendador consulta sus bienes disponibles y pausados y puede actualizar sus datos e imágenes. Si una publicación tiene reservas pendientes o pagadas, puede editar los demás campos, pero el sistema bloquea los cambios de precio o depósito para no alterar las condiciones de esas reservas.
@@ -83,3 +84,4 @@ Este módulo ayuda al arrendador a entender cómo se desempeñan sus publicacion
 - **H26 — Visualización de calificación de los bienes:** el arrendador consulta sus bienes junto con el promedio y la cantidad de calificaciones recibidas. El sistema calcula esos valores desde las reseñas de los arrendatarios, por lo que una nueva calificación se refleja en el siguiente reporte; para un bien sin reseñas entrega valores vacíos para que el panel muestre «Sin calificaciones». Puede ordenar el listado por promedio ascendente o descendente, y el reporte no permite modificar ni eliminar las reseñas.
 
 - **H27 — Visualización de la tasa de ocupación por bien:** el arrendador consulta cuántos días estuvo ocupado cada bien en el período elegido y el porcentaje correspondiente. El sistema cuenta únicamente los días de reservas pagadas o finalizadas, sin duplicar fechas; no considera reservas pendientes o canceladas ni bloqueos del arrendador. Si no se indica un período, usa los últimos 30 días incluyendo hoy, y permite ordenar y paginar los resultados.
+
