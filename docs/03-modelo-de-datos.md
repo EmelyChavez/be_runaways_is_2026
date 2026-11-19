@@ -29,9 +29,9 @@ erDiagram
 
     user {
         uuid id PK
-        string email UK "Usado para iniciar sesión"
-        string password "Hash"
-        string role "ARRENDATARIO, ARRENDADOR o ADMIN"
+        string email UK
+        string password
+        string role
         string name
         boolean isActive
         datetime createdAt
@@ -40,17 +40,17 @@ erDiagram
 
     profile {
         uuid id PK
-        uuid user_id FK, UK "Relación 1 a 1 con user"
+        uuid user_id FK, UK
         boolean is_verified
     }
 
     identity_document {
         uuid id PK
         uuid profile_id FK
-        string document_type "DUI o PASAPORTE"
+        string document_type
         string document_number
-        string document_url "Ruta interna en Cloudinary"
-        string document_status "PENDIENTE, APROBADO o RECHAZADO"
+        string document_url
+        string document_status
         datetime submitted_at
         string rejection_reason
         datetime reviewed_at
@@ -61,14 +61,14 @@ erDiagram
         uuid owner_id FK
         string title
         string description
-        string category "PROPIEDAD o EQUIPO"
+        string category
         string department
         string municipality
         string address
         decimal price_per_day
         decimal security_deposit
-        string images "URLs de Firebase"
-        string status "DISPONIBLE, PAUSADO o ELIMINADO"
+        string images
+        string status
         datetime created_at
         datetime updated_at
     }
@@ -88,8 +88,8 @@ erDiagram
         date start_date
         date end_date
         decimal subtotal
-        string status "PENDIENTE, PAGADA, FINALIZADA o CANCELADA"
-        datetime expires_at "created_at + 24 horas"
+        string status
+        datetime expires_at
         datetime created_at
         datetime updated_at
     }
@@ -100,18 +100,18 @@ erDiagram
         uuid property_id FK
         uuid author_id FK
         uuid target_user_id FK
-        string review_type "RENTER_TO_PROPERTY u OWNER_TO_RENTER"
-        int property_rating "1 a 5"
-        int user_rating "1 a 5"
-        string comment "Máximo 200"
+        string review_type
+        int property_rating
+        int user_rating
+        string comment
         datetime created_at
     }
 
     payment {
         uuid id PK
-        uuid booking_id FK, UK "Un solo pago por reserva"
+        uuid booking_id FK, UK
         uuid payer_id FK
-        string receipt_number UK "REC- más 6 dígitos"
+        string receipt_number UK
         decimal rental_amount
         decimal deposit_amount
         decimal total_amount
@@ -122,9 +122,9 @@ erDiagram
     deposit {
         uuid id PK
         uuid booking_id FK, UK
-        uuid decided_by_id FK "Nulo si fue automático"
+        uuid decided_by_id FK
         decimal amount
-        string state "PENDIENTE, DEVUELTO, RETENIDO o RETENIDO_PARCIAL"
+        string state
         decimal retained_amount
         decimal returned_amount
         datetime decided_at
@@ -135,7 +135,7 @@ erDiagram
     transaction_history {
         uuid id PK
         uuid booking_id FK
-        string type "COBRO, DEVOLUCION o RETENCION"
+        string type
         decimal amount
         string reason
         datetime created_at
@@ -154,7 +154,7 @@ erDiagram
         uuid id PK
         uuid conversation_id FK
         uuid sender_id FK
-        string content "1 a 500 caracteres"
+        string content
         boolean is_read
         datetime created_at
     }
@@ -167,7 +167,7 @@ erDiagram
         string event_type
         string origin_module
         uuid optional_reference
-        string status "UNREAD o READ"
+        string status
         datetime created_at
         datetime updated_at
     }
@@ -187,19 +187,19 @@ erDiagram
 
 ## Descripción de las tablas
 
-| Tabla | Descripción |
-|---|---|
-| `user` | Credenciales y control de acceso de la cuenta: correo único, hash de la contraseña, rol (`ARRENDATARIO`, `ARRENDADOR` o `ADMIN`) y bandera `isActive`. Toda cuenta nueva inicia como `ARRENDATARIO`. |
-| `profile` | Perfil asociado de forma 1 a 1 a cada `user`. Guarda si la cuenta está verificada (`is_verified`), dato que consultan las reservas y los pagos (H21). |
-| `identity_document` | Documento de identidad enviado para verificación: tipo (DUI o pasaporte), número, ruta privada del archivo en Firebase Storage, estado de revisión, motivo de rechazo y fecha de revisión por un `ADMIN`. |
-| `property` | Bien publicado por un arrendador: título, descripción, categoría, ubicación, precio por día, depósito de garantía, fotos y estado (`DISPONIBLE`, `PAUSADO` o `ELIMINADO`). El borrado es lógico. |
-| `no_availability` | Bloqueos de fechas que un arrendador registra sobre su bien. Se eliminan físicamente y cuentan como días ocupados junto con las reservas `PENDIENTE` y `PAGADA`. |
-| `booking` | Reservación de un bien por un arrendatario en un rango de fechas. Nace `PENDIENTE` y vence a las 24 horas (`expires_at`) si no se paga. Nunca se borra: se cancela. |
-| `payment` | Pago simulado de una reserva. Solo existe uno por reserva (`booking_id` único). Separa el monto del alquiler, el del depósito y el total, y guarda únicamente los últimos 4 dígitos de la tarjeta. |
-| `deposit` | Depósito de garantía de una reserva. Solo se crea si el depósito del bien es mayor a 0. Registra el estado (`PENDIENTE`, `DEVUELTO`, `RETENIDO` o `RETENIDO_PARCIAL`) y los montos retenido y devuelto. `decided_by_id` es nulo cuando la devolución fue automática. |
-| `transaction_history` | Historial de movimientos financieros de una reserva (`COBRO`, `DEVOLUCION`, `RETENCION`). Los registros no se eliminan. |
-| `review` | Reseña de una reserva finalizada. `RENTER_TO_PROPERTY` califica el bien y al arrendador; `OWNER_TO_RENTER` califica al arrendatario. Los promedios se calculan a partir de esta tabla y no se guardan. |
-| `conversation` | Hilo de conversación entre un arrendatario y el arrendador de un bien. Solo esas dos partes pueden verlo. |
-| `message` | Mensaje de un hilo, de 1 a 500 caracteres, con indicador de lectura. |
-| `notification` | Aviso dirigido a un usuario, creado por el servicio común de notificaciones. Guarda el módulo de origen, el tipo de evento, una referencia opcional al registro relacionado y su estado (`UNREAD` o `READ`). |
+| Tabla | Descripción | Campos importantes |
+|---|---|---|
+| `user` | Cuenta de una persona que usa el sistema. | `name`, `email`, `password`, `role`, `isActive` |
+| `profile` | Perfil de verificación asociado a una cuenta. | `user_id`, `is_verified` |
+| `identity_document` | Documento de identidad enviado para verificación. | `document_type`, `document_number`, `document_url` (Cloudinary), `document_status`, `rejection_reason`, `submitted_at`, `reviewed_at` |
+| `property` | Bien publicado para alquiler. | `owner_id`, `title`, `category`, `department`, `municipality`, `price_per_day`, `security_deposit`, `images` (URLs de Cloudinary), `status` |
+| `no_availability` | Período en que un bien no está disponible. | `property_id`, `start_date`, `end_date` |
+| `booking` | Reserva de un bien hecha por un arrendatario. | `property_id`, `tenant_id`, `start_date`, `end_date`, `subtotal`, `status`, `expires_at` |
+| `payment` | Pago asociado a una reserva. | `booking_id`, `receipt_number`, `rental_amount`, `deposit_amount`, `total_amount`, `last4_digits` |
+| `deposit` | Depósito de garantía asociado a una reserva. | `booking_id`, `decided_by_id`, `amount`, `state`, `retained_amount`, `returned_amount`, `decided_at` |
+| `transaction_history` | Movimiento financiero registrado para una reserva. | `booking_id`, `type`, `amount`, `reason`, `created_at` |
+| `review` | Calificación escrita por una de las partes de una reserva. | `booking_id`, `author_id`, `target_user_id`, `review_type`, `property_rating`, `user_rating`, `comment` |
+| `conversation` | Hilo de mensajes entre el arrendatario y el arrendador de un bien. | `property_id`, `tenant_id`, `owner_id`, `created_at`, `updated_at` |
+| `message` | Mensaje enviado dentro de una conversación. | `conversation_id`, `sender_id`, `content`, `is_read`, `created_at` |
+| `notification` | Aviso asociado a un usuario y a un evento del sistema. | `recipient_id`, `title`, `message`, `event_type`, `origin_module`, `optional_reference`, `status` |
 
