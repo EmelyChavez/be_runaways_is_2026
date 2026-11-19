@@ -154,6 +154,31 @@ export class ReviewsService {
     }
   }
 
+  async getRenterReviews(tenantId: string) {
+    const tenant = await this.reviewsRepository.findRenter(tenantId);
+    if (!tenant) {
+      throw new NotFoundException({
+        code: 'TENANT_NOT_FOUND',
+        message: 'El arrendatario no existe.',
+      });
+    }
+    const [rating, reviews] = await Promise.all([
+      this.reviewsRepository.getRenterRating(tenant.id),
+      this.reviewsRepository.getRenterReviews(tenant.id),
+    ]);
+    return {
+      tenant,
+      averageRating: rating._avg.userRating === null
+        ? null
+        : Math.round(rating._avg.userRating * 10) / 10,
+      reviewCount: rating._count._all,
+      reviews: reviews.map((review) => ({
+        ...review,
+        createdAt: review.createdAt.toISOString(),
+      })),
+    };
+  }
+
   private reviewConflict(message: string) {
     return new ConflictException({ code: 'REVIEW_NOT_ALLOWED', message });
   }

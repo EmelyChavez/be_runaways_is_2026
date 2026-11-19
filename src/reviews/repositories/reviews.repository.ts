@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, ReviewType, type PropertyStatus } from '@PrismaClient';
+import { BookingStatus, Prisma, ReviewType, Role, type PropertyStatus } from '@PrismaClient';
 import { PrismaService } from '@Prisma/services';
 
 @Injectable()
@@ -88,6 +88,28 @@ export class ReviewsRepository {
       where: { targetUserId: userId, reviewType: ReviewType.OWNER_TO_RENTER },
       _avg: { userRating: true },
       _count: { _all: true },
+    });
+  }
+
+  findRenter(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId, role: Role.TENANT },
+      select: { id: true, name: true },
+    });
+  }
+
+  getRenterReviews(userId: string) {
+    return this.prisma.review.findMany({
+      where: { targetUserId: userId, reviewType: ReviewType.OWNER_TO_RENTER },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        reservationId: true,
+        userRating: true,
+        comment: true,
+        createdAt: true,
+        author: { select: { name: true } },
+      },
     });
   }
 
