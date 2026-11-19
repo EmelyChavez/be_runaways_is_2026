@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -54,5 +54,23 @@ export class ReviewsController {
     @Body() dto: CreateRenterReviewDto,
   ) {
     return this.reviewsService.createRenterReview(user.id, reservationId, dto);
+  }
+}
+
+@ApiTags('reviews')
+@ApiBearerAuth()
+@Controller('tenants')
+export class TenantReviewsController {
+  constructor(private readonly reviewsService: ReviewsService) {}
+
+  @Get(':id/reviews')
+  @Roles(Role.OWNER)
+  @ApiOkResponse({ description: 'Promedio y reseñas recibidas por el arrendatario.' })
+  @ApiBadRequestResponse({ description: 'El identificador del arrendatario no es un UUID válido.' })
+  @ApiUnauthorizedResponse({ description: 'Se requiere una sesión válida.' })
+  @ApiForbiddenResponse({ description: 'Solo un OWNER puede consultar estas calificaciones.' })
+  @ApiNotFoundResponse({ description: 'El arrendatario no existe.' })
+  getRenterReviews(@Param('id', new ParseUUIDPipe()) tenantId: string) {
+    return this.reviewsService.getRenterReviews(tenantId);
   }
 }
