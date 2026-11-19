@@ -5,7 +5,7 @@
 | ID | Historia | Responsable BE | Responsable FE | Card | PR BE | PR FE | Estado |
 |---|---|---|---|---|---|---|---|
 | H28 | Autenticación y roles de usuario | Emely Chávez | Karla Martinez | [Card](https://trello.com/c/I9VzCVaS) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/1#issue-6253105606) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/6) | Terminada |
-| H29 | Cambio de rol de usuario | Emely Chávez | Karina Pérez | [Card](https://trello.com/c/Qg30SW8I) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/38#issue-6457871533) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/7#issue-6277037815) | Terminada |
+| H29 | Cambio de rol de usuario | Emely Chávez | Karina Pérez | [Card](https://trello.com/c/Qg30SW8I) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/3#issue-6277264655) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/7#issue-6277037815) | Terminada |
 
 ## Módulo 1: Catálogo de propiedades/equipo
 

@@ -19,11 +19,11 @@ Los usuarios de prueba se entregan en Moodle, no en este repositorio.
 
 | Nombre | Carnet | Usuario de GitHub | Módulos o historias principales |
 |---|---|---|---|
-| Violeta Lisbeth Amaya González | 00007515 | @violetalisbeth | [] |
-| Emely Alexandra Chávez Mejía | 00097923 | @EmelyChavez | [] |
-| Kevin Fernando Díaz Nativí | 00351519 | @Ferdiaz524 | [] |
-| Karla Daniela Martínez Ferrer | 00021523 | @KarlaMartinez1 | [] |
-| Génesis Karina Pérez Henríquez | 00125123 | @KaarinaP17 | [] |
+| Violeta Lisbeth Amaya González | 00007515 | @violetalisbeth | (Frontend) H1, H2, H3, H4, H5, H6, H7, H8, H15, H16, H19, H20 y H21. |
+| Emely Alexandra Chávez Mejía | 00097923 | @EmelyChavez |(Backend) H2, H3, H4, H5, H6, H19, H20, H22, H23, H24, H25, H28 y H29. |
+| Kevin Fernando Díaz Nativí | 00351519 | @Ferdiaz524 |(Backend) H1, H7, H8, H9, H10, H12, H13, H14, H15, H16, H17, H18, H21, H26 y H27.|
+| Karla Daniela Martínez Ferrer | 00021523 | @KarlaMartinez1 |(Frontend) H9, H10, H12, H17, H18 y H28.|
+| Génesis Karina Pérez Henríquez | 00125123 | @KaarinaP17 | (Frontend) H13, H14, H23, H24, H25, H26, H27 y H29.|
 
 
 ## Documentación
