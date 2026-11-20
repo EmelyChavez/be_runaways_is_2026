@@ -128,7 +128,10 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
   async listMine(tenantId: string, query: BookingQueryDto) {
     const result = await this.bookingsRepository.listTenantBookings(tenantId, query);
     return {
-      data: result.data.map((booking) => this.serializeBooking(booking)),
+      data: result.data.map((booking) => ({
+        ...this.serializeBooking(booking),
+        hasPropertyReview: booking.reviews.length > 0,
+      })),
       total: result.total,
       page: query.page,
     };
@@ -141,18 +144,22 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     );
     const ratingsByTenant = new Map(ratings.map((rating) => [rating.targetUserId, rating]));
     return {
-      data: result.data.map((booking) => ({
-        ...this.serializeBooking(booking),
-        tenant: {
-          ...booking.tenant,
-          rating: {
-            average: ratingsByTenant.get(booking.tenantId)?._avg.userRating == null
-              ? null
-              : Math.round(ratingsByTenant.get(booking.tenantId)!._avg.userRating! * 10) / 10,
-            count: ratingsByTenant.get(booking.tenantId)?._count._all ?? 0,
+      data: result.data.map((booking) => {
+        const renterRating = ratingsByTenant.get(booking.tenantId);
+        return {
+          ...this.serializeBooking(booking),
+          hasRenterReview: booking.reviews.length > 0,
+          tenant: {
+            ...booking.tenant,
+            rating: {
+              average: renterRating?._avg.userRating == null
+                ? null
+                : Math.round(renterRating._avg.userRating * 10) / 10,
+              count: renterRating?._count._all ?? 0,
+            },
           },
-        },
-      })),
+        };
+      }),
       total: result.total,
       page: query.page,
     };
@@ -239,6 +246,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     expiresAt: Date;
     createdAt?: Date;
     property?: { title: string; securityDeposit: Prisma.Decimal };
+    reviews?: Array<{ id: string }>;
     deposit?: {
       id: string;
       amount: Prisma.Decimal;
