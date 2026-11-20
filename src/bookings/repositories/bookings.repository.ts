@@ -116,6 +116,11 @@ export class BookingsRepository {
           createdAt: true,
           property: { select: { title: true, securityDeposit: true } },
           deposit: { select: { id: true, amount: true, state: true, retainedAmount: true, returnedAmount: true, decidedAt: true } },
+          reviews: {
+            where: { reviewType: ReviewType.RENTER_TO_PROPERTY },
+            select: { id: true },
+            take: 1,
+          },
         },
       }),
       this.prisma.booking.count({ where }),
@@ -151,6 +156,11 @@ export class BookingsRepository {
           tenant: { select: { name: true } },
           property: { select: { title: true, securityDeposit: true } },
           deposit: { select: { id: true, amount: true, state: true, retainedAmount: true, returnedAmount: true, decidedAt: true } },
+          reviews: {
+            where: { reviewType: ReviewType.OWNER_TO_RENTER },
+            select: { id: true },
+            take: 1,
+          },
         },
       }),
       this.prisma.booking.count({ where }),
