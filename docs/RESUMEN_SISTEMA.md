@@ -22,6 +22,7 @@ Este módulo ayuda al arrendatario a reducir el catálogo hasta encontrar bienes
 
 - **H6 — Búsqueda de bienes por criterios:** el arrendatario puede buscar por texto y acotar los resultados por departamento y municipio, categoría o bienes sin depósito. El sistema combina los criterios enviados y muestra solo publicaciones disponibles; si ninguna coincide, devuelve una lista vacía.
 
+- **H7 — Filtrar bienes por rango de precio:** el arrendatario puede indicar un precio mínimo, un máximo o ambos para ajustar el catálogo a su presupuesto. El sistema acepta montos positivos hasta 9999.99, permite incluir los límites del rango y rechaza un mínimo mayor que el máximo con un error de validación.
 - **H8 — Filtrar publicaciones por fechas disponibles:** el arrendatario puede indicar las fechas de inicio y fin del periodo en que necesita el bien. El sistema muestra solo las publicaciones sin reservas pagadas, reservas pendientes cuyo plazo de pago de 24 horas siga vigente ni fechas bloqueadas por el arrendador durante ese periodo; las reservas canceladas, finalizadas o pendientes vencidas no ocupan fechas.
 
 ## Módulo 3: Reservas y calendario de disponibilidad
@@ -84,4 +85,5 @@ Este módulo ayuda al arrendador a entender cómo se desempeñan sus publicacion
 - **H26 — Visualización de calificación de los bienes:** el arrendador consulta sus bienes junto con el promedio y la cantidad de calificaciones recibidas. El sistema calcula esos valores desde las reseñas de los arrendatarios, por lo que una nueva calificación se refleja en el siguiente reporte; para un bien sin reseñas entrega valores vacíos para que el panel muestre «Sin calificaciones». Puede ordenar el listado por promedio ascendente o descendente, y el reporte no permite modificar ni eliminar las reseñas.
 
 - **H27 — Visualización de la tasa de ocupación por bien:** el arrendador consulta cuántos días estuvo ocupado cada bien en el período elegido y el porcentaje correspondiente. El sistema cuenta únicamente los días de reservas pagadas o finalizadas, sin duplicar fechas; no considera reservas pendientes o canceladas ni bloqueos del arrendador. Si no se indica un período, usa los últimos 30 días incluyendo hoy, y permite ordenar y paginar los resultados.
+
 
