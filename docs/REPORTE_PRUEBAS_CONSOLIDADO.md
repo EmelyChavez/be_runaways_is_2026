@@ -4,9 +4,9 @@
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 444 | 444 | 0 |
+| Unitarias | 464 | 464 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **444** | **444** | **0** |
+| **Total** | **464** | **464** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -410,6 +410,50 @@ Ejecución: `npm.cmd test -- test/unit/historia-H5.spec.ts` — Vitest reportó 
 
 Ejecución: `npm.cmd test -- test/unit/historia-H6.spec.ts` — Vitest reportó 1 archivo aprobado y 19 pruebas aprobadas.
 
+
+## Módulo 2: Búsqueda y filtros — H7: Filtro por rango de precio (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H7-U01:** Acepta los límites permitidos y un mínimo igual al máximo.
+- **H7-U02:** Filtra desde el precio mínimo indicado, incluyéndolo.
+- **H7-U03:** Filtra hasta el precio máximo indicado, incluyéndolo.
+- **H7-U04:** Aplica ambos límites incluyendo bienes con precio igual al mínimo o al máximo.
+- **H7-U05:** Combina el rango de precios con otros filtros del catálogo.
+- **H7-U06:** Autoriza al rol TENANT para consultar el catálogo.
+
+### Casos negativos ejecutados
+
+- **H7-U07 a H7-U16:** Rechaza precios cero, negativos, no numéricos, con más de dos decimales o fuera del rango permitido.
+- **H7-U17:** Rechaza el mínimo mayor que el máximo y entrega un mensaje que explica el problema.
+- **H7-U18 a H7-U20:** Rechaza el acceso sin sesión con 401 y deniega OWNER y ADMIN con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H7-U01 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Límites válidos y precio exacto | Validar 0.01 como mínimo, 9999.99 como máximo y 45.00 como ambos límites. | Todos los valores pasan la validación. | Los tres valores fueron aceptados. | Aprobado |
+| H7-U02 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Solo precio mínimo | Consultar con minPrice 25.00. | Devuelve bienes cuyo precio sea 25.00 o mayor. | El filtro se envió con el límite inferior 25.00 incluido. | Aprobado |
+| H7-U03 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Solo precio máximo | Consultar con maxPrice 80.00. | Devuelve bienes cuyo precio sea 80.00 o menor. | El filtro se envió con el límite superior 80.00 incluido. | Aprobado |
+| H7-U04 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Inclusión de los extremos | Consultar el repositorio con rango de 10.00 a 50.00. | La consulta incluye los precios de 10.00 y 50.00. | Prisma recibió ambos límites inclusivos para resultados y conteo. | Aprobado |
+| H7-U05 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Combinación con otros filtros | Consultar página 2 con rango, categoría EQUIPMENT y departamento La Libertad. | El repositorio recibe todos los criterios juntos. | El repositorio recibió precios, categoría, departamento y página solicitados. | Aprobado |
+| H7-U06 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Acceso de TENANT | Revisar el rol declarado y evaluar RolesGuard con TENANT. | TENANT puede consultar el catálogo. | La metadata declara TENANT y el guard autorizó el rol. | Aprobado |
+| H7-U07 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo cero | Validar minPrice 0. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U08 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo negativo | Validar minPrice -1.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U09 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo no numérico | Validar minPrice abc. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U10 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo con más de dos decimales | Validar minPrice 10.001. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U11 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo mayor al máximo permitido | Validar minPrice 10000.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U12 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo cero | Validar maxPrice 0. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U13 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo negativo | Validar maxPrice -1.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U14 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo no numérico | Validar maxPrice abc. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U15 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo con más de dos decimales | Validar maxPrice 10.001. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U16 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo mayor al permitido | Validar maxPrice 10000.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U17 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo mayor que máximo | Validar minPrice 50.00 y maxPrice 10.00. | Rechaza con error 400 y mensaje que indica que el mínimo no puede superar al máximo. | La validación reportó el mensaje esperado en maxPrice. | Aprobado |
+| H7-U18 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta sin sesión | Ejecutar JwtAuthGuard sin credenciales. | Responde 401. | El guard respondió 401. | Aprobado |
+| H7-U19 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta con rol OWNER | Ejecutar RolesGuard con OWNER. | Responde 403. | El guard denegó el acceso con 403. | Aprobado |
+| H7-U20 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta con rol ADMIN | Ejecutar RolesGuard con ADMIN. | Responde 403. | El guard denegó el acceso con 403. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H7.spec.ts` — Vitest reportó 1 archivo aprobado y 20 pruebas aprobadas.
 
 ## Módulo 2: Búsqueda y filtros — H8: Filtrar publicaciones por fechas disponibles (Unitarias)
 
