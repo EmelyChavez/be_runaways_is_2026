@@ -1,12 +1,12 @@
-# Reporte consolidado de pruebas
+﻿# Reporte consolidado de pruebas
 
 ## Resumen global
 
 | Tipo | Ejecutadas | Aprobadas | Fallidas |
 |---|---:|---:|---:|
-| Unitarias | 422 | 422 | 0 |
+| Unitarias | 464 | 464 | 0 |
 | E2E | 0 | 0 | 0 |
-| **Total** | **422** | **422** | **0** |
+| **Total** | **464** | **464** | **0** |
 
 ## Módulo 0: Autenticación y perfil — H28: Registro, inicio, renovación y cierre de sesión (Unitarias)
 
@@ -142,7 +142,52 @@ Ejecución: `npm.cmd test -- test/unit/historia-H28.spec.ts` — Vitest reportó
 | H29-U20 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de OWNER | Revisar roles declarados en publicaciones/gestión, reservas y pagos. | OWNER puede publicar y gestionar; no puede reservar ni pagar. | La metadata autoriza OWNER en publicaciones y lo excluye de crear reservas y pagar. | Aprobado |
 | H29-U21 | Positiva | Módulo 0: Autenticación y perfil / H29: Consulta de perfil y cambio de rol entre arrendatario y arrendador | Permisos de TENANT | Revisar roles declarados en reservas, pagos y publicaciones/gestión. | TENANT puede reservar y pagar; no puede publicar ni gestionar. | La metadata autoriza TENANT en reservas/pagos y lo excluye de publicar/gestionar. | Aprobado |
 
-Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+Ejecución: `npm.cmd test -- test/unit/historia-H29.spec.ts` — Vitest reportó 1 archivo aprobado y 22 pruebas aprobadas.
+
+## Módulo 1: Catálogo de propiedades/equipo — H1: Publicar una propiedad (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H1-U01:** Publicación con una foto JPG; devuelve el objeto completo con estado AVAILABLE y fechas ISO.
+- **H1-U02:** Acepta cinco fotos JPG/PNG válidas, incluida una de exactamente 5 MB.
+- **H1-U03:** Persiste los campos de la publicación, las URLs de imágenes y el ID del OWNER autenticado.
+- **H1-U04:** La publicación AVAILABLE aparece en la siguiente consulta del catálogo.
+- **H1-U05:** El endpoint POST /properties autoriza OWNER.
+
+### Casos negativos ejecutados
+
+- **H1-U06:** Rechaza cero fotos y seis fotos con 400 antes de subirlas o guardar el bien.
+- **H1-U07:** Rechaza fotos mayores de 5 MB, GIF y contenido que no coincide con el MIME JPG/PNG con 400.
+- **H1-U08:** Rechaza nombre vacío o mayor de 100 caracteres, descripción menor de 30, categoría inválida, departamento o municipio vacío y precio cero o negativo.
+- **H1-U09:** Sin sesión responde 401; TENANT y ADMIN reciben 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H1-U01 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Publicación con una foto JPG | Subir una foto JPG válida y crear el bien. | Guarda el bien del OWNER con imagen y estado AVAILABLE; devuelve objeto completo y fechas ISO. | Imagen subida y objeto devuelto con estado AVAILABLE y fecha ISO. | Aprobado |
+| H1-U02 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Cinco fotos válidas, incluida una de 5 MB | Publicar con cinco fotos JPG/PNG válidas, una de exactamente 5 MB. | Acepta y asocia las cinco imágenes. | Se aceptaron las cinco fotos y el repositorio recibió cinco URLs. | Aprobado |
+| H1-U03 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Persistencia de datos | Invocar el repositorio con todos los datos requeridos y URLs. | Persiste los campos, imágenes y ownerId de sesión. | Prisma recibió los campos esperados, imágenes y ownerId. | Aprobado |
+| H1-U04 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Permiso OWNER | Evaluar metadata y RolesGuard para OWNER. | POST /properties permite OWNER. | Metadata declaró OWNER y el guard autorizó. | Aprobado |
+| H1-U05 | Positiva | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Aparición en la siguiente consulta del catálogo | Publicar un bien y consultar el catálogo después de guardar. | El bien AVAILABLE aparece en la lista del catálogo. | La consulta filtró por AVAILABLE y devolvió la nueva publicación. | Aprobado |
+| H1-U06 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Sin fotos | Intentar publicar con cero fotos. | Responde 400 sin subir o guardar el bien. | Rechazó la cantidad; upload y create no se invocaron. | Aprobado |
+| H1-U07 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Más de cinco fotos | Intentar publicar con seis fotos. | Responde 400 sin subir o guardar el bien. | Rechazó la cantidad; upload y create no se invocaron. | Aprobado |
+| H1-U08 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Foto mayor de 5 MB | Intentar subir una foto de 5 MB + 1 byte. | Responde 400 antes de subir o persistir. | La foto fue rechazada. | Aprobado |
+| H1-U09 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Formato GIF | Intentar subir una imagen GIF. | Responde 400 antes de subir o persistir. | La foto fue rechazada. | Aprobado |
+| H1-U10 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Firma PNG declarada como JPG | Enviar contenido PNG con MIME image/jpeg. | Responde 400 antes de subir o persistir. | La firma incompatible fue rechazada. | Aprobado |
+| H1-U11 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Firma JPG declarada como PNG | Enviar contenido JPG con MIME image/png. | Responde 400 antes de subir o persistir. | La firma incompatible fue rechazada. | Aprobado |
+| H1-U12 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Nombre vacío | Validar un nombre compuesto por espacios. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U13 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Nombre mayor de 100 caracteres | Validar un nombre de 101 caracteres. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U14 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Descripción menor de 30 caracteres | Validar una descripción de 29 caracteres. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U15 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Categoría inválida | Validar categoría OTRA. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U16 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Departamento vacío | Validar department vacío. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U17 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Municipio vacío | Validar municipality vacío. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U18 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Precio cero | Validar pricePerDay 0.00. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U19 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Precio negativo | Validar pricePerDay -1.00. | La validación falla y la solicitud responde 400. | class-validator reportó error. | Aprobado |
+| H1-U20 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Acceso sin sesión | Ejecutar JwtAuthGuard sin credencial. | Responde 401. | El guard respondió 401. | Aprobado |
+| H1-U21 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Acceso con rol TENANT | Ejecutar RolesGuard con TENANT. | Responde 403. | El guard denegó acceso con 403. | Aprobado |
+| H1-U22 | Negativa | Módulo 1: Catálogo de propiedades/equipo / H1: Publicar una propiedad | Acceso con rol ADMIN | Ejecutar RolesGuard con ADMIN. | Responde 403. | El guard denegó acceso con 403. | Aprobado |
+Ejecución: `npm.cmd test -- test/unit/historia-H1.spec.ts` — Vitest reportó 1 archivo aprobado y 22 pruebas aprobadas.
 
 
 ## Módulo 1: Catálogo de propiedades/equipo — H2: Consultar el catálogo de bienes disponibles (Unitarias)
@@ -365,6 +410,50 @@ Ejecución: `npm.cmd test -- test/unit/historia-H5.spec.ts` — Vitest reportó 
 
 Ejecución: `npm.cmd test -- test/unit/historia-H6.spec.ts` — Vitest reportó 1 archivo aprobado y 19 pruebas aprobadas.
 
+
+## Módulo 2: Búsqueda y filtros — H7: Filtro por rango de precio (Unitarias)
+
+### Casos positivos ejecutados
+
+- **H7-U01:** Acepta los límites permitidos y un mínimo igual al máximo.
+- **H7-U02:** Filtra desde el precio mínimo indicado, incluyéndolo.
+- **H7-U03:** Filtra hasta el precio máximo indicado, incluyéndolo.
+- **H7-U04:** Aplica ambos límites incluyendo bienes con precio igual al mínimo o al máximo.
+- **H7-U05:** Combina el rango de precios con otros filtros del catálogo.
+- **H7-U06:** Autoriza al rol TENANT para consultar el catálogo.
+
+### Casos negativos ejecutados
+
+- **H7-U07 a H7-U16:** Rechaza precios cero, negativos, no numéricos, con más de dos decimales o fuera del rango permitido.
+- **H7-U17:** Rechaza el mínimo mayor que el máximo y entrega un mensaje que explica el problema.
+- **H7-U18 a H7-U20:** Rechaza el acceso sin sesión con 401 y deniega OWNER y ADMIN con 403.
+
+### Tabla de resultados
+
+| ID de prueba | Tipo | Módulo / Historia | Descripción | Pasos ejecutados | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|---|---|---|
+| H7-U01 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Límites válidos y precio exacto | Validar 0.01 como mínimo, 9999.99 como máximo y 45.00 como ambos límites. | Todos los valores pasan la validación. | Los tres valores fueron aceptados. | Aprobado |
+| H7-U02 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Solo precio mínimo | Consultar con minPrice 25.00. | Devuelve bienes cuyo precio sea 25.00 o mayor. | El filtro se envió con el límite inferior 25.00 incluido. | Aprobado |
+| H7-U03 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Solo precio máximo | Consultar con maxPrice 80.00. | Devuelve bienes cuyo precio sea 80.00 o menor. | El filtro se envió con el límite superior 80.00 incluido. | Aprobado |
+| H7-U04 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Inclusión de los extremos | Consultar el repositorio con rango de 10.00 a 50.00. | La consulta incluye los precios de 10.00 y 50.00. | Prisma recibió ambos límites inclusivos para resultados y conteo. | Aprobado |
+| H7-U05 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Combinación con otros filtros | Consultar página 2 con rango, categoría EQUIPMENT y departamento La Libertad. | El repositorio recibe todos los criterios juntos. | El repositorio recibió precios, categoría, departamento y página solicitados. | Aprobado |
+| H7-U06 | Positiva | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Acceso de TENANT | Revisar el rol declarado y evaluar RolesGuard con TENANT. | TENANT puede consultar el catálogo. | La metadata declara TENANT y el guard autorizó el rol. | Aprobado |
+| H7-U07 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo cero | Validar minPrice 0. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U08 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo negativo | Validar minPrice -1.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U09 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo no numérico | Validar minPrice abc. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U10 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo con más de dos decimales | Validar minPrice 10.001. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U11 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo mayor al máximo permitido | Validar minPrice 10000.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para minPrice. | Aprobado |
+| H7-U12 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo cero | Validar maxPrice 0. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U13 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo negativo | Validar maxPrice -1.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U14 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo no numérico | Validar maxPrice abc. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U15 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo con más de dos decimales | Validar maxPrice 10.001. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U16 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Máximo mayor al permitido | Validar maxPrice 10000.00. | La validación falla y la solicitud responde 400. | class-validator reportó error para maxPrice. | Aprobado |
+| H7-U17 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Mínimo mayor que máximo | Validar minPrice 50.00 y maxPrice 10.00. | Rechaza con error 400 y mensaje que indica que el mínimo no puede superar al máximo. | La validación reportó el mensaje esperado en maxPrice. | Aprobado |
+| H7-U18 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta sin sesión | Ejecutar JwtAuthGuard sin credenciales. | Responde 401. | El guard respondió 401. | Aprobado |
+| H7-U19 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta con rol OWNER | Ejecutar RolesGuard con OWNER. | Responde 403. | El guard denegó el acceso con 403. | Aprobado |
+| H7-U20 | Negativa | Módulo 2: Búsqueda y filtros / H7: Filtro por rango de precio | Consulta con rol ADMIN | Ejecutar RolesGuard con ADMIN. | Responde 403. | El guard denegó el acceso con 403. | Aprobado |
+
+Ejecución: `npm.cmd test -- test/unit/historia-H7.spec.ts` — Vitest reportó 1 archivo aprobado y 20 pruebas aprobadas.
 
 ## Módulo 2: Búsqueda y filtros — H8: Filtrar publicaciones por fechas disponibles (Unitarias)
 
@@ -591,7 +680,7 @@ Ejecución: `npm.cmd test -- test/unit/historia-H10.spec.ts` — Vitest reportó
 | H12-U20 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | UUID inválido | Pasar un ID inválido por ParseUUIDPipe para cada una de las tres rutas. | Cada ruta rechaza el ID con 400. | ParseUUIDPipe lanzó BadRequestException en las tres comprobaciones. | Aprobado |
 | H12-U21 | Negativa | Módulo 3: Reservas y calendario de disponibilidad / H12: Bloqueo de fechas no disponibles | Conflicto de serialización | Simular error Prisma P2034 durante la transacción de creación. | Responde 409 DATES_UNAVAILABLE. | El servicio convirtió P2034 en ConflictException con code DATES_UNAVAILABLE. | Aprobado |
 
-Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+Ejecución: `npm.cmd test -- test/unit/historia-H12.spec.ts` — Vitest reportó 1 archivo aprobado y 22 pruebas aprobadas.
 
 ## Módulo 4: Pagos y depósitos de garantía — H13: Pago de alquiler con detalle del depósito (Unitarias)
 
@@ -947,7 +1036,7 @@ Ejecución: `npm.cmd test -- test/unit/historia-H19.spec.ts` — Vitest reportó
 | H20-U20 | Negativa | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Revisión concurrente | Simular que la actualización condicional no modifica filas. | Responde 409 y no verifica el perfil. | ConflictException con 409; perfil no actualizado. | Aprobado |
 | H20-U21 | Positiva | Módulo 7: Verificación de identidad/documentos / H20: Aprobar o rechazar documentos de identidad enviados | Consulta de pendientes en repositorio | Ejecutar findPendingDocuments y countPendingDocuments con Prisma simulado. | Filtra PENDING, ordena submittedAt ascendente, omite 0 y toma 10. | Prisma recibió el filtro, orden ascendente y paginación esperados. | Aprobado |
 
-Ejecución: `npm.cmd test -- test/unit/historia-H20.spec.ts` — Vitest reportó 1 archivo aprobado y 21 pruebas aprobadas.
+Ejecución: `npm.cmd test -- test/unit/historia-H20.spec.ts` — Vitest reportó 1 archivo aprobado y 22 pruebas aprobadas.
 
 Nota: no se probaron las notificaciones porque el servicio del Módulo 8 no existe todavía en este backend. Los mensajes, botones y estados visuales pertenecen al frontend y no se cubren con estas pruebas unitarias.
 
