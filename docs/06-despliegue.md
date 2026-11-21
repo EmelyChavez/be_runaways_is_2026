@@ -40,3 +40,25 @@ Las variables se configuran en el panel del servicio del backend en Railway. Se 
 | `SEED_TEST_PASSWORD` | Railway, Variables del servicio backend; contraseña secreta de la cuenta de prueba utilizada durante el despliegue |
 | `ADMIN_EMAIL` | Railway, Variables del servicio backend; correo utilizado por el seed de despliegue para crear o actualizar la cuenta ADMIN |
 | `ADMIN_PASSWORD` | Railway, Variables del servicio backend; contraseña secreta utilizada por el seed de despliegue para crear la cuenta ADMIN |
+
+# Despliegue del frontend
+
+## Cómo se publica una nueva versión
+
+El frontend tiene despliegue continuo desde `main`: cada cambio integrado en esa rama inicia automáticamente una nueva versión de producción en Vercel.
+
+1. Se desarrollan las historias en ramas `feature/<descripcion>` desde `develop` y se integran en `develop` mediante Pull Requests revisados y aprobados por otro integrante.
+2. Cuando las historias de una entrega están listas, se crea una rama `release/X.Y.Z` desde `develop`. En ella se realizan únicamente ajustes finales de la entrega.
+3. Se abre un Pull Request de `release/X.Y.Z` hacia `main`. Otro integrante debe aprobarlo antes de fusionarlo. La rama release también se integra de regreso a `develop` para mantener ambas ramas sincronizadas.
+4. Se crea en GitHub la etiqueta `vX.Y.Z` sobre el commit publicado en `main`, acompañada de una lista breve de los cambios incluidos.
+5. La integración en `main` activa el despliegue automático de Vercel, que construye y publica el frontend.
+6. Se verifica que la aplicación publicada responda en el dominio de producción asignado por Vercel (`*.vercel.app`).
+
+Antes de integrar los cambios de la entrega, el proyecto requiere ejecutar `npm run lint`, `npm run build` y `npm test`.
+
+## Variables de entorno en producción
+
+| Variable | Dónde se configura |
+|---|---|
+| `API_URL` | Vercel, Settings → Environment Variables (Production). |
+| `USE_MOCKS` | Vercel, Settings → Environment Variables (Production). |

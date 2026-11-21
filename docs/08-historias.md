@@ -51,8 +51,8 @@
 
 | ID | Historia | Responsable BE | Responsable FE | Card | PR BE | PR FE | Estado |
 |---|---|---|---|---|---|---|---|
-| H17 | Calificar experiencia sobre un bien y su arrendador | Fernando Diaz | Karla Martinez | [Card](https://trello.com/c/ZJbfGE2h) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/33#issue-6461382789) |  | Terminada |
-| H18 | Calificar experiencia con arrendatario | Fernando Diaz | Karla Martinez | [Card](https://trello.com/c/LAmPLoj2) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/34#issue-6462233250) |  | Terminada |
+| H17 | Calificar experiencia sobre un bien y su arrendador | Fernando Diaz | Karla Martinez | [Card](https://trello.com/c/ZJbfGE2h) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/33#issue-6461382789) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/25) | Terminada |
+| H18 | Calificar experiencia con arrendatario | Fernando Diaz | Karla Martinez | [Card](https://trello.com/c/LAmPLoj2) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/34#issue-6462233250) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/64#issue-6518390565) | Terminada |
 
 ## Módulo 7: Verificación de identidad/documentos
 
@@ -76,6 +76,6 @@
 | H24 | Visualización de ingresos totales | Emely Chávez | Karina Pérez | [Card](https://trello.com/c/h0t2O5n2) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/22#issue-6432499917) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/12#issue-6322041742) | Terminada |
 | H25 | Visualización de ingresos por bien publicado | Emely Chávez | Karina Pérez | [Card](https://trello.com/c/TrttR3aE) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/24#issue-6435780961) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/13#issue-6334008914) | Terminada |
 | H26 | Visualización de calificación de los bienes | Fernando Diaz | Karina Pérez | [Card](https://trello.com/c/Bi3Hl6xH) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/36#issue-6464955553) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/50#issue-6494972136) | Terminada |
-| H27 | Visualización de la tasa de ocupación por bien | Fernando Diaz | Karina Pérez | [Card](https://trello.com/c/PS6EyzSz) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/37#issue-6465548611) |  | Terminada |
+| H27 | Visualización de la tasa de ocupación por bien | Fernando Diaz | Karina Pérez | [Card](https://trello.com/c/PS6EyzSz) | [PR](https://github.com/EmelyChavez/be_runaways_is_2026/pull/37#issue-6465548611) | [PR](https://github.com/KarlaMartinez1/fe_runaways_is_2026/pull/51#issue-6498781806) | Terminada |
 
 

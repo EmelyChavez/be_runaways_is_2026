@@ -24,7 +24,7 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
-
+.playwright-browsers
 # IDEs and editors
 /.idea
 .project

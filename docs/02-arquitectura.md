@@ -1,4 +1,3 @@
-
 # Arquitectura del sistema
 
 ## Vista general
@@ -25,8 +24,29 @@ flowchart LR
 
 ### Diagrama del frontend
 
-Pendiente de agregar el diagrama específico del frontend. El frontend es una aplicación Next.js
-16.3.6 desplegada en Vercel y consume la API del backend por HTTPS.
+### Diagrama del frontend
+
+El navegador no llama directamente a la API. El servidor de Next.js funciona como intermediario: `proxy.ts` revisa la sesión y el rol antes de mostrar cada página; las páginas de servidor y las acciones de servidor (`app/actions`) piden los datos a los repositorios (`lib/repositories`), y el cliente HTTP (`lib/api/client.ts`) lee la cookie `session` HttpOnly y envía el access token como Bearer a la API. Así el token nunca queda disponible para el JavaScript del navegador. Con `USE_MOCKS=true`, los repositorios usan datos simulados en lugar de la API.
+
+```mermaid
+flowchart LR
+    U([Navegador]) -->|abre una página| PX[proxy.ts<br/>sesión y rol]
+    PX --> PG[Páginas de servidor<br/>app/]
+    U -->|envía un formulario| SA[Acciones de servidor<br/>app/actions]
+    PG --> REPO[Repositorios<br/>lib/repositories]
+    SA --> REPO
+    REPO -->|USE_MOCKS=false| HTTP[Cliente HTTP<br/>lib/api/client.ts]
+    REPO -. USE_MOCKS=true .-> MOCK[Datos simulados]
+    CK[(Cookie session<br/>HttpOnly)] -.-> HTTP
+    HTTP -->|HTTPS · Bearer| API[API NestJS<br/>Railway]
+
+    classDef app fill:#e8f1ff,stroke:#3973c6,color:#17365d,stroke-width:1.5px;
+    classDef data fill:#e8f6ee,stroke:#3b8d5a,color:#174a2a,stroke-width:1.5px;
+    classDef external fill:#fff3df,stroke:#d39432,color:#68420b,stroke-width:1.5px;
+    class PX,PG,SA,REPO,HTTP app;
+    class CK,MOCK data;
+    class U,API external;
+```
 
 ### Flujo interno del backend
 
@@ -66,6 +86,7 @@ flowchart LR
 
 ## Estructura de carpetas
 
+### Backend
 ```
 src/
 ├── auth/                 # Autenticación, tokens y guards
@@ -90,8 +111,53 @@ docs/                     # Documentación del proyecto
 Dockerfile                # Imagen de la API
 docker-compose.yml        # API y PostgreSQL para entorno local
 ```
+### Frontend
+```
+app/                         # Rutas, páginas y acciones de servidor de Next.js
+├── actions/                 # Acciones de servidor por funcionalidad
+├── admin/                   # Rutas de administración
+├── api/                     # Rutas API del frontend
+├── bookings/                # Páginas de reservas, pagos, recibos y depósitos
+├── lessor/                  # Rutas del arrendador
+├── login/                   # Inicio de sesión
+├── messages/                # Lista y detalle de conversaciones
+├── notifications/           # Bandeja y acciones de notificaciones
+├── owner/                   # Reportes del arrendador
+├── profile/                 # Perfil y verificación de cuenta
+├── properties/              # Catálogo, publicaciones y disponibilidad
+├── register/                # Registro de cuenta
+└── reservations/            # Calificación de reservas
+components/                   # Componentes de interfaz por funcionalidad
+├── auth/                    # Formularios y componentes de autenticación
+├── availability/            # Calendario de disponibilidad
+├── bookings/                # Componentes de reservas
+├── deposit/                 # Componentes de depósitos
+├── layout/                  # Navegación y estructura compartida
+├── messages/                # Componentes de mensajería
+├── notifications/           # Componentes de notificaciones
+├── payment/                 # Formularios y resumen de pago
+├── profile/                 # Componentes de perfil y gestión de roles
+├── properties/              # Componentes de bienes y búsqueda
+├── reports/                 # Tablas y paneles de reportes
+├── reviews/                 # Componentes de reseñas
+└── ui/                      # Componentes genéricos reutilizables
+lib/                          # Lógica compartida de la aplicación
+├── api/                     # Cliente HTTP, tipos y utilidades de API
+├── auth/                    # Autenticación y roles
+├── bookings/                # Reglas y formato de reservas
+├── messages/                # Textos de interfaz en español
+├── payments/                # Lógica del pago simulado
+├── repositories/            # Interfaces y fábrica de repositorios
+│   ├── http/                # Implementaciones conectadas al backend
+│   └── mock/                # Implementaciones y datos de prueba
+│       └── fixtures/        # Datos de ejemplo para repositorios mock
+├── stores/                  # Estado global de sesión y rol
+├── utils/                   # Funciones utilitarias
+└── validations/             # Validaciones de formularios
+public/                       # Recursos estáticos, como imágenes e iconos
+types/                        # Tipos y modelos compartidos de TypeScript
+```
 
-## Decisiones técnicas
 ## Decisiones técnicas
 
 | Decisión | Alternativas consideradas | Motivo |
