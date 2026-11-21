@@ -14,6 +14,9 @@ export interface EnvConfig {
   JWT_EXPIRES_IN: string;
   REFRESH_TOKEN_EXPIRES_IN_DAYS: number;
   BCRYPT_SALT_ROUNDS: number;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
 }
 
 const requiredVars = ['DATABASE_URL', 'JWT_SECRET'] as const;
@@ -69,6 +72,18 @@ export function validateEnv(raw: Record<string, unknown>): EnvConfig {
     );
   }
 
+  const cloudinaryValues = [
+    raw.CLOUDINARY_CLOUD_NAME,
+    raw.CLOUDINARY_API_KEY,
+    raw.CLOUDINARY_API_SECRET,
+  ];
+  const configuredCloudinaryValues = cloudinaryValues.filter(Boolean).length;
+  if (configuredCloudinaryValues > 0 && configuredCloudinaryValues < 3) {
+    throw new Error(
+      'Configura CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET juntos.',
+    );
+  }
+
   return {
     NODE_ENV: readString(raw, 'NODE_ENV', 'development'),
     PORT: readInt(raw, 'PORT', 3000),
@@ -77,5 +92,8 @@ export function validateEnv(raw: Record<string, unknown>): EnvConfig {
     JWT_EXPIRES_IN: readString(raw, 'JWT_EXPIRES_IN', '15m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: readInt(raw, 'REFRESH_TOKEN_EXPIRES_IN_DAYS', 7),
     BCRYPT_SALT_ROUNDS: readInt(raw, 'BCRYPT_SALT_ROUNDS', 12),
+    CLOUDINARY_CLOUD_NAME: readString(raw, 'CLOUDINARY_CLOUD_NAME', ''),
+    CLOUDINARY_API_KEY: readString(raw, 'CLOUDINARY_API_KEY', ''),
+    CLOUDINARY_API_SECRET: readString(raw, 'CLOUDINARY_API_SECRET', ''),
   };
 }

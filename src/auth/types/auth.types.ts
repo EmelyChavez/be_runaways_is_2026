@@ -1,8 +1,11 @@
+import type { Role } from '@PrismaClient';
+
 /** Payload que viaja dentro del JWT de acceso. */
 export interface AccessTokenPayload {
   /** ID del usuario (claim estándar `sub`). */
   sub: string;
   email: string;
+  role: Role;
 }
 
 /** Par de tokens devuelto por login y refresh. */

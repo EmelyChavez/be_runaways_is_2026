@@ -30,17 +30,333 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  TENANT
+  ADMIN
+  OWNER
+}
+
+enum PropertyCategory {
+  PROPERTY
+  EQUIPMENT
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  PAUSED
+  DELETED
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  COMPLETED
+  CANCELED
+}
+
+enum DepositStatus {
+  PENDING
+  RETURNED
+  RETAINED
+  PARTIALLY_RETAINED
+}
+
+enum TransactionType {
+  CHARGE
+  REFUND
+  RETENTION
+}
+
+enum ReviewType {
+  RENTER_TO_PROPERTY
+  OWNER_TO_RENTER
+}
+
+enum IdentityDocumentType {
+  DUI
+  PASSPORT
+}
+
+enum IdentityDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AccountStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+enum OriginModule {
+  RESERVATIONS
+  PAYMENTS
+  MESSAGING
+  VERIFICATION
+}
+
+enum NotificationEventType {
+  RESERVATION_CREATED
+  PAYMENT_CONFIRMED
+  RESERVATION_CANCELED_EXPIRED
+  RESERVATION_FINISHED
+  MESSAGE_NEW
+  DEPOSIT_RETURNED
+  DEPOSIT_RETURNED_AUTO
+  DEPOSIT_RETAINED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
+  role         Role     @default(TENANT)
+  name         String
   email        String   @unique
   passwordHash String   @map("password_hash")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
+  refreshTokens         RefreshToken[]
+  profile               Profile? //permite que sea opcional
+  ownedProperties       Property[]           @relation("PropertyOwner")
+  tenantBookings        Booking[]            @relation("BookingTenant")
+  transactionDecisions  TransactionHistory[] @relation("TransactionActor")
+  depositsDecided       Deposit[]            @relation("DepositDecidedBy")
+  reviewsAuthored       Review[]             @relation("ReviewAuthor")
+  reviewsReceived       Review[]             @relation("ReviewTargetUser")
+  notifications         Notification[]
+  payments              Payment[]
+  conversationsAsTenant Conversation[]       @relation("ConversationTenant")
+  sentMessages          Message[]            @relation("MessageSender")
 
   @@map("users")
+}
+
+model Profile {
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @unique @map("user_id") @db.Uuid
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isVerified       Boolean           @default(false) @map("is_verified")
+  identityDocument IdentityDocument?
+
+  @@map("profiles")
+}
+
+model IdentityDocument {
+  id              String                 @id @default(uuid()) @db.Uuid
+  profileId       String                 @unique @map("profile_id") @db.Uuid
+  profile         Profile                @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  documentType    IdentityDocumentType   @map("document_type")
+  documentNumber  String                 @map("document_number")
+  documentUrl     String                 @map("document_url")
+  documentStatus  IdentityDocumentStatus @default(PENDING) @map("document_status")
+  submittedAt     DateTime               @default(now()) @map("submitted_at")
+  rejectionReason String?                @map("rejection_reason")
+  reviewedAt      DateTime?              @map("reviewed_at")
+
+  @@map("identity_document")
+}
+
+model LoginAttempt {
+  keyHash         String    @id @map("key_hash")
+  attempts        Int       @default(0)
+  windowStartedAt DateTime  @default(now()) @map("window_started_at")
+  lockedUntil     DateTime? @map("locked_until")
+  expiresAt       DateTime  @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("login_attempts")
+}
+
+model Notification {
+  id           String                @id @default(uuid()) @db.Uuid
+  recipientId  String                @map("recipient_id") @db.Uuid
+  recipient    User                  @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  eventType    NotificationEventType @map("event_type")
+  originModule OriginModule          @map("origin_module")
+  title        String                @db.VarChar(100)
+  message      String                @db.VarChar(250)
+  referenceId  String?               @map("reference_id") @db.Uuid
+  status       NotificationStatus    @default(UNREAD)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  @@index([recipientId, status])
+  @@map("notifications")
+}
+
+model Property {
+  id              String           @id @default(uuid()) @db.Uuid
+  ownerId         String           @map("owner_id") @db.Uuid
+  owner           User             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  title           String           @db.VarChar(100)
+  description     String
+  category        PropertyCategory
+  department      String
+  municipality    String
+  address         String
+  pricePerDay     Decimal          @map("price_per_day") @db.Decimal(10, 2)
+  securityDeposit Decimal          @map("security_deposit") @db.Decimal(10, 2)
+  verifiedOnly    Boolean          @default(true) @map("verified_only")
+  images          String[]         @default([])
+  status          PropertyStatus   @default(AVAILABLE)
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  bookings           Booking[]
+  reviews            Review[]
+  availabilityBlocks NoAvailability[]
+  conversations      Conversation[]
+
+  @@index([ownerId, status])
+  @@map("properties")
+}
+
+model Booking {
+  id         String        @id @default(uuid()) @db.Uuid
+  propertyId String        @map("property_id") @db.Uuid
+  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenantId   String        @map("tenant_id") @db.Uuid
+  tenant     User          @relation("BookingTenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  startDate  DateTime      @map("start_date") @db.Date
+  endDate    DateTime      @map("end_date") @db.Date
+  subtotal   Decimal       @db.Decimal(10, 2)
+  status     BookingStatus @default(PENDING)
+  expiresAt  DateTime      @map("expires_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  deposit            Deposit?
+  payment            Payment?
+  transactionHistory TransactionHistory[]
+  reviews            Review[]
+
+  @@index([tenantId, status])
+  @@index([propertyId, status])
+  @@map("bookings")
+}
+
+model NoAvailability {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  startDate  DateTime @map("start_date") @db.Date
+  endDate    DateTime @map("end_date") @db.Date
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([propertyId, startDate, endDate])
+  @@map("no_availabilities")
+}
+
+model Conversation {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenantId   String   @map("tenant_id") @db.Uuid
+  tenant     User     @relation("ConversationTenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  messages Message[]
+
+  @@unique([propertyId, tenantId])
+  @@index([tenantId, updatedAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id") @db.Uuid
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  content        String       @db.VarChar(500)
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, isRead])
+  @@map("messages")
+}
+
+model Review {
+  id             String     @id @default(uuid()) @db.Uuid
+  reservationId  String     @map("reservation_id") @db.Uuid
+  reservation    Booking    @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  propertyId     String     @map("property_id") @db.Uuid
+  property       Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  authorId       String     @map("author_id") @db.Uuid
+  author         User       @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  targetUserId   String     @map("target_user_id") @db.Uuid
+  targetUser     User       @relation("ReviewTargetUser", fields: [targetUserId], references: [id], onDelete: Restrict)
+  reviewType     ReviewType @map("review_type")
+  propertyRating Int?       @map("property_rating")
+  userRating     Int        @map("user_rating")
+  comment        String?    @db.VarChar(200)
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  @@index([propertyId, reviewType])
+  @@index([targetUserId, reviewType])
+  @@unique([reservationId, reviewType])
+  @@map("reviews")
+}
+
+model Deposit {
+  id             String        @id @default(uuid()) @db.Uuid
+  bookingId      String        @unique @map("booking_id") @db.Uuid
+  booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  decidedById    String?       @map("decided_by_id") @db.Uuid
+  decidedBy      User?         @relation("DepositDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  amount         Decimal       @db.Decimal(10, 2)
+  state          DepositStatus @default(PENDING)
+  retainedAmount Decimal       @default(0) @map("retained_amount") @db.Decimal(10, 2)
+  returnedAmount Decimal       @default(0) @map("returned_amount") @db.Decimal(10, 2)
+  decidedAt      DateTime?     @map("decided_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  @@index([state])
+  @@map("deposits")
+}
+
+model Payment {
+  id            String   @id @default(uuid()) @db.Uuid
+  bookingId     String   @unique @map("booking_id") @db.Uuid
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  payerId       String   @map("payer_id") @db.Uuid
+  payer         User     @relation(fields: [payerId], references: [id], onDelete: Restrict)
+  receiptNumber String   @unique @map("receipt_number")
+  rentalAmount  Decimal  @map("rental_amount") @db.Decimal(10, 2)
+  depositAmount Decimal  @map("deposit_amount") @db.Decimal(10, 2)
+  totalAmount   Decimal  @map("total_amount") @db.Decimal(10, 2)
+  last4Digits   String   @map("last4_digits") @db.Char(4)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("payments")
+}
+
+model TransactionHistory {
+  id        String          @id @default(uuid()) @db.Uuid
+  bookingId String          @map("booking_id") @db.Uuid
+  booking   Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  actorId   String?         @map("actor_id") @db.Uuid
+  actor     User?           @relation("TransactionActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type      TransactionType
+  amount    Decimal         @db.Decimal(10, 2)
+  reason    String
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([bookingId, createdAt])
+  @@map("transaction_history")
 }
 
 model RefreshToken {

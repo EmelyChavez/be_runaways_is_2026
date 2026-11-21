@@ -1,0 +1,326 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@Prisma/services';
+import type { CreatePropertyRequestDto } from '@Properties/dto';
+import { BookingStatus, Prisma, PropertyStatus, type Property } from '@PrismaClient';
+
+const CATALOG_PAGE_SIZE = 12;
+@Injectable()
+export class PropertiesRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  create(ownerId: string, data: CreatePropertyRequestDto, images: string[]): Promise<Property> {
+    return this.prisma.property.create({
+      data: {
+        ownerId,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        department: data.department,
+        municipality: data.municipality,
+        address: data.address,
+        pricePerDay: data.pricePerDay,
+        securityDeposit: data.securityDeposit,
+        verifiedOnly: true,
+        images,
+      },
+    });
+  }
+
+  async findAvailablePage(
+    page: number,
+    filters: Prisma.PropertyWhereInput,
+    q?: string,
+  ) {
+    const textConditions: Prisma.Sql[] = [];
+    if (q) {
+      textConditions.push(Prisma.sql`(
+        strpos(unaccent(lower(coalesce(title, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(description, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(department, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(municipality, ''))), unaccent(lower(${q}))) > 0 OR
+        strpos(unaccent(lower(coalesce(address, ''))), unaccent(lower(${q}))) > 0
+      )`);
+    }
+
+    const matchingIds = textConditions.length
+      ? await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+          SELECT id FROM properties WHERE ${Prisma.join(textConditions, ' AND ')}
+        `)
+      : undefined;
+
+    const where: Prisma.PropertyWhereInput = {
+      ...filters,
+      ...(matchingIds && { id: { in: matchingIds.map(({ id }) => id) } }),
+    };
+    const [properties, total] = await this.prisma.$transaction([
+      this.prisma.property.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * CATALOG_PAGE_SIZE,
+        take: CATALOG_PAGE_SIZE,
+        select: {
+          id: true,
+          title: true,
+          municipality: true,
+          department: true,
+          category: true,
+          pricePerDay: true,
+          images: true,
+        },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+
+    return { properties, total };
+  }
+
+  async findOwnerPage(ownerId: string, page: number) {
+    const where = {
+      ownerId,
+      status: { in: [PropertyStatus.AVAILABLE, PropertyStatus.PAUSED] },
+    };
+    const [properties, total] = await this.prisma.$transaction([
+      this.prisma.property.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * CATALOG_PAGE_SIZE,
+        take: CATALOG_PAGE_SIZE,
+        select: {
+          id: true,
+          title: true,
+          municipality: true,
+          department: true,
+          category: true,
+          pricePerDay: true,
+          images: true,
+          status: true,
+        },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+    return { properties, total };
+  }
+
+  findOwnedById(ownerId: string, id: string, transaction?: Prisma.TransactionClient) {
+    const client = transaction ?? this.prisma;
+    return client.property.findFirst({
+      where: {
+        id,
+        ownerId,
+        status: { in: [PropertyStatus.AVAILABLE, PropertyStatus.PAUSED] },
+      },
+    });
+  }
+
+  countActiveBookings(propertyId: string, transaction?: Prisma.TransactionClient) {
+    const client = transaction ?? this.prisma;
+    return client.booking.count({
+      where: { propertyId, status: { in: ['PENDING', 'PAID'] } },
+    });
+  }
+
+  findOwnedForManagement(ownerId: string, id: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.findFirst({ where: { id, ownerId } });
+  }
+
+  findOwnedForAvailability(ownerId: string, propertyId: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.findFirst({ where: { id: propertyId, ownerId }, select: { id: true } });
+  }
+
+  findOwnedProperty(ownerId: string, propertyId: string) {
+    return this.prisma.property.findFirst({ where: { id: propertyId, ownerId }, select: { id: true } });
+  }
+
+  findOverlappingAvailabilityBlock(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.noAvailability.findFirst({
+      where: { propertyId, startDate: { lte: endDate }, endDate: { gte: startDate } },
+      select: { id: true },
+    });
+  }
+
+  findOverlappingActiveBooking(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.booking.findFirst({
+      where: {
+        propertyId,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+        status: { in: [BookingStatus.PENDING, BookingStatus.PAID] },
+      },
+      select: { id: true },
+    });
+  }
+
+  createAvailabilityBlock(
+    propertyId: string,
+    startDate: Date,
+    endDate: Date,
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.noAvailability.create({ data: { propertyId, startDate, endDate } });
+  }
+
+  listAvailabilityBlocks(propertyId: string, from: Date) {
+    return this.prisma.noAvailability.findMany({
+      where: { propertyId, endDate: { gte: from } },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  findAvailabilityBlockById(id: string) {
+    return this.prisma.noAvailability.findUnique({ where: { id } });
+  }
+
+  deleteAvailabilityBlock(id: string) {
+    return this.prisma.noAvailability.delete({ where: { id } });
+  }
+
+  updateStatus(id: string, status: PropertyStatus, transaction: Prisma.TransactionClient) {
+    return transaction.property.update({ where: { id }, data: { status } });
+  }
+
+  softDelete(id: string, transaction: Prisma.TransactionClient) {
+    return transaction.property.update({ where: { id }, data: { status: PropertyStatus.DELETED } });
+  }
+
+  transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction(operation);
+  }
+
+  serializableTransaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction(operation, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  updateOwned(
+    ownerId: string,
+    id: string,
+    data: CreatePropertyRequestDto,
+    images: string[],
+    transaction: Prisma.TransactionClient,
+  ) {
+    return transaction.property.update({
+      where: { id, ownerId },
+      data: {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        department: data.department,
+        municipality: data.municipality,
+        address: data.address,
+        pricePerDay: data.pricePerDay,
+        securityDeposit: data.securityDeposit,
+        verifiedOnly: true,
+        images,
+      },
+    });
+  }
+
+  findAvailableById(id: string) {
+    return this.prisma.property.findFirst({
+      where: { id, status: 'AVAILABLE' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        department: true,
+        municipality: true,
+        pricePerDay: true,
+        securityDeposit: true,
+        verifiedOnly: true,
+        images: true,
+        owner: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  findAvailabilityProperty(id: string, ownerId?: string) {
+    return this.prisma.property.findFirst({
+      where: {
+        id,
+        status: PropertyStatus.AVAILABLE,
+        ...(ownerId && { ownerId }),
+      },
+      select: { id: true },
+    });
+  }
+
+  async findOccupiedRanges(propertyId: string, from: Date, to: Date) {
+    const [bookings, blocks] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: {
+          propertyId,
+          status: { in: [BookingStatus.PENDING, BookingStatus.PAID] },
+          startDate: { lte: to },
+          endDate: { gte: from },
+        },
+        select: { startDate: true, endDate: true },
+      }),
+      this.prisma.noAvailability.findMany({
+        where: { propertyId, startDate: { lte: to }, endDate: { gte: from } },
+        select: { startDate: true, endDate: true },
+      }),
+    ]);
+    return [...bookings, ...blocks];
+  }
+
+  async findOwnerOccupancyData(ownerId: string, from: Date, to: Date) {
+    const properties = await this.prisma.property.findMany({
+      where: { ownerId },
+      orderBy: [{ title: 'asc' }, { id: 'asc' }],
+      select: { id: true, title: true, status: true },
+    });
+    if (properties.length === 0) return { properties, bookings: [] };
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        propertyId: { in: properties.map(({ id }) => id) },
+        status: { in: [BookingStatus.PAID, BookingStatus.COMPLETED] },
+        startDate: { lte: to },
+        endDate: { gte: from },
+      },
+      select: { propertyId: true, startDate: true, endDate: true },
+    });
+    return { properties, bookings };
+  }
+
+  findPropertyRating(propertyId: string) {
+    return this.prisma.review.aggregate({
+      where: { propertyId, reviewType: 'RENTER_TO_PROPERTY' },
+      _avg: { propertyRating: true },
+      _count: { _all: true },
+    });
+  }
+
+  findUserRating(userId: string) {
+    return this.prisma.review.aggregate({
+      where: { targetUserId: userId },
+      _avg: { userRating: true },
+      _count: { _all: true },
+    });
+  }
+
+  findPropertyReviews(propertyId: string) {
+    return this.prisma.review.findMany({
+      where: { propertyId, reviewType: 'RENTER_TO_PROPERTY' },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        propertyRating: true,
+        userRating: true,
+        comment: true,
+        createdAt: true,
+        author: { select: { name: true } },
+      },
+    });
+  }
+}

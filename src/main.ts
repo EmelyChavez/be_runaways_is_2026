@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -23,6 +23,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       // Convierte el payload al tipo del DTO (los query/params llegan string).
       transform: true,
+      exceptionFactory: (errors) =>
+        new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: errors
+            .flatMap((error) => Object.values(error.constraints ?? {}))
+            .join(' '),
+        }),
     }),
   );
 
