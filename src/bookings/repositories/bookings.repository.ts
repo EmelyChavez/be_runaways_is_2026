@@ -217,4 +217,27 @@ export class BookingsRepository {
     }
     return canceled;
   }
+
+  async completeExpiredPaidBookings(today: Date) {
+    const expired = await this.prisma.booking.findMany({
+      where: { status: BookingStatus.PAID, endDate: { lt: today } },
+      select: {
+        id: true,
+        tenantId: true,
+        property: { select: { title: true } },
+      },
+    });
+    const completed: Array<{ id: string; tenantId: string; propertyTitle: string }> = [];
+
+    for (const booking of expired) {
+      const result = await this.prisma.booking.updateMany({
+        where: { id: booking.id, status: BookingStatus.PAID, endDate: { lt: today } },
+        data: { status: BookingStatus.COMPLETED },
+      });
+      if (result.count === 1) {
+        completed.push({ id: booking.id, tenantId: booking.tenantId, propertyTitle: booking.property.title });
+      }
+    }
+    return completed;
+  }
 }

@@ -194,7 +194,7 @@ erDiagram
 | `identity_document` | Documento de identidad enviado para verificación. | `document_type`, `document_number`, `document_url` (Cloudinary), `document_status`, `rejection_reason`, `submitted_at`, `reviewed_at` |
 | `property` | Bien publicado para alquiler. | `owner_id`, `title`, `category`, `department`, `municipality`, `price_per_day`, `security_deposit`, `images` (URLs de Cloudinary), `status` |
 | `no_availability` | Período en que un bien no está disponible. | `property_id`, `start_date`, `end_date` |
-| `booking` | Reserva de un bien hecha por un arrendatario. | `property_id`, `tenant_id`, `start_date`, `end_date`, `subtotal`, `status`, `expires_at` |
+| `booking` | Reserva de un bien hecha por un arrendatario. | `property_id`, `tenant_id`, `start_date`, `end_date`, `subtotal`, `status`, `expires_at`, `updated_at` |
 | `payment` | Pago asociado a una reserva. | `booking_id`, `receipt_number`, `rental_amount`, `deposit_amount`, `total_amount`, `last4_digits` |
 | `deposit` | Depósito de garantía asociado a una reserva. | `booking_id`, `decided_by_id`, `amount`, `state`, `retained_amount`, `returned_amount`, `decided_at` |
 | `transaction_history` | Movimiento financiero registrado para una reserva. | `booking_id`, `type`, `amount`, `reason`, `created_at` |

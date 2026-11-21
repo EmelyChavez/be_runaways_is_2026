@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma, ReviewType, Role, type PropertyStatus } from '@PrismaClient';
+import { Prisma, ReviewType, Role, type PropertyStatus } from '@PrismaClient';
 import { PrismaService } from '@Prisma/services';
 
 @Injectable()
