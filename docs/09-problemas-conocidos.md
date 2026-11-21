@@ -1,0 +1,9 @@
+# Problemas conocidos
+
+| Problema | Cómo se reproduce | Impacto | Historia relacionada |
+|---|---|---|---|
+| Almacenamiento de imágenes y documentos: el documento de historias indicaba Firebase Storage, pero Firebase es de pago, por lo que se cambió a Cloudinary. Las fotos de los bienes y los documentos de identidad se guardan en Cloudinary. | Publicar un bien con fotos o subir un documento de identidad y revisar dónde queda almacenado el archivo. | Bajo | H1, H4, H19 |
+| Servicio de notificaciones: el documento de historias definía un endpoint `POST /api/v1/notifications/internal`. Se descartó porque generaba una llamada HTTP innecesaria entre módulos del mismo backend, con latencia y puntos de falla extra. Se reemplazó por una fachada (patrón Facade) interna, `NotificationsService.emit`, que los demás módulos invocan directamente. | Buscar `POST /api/v1/notifications/internal` en Swagger (`/api/docs`): no existe. Las notificaciones se generan al crear reservas, pagos, mensajes y revisiones de documentos. | Bajo | H22 |
+| H11 (registro de entrega y devolución) se eliminó del alcance porque repetía funcionalidad: la finalización de la reserva ya se resuelve en H10. Por eso no existen `PATCH /bookings/:id/delivery` ni `/return`. | Buscar esos endpoints en Swagger: no existen. La reserva pasa a `FINALIZADA` sin un registro separado de entrega y devolución. | Bajo | H11, H10 |
+| Rutas distintas al documento de historias: las rutas originales no encajaban con la lógica de la aplicación, por lo que se cambiaron por otras (por ejemplo `/owner/bookings`, `/bookings/:bookingId/transactions`, `/profile/document/admin`, `/income/reports`, `/owner/reports/ratings` y `/owner/reports/occupancy`). Las cards de Trello y la documentación usan las rutas nuevas. | Comparar las rutas de Swagger con las tablas del documento de historias original. | Bajo | H10, H13, H14, H20, H24, H25, H26, H27 |
+
