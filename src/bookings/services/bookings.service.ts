@@ -17,13 +17,13 @@ import {
 import { NotificationsService } from '@Notifications/services';
 import type { BookingQueryDto, CreateBookingDto, OwnerBookingQueryDto } from '@Bookings/dto';
 import { BookingsRepository } from '@Bookings/repositories';
+import { getTodayInElSalvador } from '../booking-dates.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PAYMENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_BOOKING_DAYS = 30;
 const BOOKING_HORIZON_DAYS = 90;
 const EXPIRATION_SCAN_INTERVAL_MS = 30 * 1000;
-const EL_SALVADOR_TIME_ZONE = 'America/El_Salvador';
 
 @Injectable()
 export class BookingsService implements OnModuleInit, OnModuleDestroy {
@@ -37,13 +37,13 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.expirationTimer = setInterval(() => {
-      void this.expirePendingBookings().catch((error: unknown) => {
-        this.logger.error('No se pudieron procesar las reservas vencidas.', error);
+      void this.processBookingLifecycle().catch((error: unknown) => {
+        this.logger.error('No se pudo procesar el ciclo de vida de las reservas.', error);
       });
     }, EXPIRATION_SCAN_INTERVAL_MS);
     this.expirationTimer.unref();
-    void this.expirePendingBookings().catch((error: unknown) => {
-      this.logger.error('No se pudieron procesar las reservas vencidas.', error);
+    void this.processBookingLifecycle().catch((error: unknown) => {
+      this.logger.error('No se pudo procesar el ciclo de vida de las reservas.', error);
     });
   }
 
@@ -192,6 +192,27 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async completeExpiredPaidBookings(now = new Date()): Promise<void> {
+    const today = this.getTodayInElSalvador(now);
+    const completed = await this.bookingsRepository.completeExpiredPaidBookings(today);
+    for (const booking of completed) {
+      await this.notificationsService.emit({
+        recipientId: booking.tenantId,
+        eventType: NotificationEventType.RESERVATION_FINISHED,
+        originModule: OriginModule.RESERVATIONS,
+        referenceId: booking.id,
+        templateData: { propertyName: booking.propertyTitle },
+        title: 'Reserva finalizada',
+        message: `La reserva del bien "${booking.propertyTitle}" ha sido marcada como finalizada.`,
+      });
+    }
+  }
+
+  private async processBookingLifecycle(): Promise<void> {
+    await this.expirePendingBookings();
+    await this.completeExpiredPaidBookings();
+  }
+
   private validatePeriod(start: string, end: string) {
     if (!this.isDateOnly(start) || !this.isDateOnly(end)) {
       throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Las fechas deben usar el formato YYYY-MM-DD.' });
@@ -224,15 +245,8 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
   }
 
-  private getTodayInElSalvador(): Date {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: EL_SALVADOR_TIME_ZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(new Date());
-    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-    return new Date(`${values.year}-${values.month}-${values.day}T00:00:00.000Z`);
+  private getTodayInElSalvador(now = new Date()): Date {
+    return getTodayInElSalvador(now);
   }
 
   private serializeBooking<T extends {
