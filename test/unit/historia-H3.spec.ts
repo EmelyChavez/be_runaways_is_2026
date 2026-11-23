@@ -168,8 +168,8 @@ describe("H3. Detalle de un bien", () => {
 
       const attemptBooking = bookingsService.create('tenant-1', {
         propertyId,
-        startDate: '2026-11-20',
-        endDate: '2026-11-20',
+        startDate: '2026-11-30',
+        endDate: '2026-11-30',
       });
       await expect(attemptBooking).rejects.toBeInstanceOf(ForbiddenException);
       await expect(attemptBooking).rejects.toMatchObject({

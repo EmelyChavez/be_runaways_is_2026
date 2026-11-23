@@ -197,6 +197,7 @@ describe("H14. Devolución o retención del depósito de garantía", () => {
           status: BookingStatus.COMPLETED,
           expiresAt: new Date('2026-10-20T12:00:00.000Z'),
           createdAt: new Date('2026-10-19T12:00:00.000Z'),
+          reviews: [],
           property: { title: 'Casa de campo', securityDeposit: new Prisma.Decimal('100.00') },
           deposit: {
             id: depositId,

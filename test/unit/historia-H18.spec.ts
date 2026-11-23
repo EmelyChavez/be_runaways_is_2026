@@ -152,6 +152,7 @@ describe("H18. Calificar experiencia con arrendatario", () => {
             subtotal: new Prisma.Decimal('40.00'),
             status: BookingStatus.COMPLETED,
             expiresAt: new Date('2026-11-10T12:00:00.000Z'),
+            reviews: [],
           }],
           total: 1,
         }),
