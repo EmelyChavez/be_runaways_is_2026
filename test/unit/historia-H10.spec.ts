@@ -44,6 +44,7 @@ describe("H10. Reserva de un bien por un periodo", () => {
     status: BookingStatus.PENDING,
     expiresAt: new Date('2026-11-17T18:00:00.000Z'),
     createdAt: new Date('2026-11-16T18:00:00.000Z'),
+    reviews: [],
     ...overrides,
   });
 
